@@ -1,0 +1,16 @@
+---
+description: Core standards for E-Commerce project
+alwaysApply: true
+---
+
+# Core Standards
+
+- Follow clean architecture with clear separation: controller, service, model, route.
+- Never hardcode secrets; always use environment variables.
+- Keep API responses consistent with `success`, `message`, and `data` fields.
+- Add pagination, sorting, and filtering support for list endpoints.
+- Use role-based authorization for protected endpoints.
+- Use transactions for checkout flows that modify stock and orders.
+- Add concise comments only for complex business logic.
+- Prefer readable, maintainable code over premature optimization.
+- Prefer Vietnamese when explaining code, technical decisions, and implementation steps.
