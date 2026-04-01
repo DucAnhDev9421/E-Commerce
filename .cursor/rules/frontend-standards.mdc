@@ -1,0 +1,15 @@
+---
+description: Frontend conventions for React application
+globs: frontend/**/*.{js,jsx,ts,tsx}
+alwaysApply: false
+---
+
+# Frontend Standards
+
+- Use functional components and split reusable logic into hooks.
+- Keep API calls inside service files, not directly inside UI components.
+- Use clear loading, error, and empty states for async views.
+- Keep components focused; extract large sections into smaller components.
+- Prefer predictable state patterns and avoid deeply nested local state.
+- Use consistent naming for query keys and route paths.
+- Keep UI text and labels clear for user-facing features.

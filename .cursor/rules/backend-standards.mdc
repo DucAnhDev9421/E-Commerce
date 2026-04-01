@@ -1,0 +1,16 @@
+---
+description: Backend conventions for Express and business logic
+globs: backend/**/*.js
+alwaysApply: false
+---
+
+# Backend Standards
+
+- Follow structure: `controllers`, `services`, `models`, `routes`, `middlewares`.
+- Keep controller thin: validate input, call service, return response.
+- Put business logic in service layer, not in routes.
+- Use `try/catch` in async handlers and forward errors consistently.
+- Do not hardcode secrets; read from `process.env`.
+- Keep response format consistent: `success`, `message`, `data`.
+- Add pagination/sort/filter for list APIs.
+- Use transactions for checkout/order flows affecting stock and payment.

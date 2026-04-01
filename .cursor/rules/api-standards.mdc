@@ -1,0 +1,16 @@
+---
+description: API design standards for docs and backend endpoint code
+globs: "{docs/**/*API*.md,docs/RESTFUL_ENDPOINTS.md,backend/src/routes/**/*.js,backend/src/controllers/**/*.js}"
+alwaysApply: false
+---
+
+# API Standards
+
+- Design RESTful endpoints with resource-oriented naming.
+- Use correct methods: `GET`, `POST`, `PATCH/PUT`, `DELETE`.
+- Keep API status codes accurate (`200`, `201`, `400`, `401`, `403`, `404`, `500`).
+- Standardize response shape for success and error cases.
+- Enforce authentication and role-based authorization on protected routes.
+- Document required params, query, and payload clearly in API docs.
+- Ensure list endpoints support pagination, sorting, and filtering.
+- Keep API docs in sync whenever endpoint behavior changes.
