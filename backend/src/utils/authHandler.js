@@ -14,23 +14,23 @@ let CheckLogin = async function (req, res, next) {
         }
 
         if (!token) {
-            return res.status(404).send({ message: "Bạn chưa đăng nhập" });
+            return res.status(401).send({ message: "Bạn chưa đăng nhập" });
         }
 
         // 3. Giải mã JWT và kiểm tra thời hạn
-        let decoded = jwt.verify(token, 'SECRET_KEY_NNPTUD_C4');
+        let decoded = jwt.verify(token, 'ACCESS_TOKEN_SECRET');
         
         // 4. Lấy thông tin user (dùng hàm từ controller có populate role)
         let user = await userController.GetAnUserById(decoded.id);
         if (!user) {
-            return res.status(404).send({ message: "Người dùng không tồn tại hoặc đã bị khóa" });
+            return res.status(401).send({ message: "Người dùng không tồn tại hoặc đã bị khóa" });
         }
 
         // Gán user vào request để dùng ở các route sau
         req.user = user;
         next();
     } catch (error) {
-        return res.status(404).send({ message: "Token không hợp lệ hoặc đã hết hạn" });
+        return res.status(401).send({ message: "Token không hợp lệ hoặc đã hết hạn" });
     }
 }
 
@@ -38,7 +38,7 @@ let CheckLogin = async function (req, res, next) {
 let CheckRole = function (...requiredRole) {
     return function (req, res, next) {
         // Kiểm tra xem name của role có nằm trong mảng requiredRole không
-        if (req.user && req.user.role && requiredRole.includes(req.user.role.name)) {
+        if (req.user && req.user.role && requiredRole.some(r => r.toLowerCase() === req.user.role.name.toLowerCase())) {
             next();
         } else {
             return res.status(403).send({ message: "Bạn không có quyền truy cập" });

@@ -1,16 +1,117 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import HeroBanner from '../components/home/HeroBanner';
 import TrustBadges from '../components/home/TrustBadges';
 import FlashSale from '../components/home/FlashSale';
 import CategorySection from '../components/home/CategorySection';
 import BestSellers from '../components/home/BestSellers';
 import CustomerReviews from '../components/home/CustomerReviews';
-import { Typography, Button, Input } from 'antd';
-import { SendOutlined, MailOutlined } from '@ant-design/icons';
+import { Typography, Button, Input, Row, Col, Card, Spin, Empty, Breadcrumb } from 'antd';
+import { SendOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
+import { useSearchParams, Link } from 'react-router-dom';
+import productApi from '../api/productApi';
 
 const { Title, Text } = Typography;
 
 const Home: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search');
+  const viewParam = searchParams.get('view');
+  const categoryParam = searchParams.get('category');
+  const isListView = Boolean(searchQuery || viewParam === 'all' || categoryParam);
+
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isListView) {
+      const fetchSearchResults = async () => {
+        setLoading(true);
+        try {
+          const params: any = {};
+          if (searchQuery) params.search = searchQuery;
+          if (categoryParam) params.categoryId = categoryParam;
+          
+          const res: any = await productApi.getAll(params);
+          setProducts(res);
+        } catch (error) {
+          console.error("Search error:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchSearchResults();
+    }
+  }, [isListView, searchQuery, categoryParam]);
+
+  if (isListView) {
+    let titleText = "TẤT CẢ SẢN PHẨM";
+    if (searchQuery) titleText = `KẾT QUẢ TÌM KIẾM CHO: "${searchQuery}"`;
+    else if (categoryParam) titleText = "SẢN PHẨM THEO DANH MỤC";
+
+    return (
+      <div className="bg-[#fcfdfe] min-h-screen py-10 px-4 md:px-10">
+        <div className="container mx-auto">
+          <Breadcrumb className="mb-6">
+            <Breadcrumb.Item><Link to="/"><HomeOutlined /> Trang chủ</Link></Breadcrumb.Item>
+            <Breadcrumb.Item>{searchQuery ? `Tìm kiếm: "${searchQuery}"` : categoryParam ? 'Danh mục' : 'Tất cả sản phẩm'}</Breadcrumb.Item>
+          </Breadcrumb>
+
+          <Title level={2} className="mb-8 font-black uppercase text-blue-900 border-l-4 border-blue-600 pl-4">
+            {titleText}
+          </Title>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Spin size="large" tip="Đang tìm kiếm sản phẩm..." />
+            </div>
+          ) : products.length > 0 ? (
+            <Row gutter={[24, 24]}>
+              {products.map((product) => (
+                <Col xs={24} sm={12} md={8} lg={6} key={product._id}>
+                  <Link to={`/product/${product._id}`}>
+                    <Card
+                      hoverable
+                      cover={
+                        <img 
+                          alt={product.name} 
+                          src={product.images?.[0] ? (product.images[0].startsWith('http') ? product.images[0] : `${import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${product.images[0]}`) : 'https://via.placeholder.com/300'} 
+                          className="h-64 object-cover"
+                        />
+                      }
+                      className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all"
+                    >
+                      <Card.Meta 
+                        title={<span className="text-lg font-bold text-gray-800">{product.name}</span>} 
+                        description={
+                          <div className="mt-2">
+                            <Text type="secondary" className="block mb-2 line-clamp-1">{product.categoryId?.name}</Text>
+                            <Text className="text-blue-600 font-extrabold text-xl">
+                              {product.price?.toLocaleString()} đ
+                            </Text>
+                          </div>
+                        } 
+                      />
+                    </Card>
+                  </Link>
+                </Col>
+              ))}
+            </Row>
+          ) : (
+            <Empty 
+              image={Empty.PRESENTED_IMAGE_SIMPLE} 
+              description={
+                <div className="text-center py-20">
+                  <Text className="text-xl text-gray-500">Rất tiếc, chúng tôi không tìm thấy sản phẩm nào phù hợp.</Text>
+                  <p className="mt-4"><Link to="/"><Button type="primary" shape="round">Quay lại Trang chủ</Button></Link></p>
+                </div>
+              }
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#fcfdfe] min-h-screen">
       {/* Container shared for all sections */}

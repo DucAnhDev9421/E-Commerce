@@ -5,9 +5,9 @@ let path = require('path');
 let fs = require('fs');
 
 // Cấu hình lưu trữ tại chỗ
-let uploadDir = 'uploads/';
+let uploadDir = path.resolve(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 let storage = multer.diskStorage({

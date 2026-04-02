@@ -1,56 +1,57 @@
-import React from 'react';
-import { Typography, Row, Col } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Typography, Row, Col, Spin, Empty } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import categoryApi from '../../api/categoryApi';
+
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const getImageUrl = (url: string) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${BASE_URL}${url}`;
+};
 
 const { Title, Text } = Typography;
 
 const CategorySection: React.FC = () => {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categories = [
-    { 
-      name: 'iPhone 15 Series', 
-      image: 'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&q=80&w=300', 
-      color: 'bg-[#f0f9ff]',
-      hoverColor: 'hover:bg-blue-600',
-      count: '150+ Sản phẩm'
-    },
-    { 
-      name: 'Laptops & Office', 
-      image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&q=80&w=300', 
-      color: 'bg-[#fdf2f8]',
-      hoverColor: 'hover:bg-pink-600',
-      count: '80+ Sản phẩm'
-    },
-    { 
-      name: 'Smart Watches', 
-      image: 'https://images.unsplash.com/photo-1434493907317-a46b53b81882?auto=format&fit=crop&q=80&w=300', 
-      color: 'bg-[#ecfdf5]',
-      hoverColor: 'hover:bg-green-600',
-      count: '40+ Sản phẩm'
-    },
-    { 
-      name: 'Audio & Music', 
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300', 
-      color: 'bg-[#fff7ed]',
-      hoverColor: 'hover:bg-orange-600',
-      count: '120+ Sản phẩm'
-    },
-     { 
-      name: 'Gaming Gear', 
-      image: 'https://images.unsplash.com/photo-1615663248517-46388588ca78?auto=format&fit=crop&q=80&w=300', 
-      color: 'bg-[#f5f3ff]',
-      hoverColor: 'hover:bg-purple-600',
-      count: '60+ Sản phẩm'
-    },
-     { 
-      name: 'Photography', 
-      image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=300', 
-      color: 'bg-[#fefce8]',
-      hoverColor: 'hover:bg-yellow-600',
-      count: '30+ Sản phẩm'
-    }
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res: any = await categoryApi.getAll();
+        setCategories(res.filter((c: any) => c.status === 'active' && !c.isDeleted));
+      } catch (error) {
+        console.error("Fetch categories error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const colors = [
+    'bg-[#f0f9ff]', 'bg-[#fdf2f8]', 'bg-[#ecfdf5]', 
+    'bg-[#fff7ed]', 'bg-[#f5f3ff]', 'bg-[#fefce8]'
   ];
+
+  const placeholderImages = [
+    'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&q=80&w=300',
+    'https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&q=80&w=300',
+    'https://images.unsplash.com/photo-1434493907317-a46b53b81882?auto=format&fit=crop&q=80&w=300',
+    'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=300',
+    'https://images.unsplash.com/photo-1615663248517-46388588ca78?auto=format&fit=crop&q=80&w=300',
+    'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=300'
+  ];
+
+  if (loading) {
+    return <div className="mt-20 text-center"><Spin size="large" tip="Đang tải danh mục..." /></div>;
+  }
+
+  if (categories.length === 0) {
+    return <div className="mt-20"><Empty description="Chưa có danh mục nào" /></div>;
+  }
 
   return (
     <div className="mt-24">
@@ -66,16 +67,16 @@ const CategorySection: React.FC = () => {
 
       <Row gutter={[24, 24]}>
         {categories.map((cat, idx) => (
-          <Col xs={12} sm={8} lg={4} key={idx}>
+          <Col xs={12} sm={8} lg={4} key={cat._id}>
             <div 
               className="flex flex-col items-center group cursor-pointer transition-all duration-300 transform hover:-translate-y-2"
-              onClick={() => navigate('/products')}
+              onClick={() => navigate(`/?category=${cat._id}`)}
             >
               <div 
-                className={`${cat.color} w-full aspect-square rounded-[2rem] p-8 flex items-center justify-center relative overflow-hidden transition-all duration-500 group-hover:rounded-[3rem] shadow-sm border border-transparent group-hover:border-blue-100 group-hover:shadow-xl`}
+                className={`${colors[idx % colors.length]} w-full aspect-square rounded-[2rem] p-8 flex items-center justify-center relative overflow-hidden transition-all duration-500 group-hover:rounded-[3rem] shadow-sm border border-transparent group-hover:border-blue-100 group-hover:shadow-xl`}
               >
                 <img 
-                  src={cat.image} 
+                  src={cat.image ? getImageUrl(cat.image) : placeholderImages[idx % placeholderImages.length]} 
                   alt={cat.name} 
                   className="w-full h-full object-contain drop-shadow-2xl transition-all duration-500 group-hover:rotate-6 group-hover:scale-125 pointer-events-none"
                 />
@@ -85,7 +86,7 @@ const CategorySection: React.FC = () => {
                   {cat.name}
                 </Text>
                 <Text className="text-[11px] md:text-xs text-gray-400 font-bold opacity-60">
-                    {cat.count}
+                    Sản phẩm mới nhất
                 </Text>
               </div>
             </div>
