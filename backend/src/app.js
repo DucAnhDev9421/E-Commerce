@@ -10,9 +10,9 @@ let mongoose = require('mongoose');
 // Kết nối trực tiếp với MongoDB Local (Mặc định của nhóm)
 const MONGO_URI = "mongodb+srv://j2eegr10_db_user:rYmBxbdisgVGyd8d@cluster0.znbwrrs.mongodb.net";
 
-mongoose.connect(MONGO_URI) 
+mongoose.connect(MONGO_URI)
   .then(() => {
-    console.log("Đã kết nối trực tiếp thành công với MongoDB Local!");
+    console.log("Đã kết nối với MongoDB");
   })
   .catch((err) => {
     console.log("Lỗi kết nối MongoDB: ", err.message);
@@ -29,6 +29,7 @@ app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/addresses', require('./routes/addresses'));
 app.use('/api/v1/categories', require('./routes/categories'));
 app.use('/api/v1/products', require('./routes/products'));
+app.use('/api/v1/product-images', require('./routes/productImages'));
 app.use('/api/v1/upload', require('./routes/upload'));
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 app.get("/api/health", (req, res) => {
