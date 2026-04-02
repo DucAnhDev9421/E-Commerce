@@ -7,10 +7,12 @@ let path = require('path');
 const app = express();
 let mongoose = require('mongoose');
 
-// Kết nối với MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/NNPTUD-C4') 
+// Kết nối trực tiếp với MongoDB Local (Mặc định của nhóm)
+const MONGO_URI = "mongodb+srv://j2eegr10_db_user:rYmBxbdisgVGyd8d@cluster0.znbwrrs.mongodb.net";
+
+mongoose.connect(MONGO_URI)
   .then(() => {
-    console.log("Đã kết nối thành công với MongoDB!");
+    console.log("Đã kết nối với MongoDB");
   })
   .catch((err) => {
     console.log("Lỗi kết nối MongoDB: ", err.message);
@@ -25,8 +27,11 @@ app.use('/api/v1/roles', require('./routes/roles'));
 app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/addresses', require('./routes/addresses'));
+app.use('/api/v1/categories', require('./routes/categories'));
+app.use('/api/v1/products', require('./routes/products'));
+app.use('/api/v1/product-images', require('./routes/productImages'));
 app.use('/api/v1/upload', require('./routes/upload'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 app.get("/api/health", (req, res) => {
   return res.status(200).json({
     success: true,

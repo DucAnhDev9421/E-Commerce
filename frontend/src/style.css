@@ -94,3 +94,22 @@ body {
   background: white !important;
 }
 
+/* Ép Header luôn theo màu nền trắng và text theo biến primary */
+.ant-layout-header {
+  background-color: white !important; /* Hoặc var(--color-primary) nếu bạn muốn nền xanh */
+  line-height: normal !important;
+  padding: 0 !important;
+}
+
+/* Sử dụng biến primary cho các thành phần AntD đã override */
+.best-sellers-tabs .ant-tabs-tab-active {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Đồng bộ màu cho nút Search của AntD */
+.ant-input-search .ant-input-search-button {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+

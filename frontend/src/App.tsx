@@ -10,6 +10,9 @@ import MainLayout from './components/MainLayout';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/Admin/Dashboard';
 import Roles from './pages/Admin/Roles';
+import Categories from './pages/Admin/Categories';
+import Products from './pages/Admin/Products';
+import Users from './pages/Admin/Users';
 
 function App() {
   return (
@@ -57,7 +60,9 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/roles" element={<Roles />} />
-              <Route path="/admin/users" element={<div className="p-5"><h1>User Management</h1><p>Tính năng đang phát triển.</p></div>} />
+              <Route path="/admin/categories" element={<Categories />} />
+              <Route path="/admin/products" element={<Products />} />
+              <Route path="/admin/users" element={<Users />} />
             </Route>
           </Route>
 
