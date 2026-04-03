@@ -75,7 +75,6 @@ let checkRole = function (...requiredRole) {
 
 };
 
-
 module.exports = {
     verifyToken,
     CheckLogin: verifyToken,
