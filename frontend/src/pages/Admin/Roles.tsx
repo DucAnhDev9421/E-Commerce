@@ -30,7 +30,7 @@ const Roles: React.FC = () => {
       setFiltered(response);
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi tải danh sách quyền',
+        title: 'Lỗi tải danh sách quyền',
         description: error?.message || 'Có lỗi xảy ra',
       });
     } finally {
@@ -70,11 +70,11 @@ const Roles: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await roleApi.delete(id);
-      notification.success({ message: '✅ Xóa quyền thành công' });
+      notification.success({ title: '✅ Xóa quyền thành công' });
       fetchRoles();
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi xóa quyền',
+        title: 'Lỗi xóa quyền',
         description: error?.message,
       });
     }
@@ -85,17 +85,17 @@ const Roles: React.FC = () => {
       const values = await form.validateFields();
       if (editingRole) {
         await roleApi.update(editingRole._id, values);
-        notification.success({ message: '✅ Cập nhật quyền thành công' });
+        notification.success({ title: '✅ Cập nhật quyền thành công' });
       } else {
         await roleApi.create(values);
-        notification.success({ message: '✅ Thêm quyền mới thành công' });
+        notification.success({ title: '✅ Thêm quyền mới thành công' });
       }
       setIsModalOpen(false);
       fetchRoles();
     } catch (error: any) {
       if (error?.name !== 'ValidationError') {
         notification.error({
-          message: 'Lỗi lưu thông tin',
+          title: 'Lỗi lưu thông tin',
           description: error?.message,
         });
       }

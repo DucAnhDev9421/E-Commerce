@@ -40,8 +40,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     e.stopPropagation();
     dispatch(addItem(product));
     notification.success({
-      message: 'Đã thêm vào giỏ hàng',
-      description: `${product.name} đã được thêm vào giỏ hàng của bạn.`,
+      title: 'Đã thêm vào giỏ hàng',
+      description: `${product.name} đã được thêm thành công.`,
       placement: 'bottomRight',
       duration: 2,
     });

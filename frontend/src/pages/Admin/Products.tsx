@@ -51,11 +51,12 @@ const Products: React.FC = () => {
         productApi.getAll(),
         categoryApi.getAll(),
       ]);
-      setProducts(productRes);
-      setFiltered(productRes);
+      const productList = productRes.items || [];
+      setProducts(productList);
+      setFiltered(productList);
       setCategories(categoryRes);
     } catch (error: any) {
-      notification.error({ message: 'Lỗi tải dữ liệu', description: error?.message });
+      notification.error({ title: 'Lỗi tải dữ liệu', description: error?.message });
     } finally {
       setLoading(false);
     }
@@ -109,10 +110,10 @@ const Products: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await productApi.delete(id);
-      notification.success({ message: '✅ Xóa sản phẩm thành công' });
+      notification.success({ title: '✅ Xóa sản phẩm thành công' });
       fetchData();
     } catch (error: any) {
-      notification.error({ message: 'Lỗi xóa', description: error?.message });
+      notification.error({ title: 'Lỗi xóa', description: error?.message });
     }
   };
 
@@ -125,7 +126,7 @@ const Products: React.FC = () => {
       onSuccess(res);
     } catch (err: any) {
       onError(err);
-      notification.error({ message: 'Lỗi tải ảnh', description: 'Không thể upload ảnh lên server' });
+      notification.error({ title: 'Lỗi tải ảnh', description: 'Không thể upload ảnh lên server' });
     }
   };
 
@@ -139,16 +140,16 @@ const Products: React.FC = () => {
       const data = { ...values, images: imageUrls };
       if (editingProduct) {
         await productApi.update(editingProduct._id, data);
-        notification.success({ message: '✅ Cập nhật sản phẩm thành công' });
+        notification.success({ title: '✅ Cập nhật sản phẩm thành công' });
       } else {
         await productApi.create(data);
-        notification.success({ message: '✅ Thêm sản phẩm mới thành công' });
+        notification.success({ title: '✅ Thêm sản phẩm mới thành công' });
       }
       setIsModalOpen(false);
       fetchData();
     } catch (error: any) {
-      if (error?.name !== 'ValidationError') {
-        notification.error({ message: 'Lỗi lưu', description: error?.message });
+      if (error?.name !== 'ValidationError' && error?.name !== 'Error') {
+        notification.error({ title: 'Lỗi lưu', description: error?.message });
       }
     } finally {
       setSaving(false);

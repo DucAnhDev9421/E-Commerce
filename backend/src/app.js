@@ -8,9 +8,9 @@ require('dotenv').config();
 const app = express();
 let mongoose = require('mongoose');
 
-mongoose.connect(process.env.MONGO_URI) 
+mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log(`Đã kết nối thành công với MongoDB! Database hiện tại: ${mongoose.connection.name}`);
+    console.log(`Đã kết nối thành công với MongoDB: ${mongoose.connection.name}`);
   })
   .catch((err) => {
     console.log("Lỗi kết nối MongoDB: ", err.message);
@@ -33,6 +33,9 @@ app.use('/api/v1/addresses', require('./routes/addresses'));
 app.use('/api/v1/categories', require('./routes/categories'));
 app.use('/api/v1/products', require('./routes/products'));
 app.use('/api/v1/product-images', require('./routes/productImages'));
+app.use('/api/v1/carts', require('./routes/carts'));
+app.use('/api/v1/orders', require('./routes/orders'));
+app.use('/api/v1/order-items', require('./routes/orderItems'));
 app.use('/api/v1/upload', require('./routes/upload'));
 
 app.get("/api/health", (req, res) => {

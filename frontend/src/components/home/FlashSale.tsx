@@ -24,8 +24,8 @@ const FlashSale: React.FC = () => {
     const fetchProducts = async () => {
       try {
         const res: any = await productApi.getAll();
-        // Since we don't have a flash sale flag yet, we'll take products with the highest discount or first 4
-        const saleProducts = res
+        // Backend returns { items, page, ... }
+        const saleProducts = (res.items || [])
           .sort((a: any, b: any) => (b.discount || 0) - (a.discount || 0))
           .slice(0, 4);
         setProducts(saleProducts);
@@ -48,7 +48,7 @@ const FlashSale: React.FC = () => {
   const { h, m, s } = formatTime(timeLeft);
 
   if (loading) {
-    return <div className="mt-20 text-center"><Spin size="large" tip="Đang tải Flash Sale..." /></div>;
+    return <div className="mt-20 text-center"><Spin size="large" description="Đang tải Flash Sale..." /></div>;
   }
 
   if (products.length === 0) {

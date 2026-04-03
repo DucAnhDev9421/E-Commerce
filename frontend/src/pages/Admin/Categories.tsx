@@ -41,7 +41,7 @@ const Categories: React.FC = () => {
       setCategories(response);
       setFiltered(response);
     } catch (error: any) {
-      notification.error({ message: 'Lỗi', description: error?.message || 'Không thể tải danh mục' });
+      notification.error({ title: 'Lỗi', description: error?.message || 'Không thể tải danh mục' });
     } finally {
       setLoading(false);
     }
@@ -109,10 +109,13 @@ const Categories: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await categoryApi.delete(id);
-      notification.success({ message: '✅ Xóa danh mục thành công' });
+      notification.success({ title: '✅ Xóa danh mục thành công' });
       fetchCategories();
     } catch (error: any) {
-      notification.error({ message: 'Lỗi xóa', description: error?.message });
+      notification.error({
+        title: 'Lỗi khi xóa',
+        description: error?.message,
+      });
     }
   };
 
@@ -126,16 +129,19 @@ const Categories: React.FC = () => {
 
       if (editingCategory) {
         await categoryApi.update(editingCategory._id, values);
-        notification.success({ message: '✅ Cập nhật danh mục thành công' });
+        notification.success({ title: '✅ Cập nhật danh mục thành công' });
       } else {
         await categoryApi.create(values);
-        notification.success({ message: '✅ Thêm danh mục mới thành công' });
+        notification.success({ title: '✅ Thêm danh mục mới thành công' });
       }
       setIsModalOpen(false);
       fetchCategories();
     } catch (error: any) {
       if (error?.name !== 'ValidationError' && error?.name !== 'Error') {
-        notification.error({ message: 'Lỗi lưu', description: error?.message });
+        notification.error({
+          title: 'Lỗi tải danh mục',
+          description: error?.message,
+        });
       }
     }
   };

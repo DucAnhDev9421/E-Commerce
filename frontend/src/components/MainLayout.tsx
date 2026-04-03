@@ -15,6 +15,8 @@ import { useNavigate, Link, Outlet } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/authSlice';
 import { getAvatarUrl } from '../utils/imageUtils';
+import categoryApi from '../api/categoryApi';
+
 
 const { Header, Content, Footer } = Layout;
 const { Search } = Input;
@@ -24,6 +26,9 @@ const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { totalQuantity } = useAppSelector((state) => state.cart);
+  const [searchValue, setSearchValue] = React.useState('');
+
 
   const handleLogout = () => {
     dispatch(logout());
@@ -64,11 +69,11 @@ const MainLayout: React.FC = () => {
       {/* Top Bar Contact */}
       <div className="bg-blue-700 text-white py-2 px-10 hidden sm:block">
         <div className="flex justify-between items-center text-xs">
-          <Space split={<span className="opacity-50">|</span>}>
+          <Space separator={<span className="opacity-50">|</span>}>
             <span><PhoneOutlined className="mr-1" /> Hot-line: 1900 1234</span>
             <span><MailOutlined className="mr-1" /> support@ecommerce.com</span>
           </Space>
-          <Space split={<span className="opacity-50">|</span>}>
+          <Space separator={<span className="opacity-50">|</span>}>
             <Link to="/help" className="text-white hover:text-blue-100">Hỗ trợ</Link>
             <Link to="/news" className="text-white hover:text-blue-100">Tin tức</Link>
           </Space>
