@@ -80,7 +80,7 @@ axiosClient.interceptors.response.use(
           { withCredentials: true }
         );
 
-        const { accessToken } = response.data.data;
+        const { accessToken } = response.data;
         
         // Cập nhật token vào Redux Store
         store.dispatch(setAccessToken(accessToken));

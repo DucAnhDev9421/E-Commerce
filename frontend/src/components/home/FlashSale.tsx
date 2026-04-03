@@ -1,18 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Typography, Progress, Button } from 'antd';
+import { Row, Col, Typography, Progress, Button, Spin, Empty } from 'antd';
 import { ThunderboltOutlined, RightOutlined } from '@ant-design/icons';
-import ProductCard, { type Product } from './ProductCard';
+import { useNavigate } from 'react-router-dom';
+import ProductCard from './ProductCard';
+import productApi from '../../api/productApi';
 
 const { Text } = Typography;
 
 const FlashSale: React.FC = () => {
+  const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(7200); // 2 hours in seconds
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res: any = await productApi.getAll();
+        // Since we don't have a flash sale flag yet, we'll take products with the highest discount or first 4
+        const saleProducts = res
+          .sort((a: any, b: any) => (b.discount || 0) - (a.discount || 0))
+          .slice(0, 4);
+        setProducts(saleProducts);
+      } catch (error) {
+        console.error("Fetch flash sale error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
   }, []);
 
   const formatTime = (seconds: number) => {
@@ -24,12 +47,13 @@ const FlashSale: React.FC = () => {
 
   const { h, m, s } = formatTime(timeLeft);
 
-  const flashSaleProducts: Product[] = [
-    { id: 101, name: 'iPhone 15 Pro Max 256GB - VN/A Titan Gray', price: 29500000, oldPrice: 34990000, discount: 15, rating: 5, reviews: 124, image: 'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&q=80&w=400', sold: 45, category: 'Điện thoại' },
-    { id: 102, name: 'Sony WH-1000XM5 Noise Canceling Headphone', price: 6800000, oldPrice: 8900000, discount: 23, rating: 4.5, reviews: 88, image: 'https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&q=80&w=400', sold: 68, category: 'Phụ kiện' },
-    { id: 103, name: 'Apple Watch Series 9 GPS 41mm Midnight', price: 8200000, oldPrice: 10990000, discount: 25, rating: 4.8, reviews: 52, image: 'https://images.unsplash.com/photo-1434493907317-a46b53b81882?auto=format&fit=crop&q=80&w=400', sold: 12, category: 'Smartwatch' },
-    { id: 104, name: 'Logitech G Pro X Superlight Wireless Mouse', price: 2800000, oldPrice: 3500000, discount: 20, rating: 4.9, reviews: 215, image: 'https://images.unsplash.com/photo-1615663248517-46388588ca78?auto=format&fit=crop&q=80&w=400', sold: 95, category: 'Gaming' },
-  ];
+  if (loading) {
+    return <div className="mt-20 text-center"><Spin size="large" tip="Đang tải Flash Sale..." /></div>;
+  }
+
+  if (products.length === 0) {
+    return null; // Don't show anything if no products
+  }
 
   return (
     <div className="mt-20">
@@ -42,15 +66,16 @@ const FlashSale: React.FC = () => {
              <Text className="text-gray-500 font-bold hidden sm:inline uppercase">Kết thúc sau:</Text>
              <div className="flex gap-2">
                 {[h, m, s].map((val, i) => (
-                  <div key={i} className="bg-gray-800 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg shadow-inner">
-                    {val.toString().padStart(2, '0')}
-                  </div>
+                   <div key={i} className="bg-gray-800 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg shadow-inner">
+                     {val.toString().padStart(2, '0')}
+                   </div>
                 ))}
              </div>
           </div>
         </div>
         <Button 
           type="link" 
+          onClick={() => navigate('/?view=all')}
           className="p-0 h-auto text-blue-600 font-bold text-lg group flex items-center gap-2 hover:translate-x-2 transition-all"
         >
           XEM TẤT CẢ <RightOutlined className="text-xs" />
@@ -58,31 +83,34 @@ const FlashSale: React.FC = () => {
       </div>
 
       <Row gutter={[20, 20]}>
-        {flashSaleProducts.map(product => (
-          <Col xs={12} sm={8} lg={6} key={product.id}>
-             <div className="relative h-full flex flex-col group">
-                <ProductCard product={product} />
-                <div className="px-4 pb-4 -mt-4 bg-white rounded-b-2xl shadow-sm z-10 border border-t-0 border-gray-100">
-                    <div className="mt-4">
-                        <div className="flex justify-between items-center mb-1">
-                            <Text className="text-[11px] font-bold text-gray-500">ĐÃ BÁN {product.sold}</Text>
-                            <Text className="text-[11px] font-bold text-red-500 uppercase">Sắp hết hàng</Text>
-                        </div>
-                        <Progress 
-                            percent={(product.sold || 0) / ( (product.sold || 0) + 10) * 100} 
-                            showInfo={false} 
-                            strokeColor={{
-                                '0%': '#ef4444',
-                                '100%': '#f87171',
-                            }}
-                            className="m-0"
-                            size="small"
-                        />
-                    </div>
-                </div>
-             </div>
-          </Col>
-        ))}
+        {products.map(product => {
+          const sold = Math.floor(Math.random() * 100) + 10;
+          return (
+            <Col xs={12} sm={8} lg={6} key={product._id}>
+               <div className="relative h-full flex flex-col group">
+                  <ProductCard product={product} />
+                  <div className="px-4 pb-4 -mt-4 bg-white rounded-b-2xl shadow-sm z-10 border border-t-0 border-gray-100">
+                      <div className="mt-4">
+                          <div className="flex justify-between items-center mb-1">
+                              <Text className="text-[11px] font-bold text-gray-500">ĐÃ BÁN {sold}</Text>
+                              <Text className="text-[11px] font-bold text-red-500 uppercase">Sắp hết hàng</Text>
+                          </div>
+                          <Progress 
+                              percent={Math.min(95, (sold / (sold + 15)) * 100)} 
+                              showInfo={false} 
+                              strokeColor={{
+                                  '0%': '#ef4444',
+                                  '100%': '#f87171',
+                              }}
+                              className="m-0"
+                              size="small"
+                          />
+                      </div>
+                  </div>
+               </div>
+            </Col>
+          );
+        })}
       </Row>
     </div>
   );

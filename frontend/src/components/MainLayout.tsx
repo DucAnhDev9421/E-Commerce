@@ -30,12 +30,26 @@ const MainLayout: React.FC = () => {
     navigate('/login');
   };
 
-  const categoriesItems = [
-    { key: 'elec', label: 'Điện tử' },
-    { key: 'fashion', label: 'Thời trang' },
-    { key: 'home', label: 'Nhà cửa & Đời sống' },
-    { key: 'beauty', label: 'Làm đẹp' },
-  ];
+  const [categoriesItems, setCategoriesItems] = React.useState<any[]>([
+    { key: 'loading', label: 'Đang tải...' }
+  ]);
+
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res: any = await categoryApi.getAll();
+        const items = res.map((cat: any) => ({
+          key: cat._id,
+          label: cat.name,
+          onClick: () => navigate(`/?category=${cat._id}`)
+        }));
+        setCategoriesItems(items.length > 0 ? items : [{ key: 'empty', label: 'Chưa có danh mục' }]);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+    fetchCategories();
+  }, [navigate]);
 
   const userItems = [
     { key: 'profile', label: 'Trang cá nhân', icon: <UserOutlined />, onClick: () => navigate('/profile') },
@@ -79,6 +93,15 @@ const MainLayout: React.FC = () => {
               enterButton="Tìm kiếm" 
               size="large"
               className="w-full"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              onSearch={(value) => {
+                if (value.trim()) {
+                  navigate(`/?search=${encodeURIComponent(value)}`);
+                } else {
+                  navigate('/');
+                }
+              }}
             />
           </div>
 
@@ -90,7 +113,7 @@ const MainLayout: React.FC = () => {
               </Dropdown>
             </div>
 
-            <Badge count={3} overflowCount={99}>
+            <Badge count={totalQuantity} overflowCount={99}>
               <div 
                 className="text-gray-600 hover:text-blue-600 cursor-pointer transition-colors"
                 onClick={() => navigate('/cart')}
@@ -129,8 +152,8 @@ const MainLayout: React.FC = () => {
         <div className="container mx-auto">
           <Row gutter={[48, 32]}>
             <Col xs={24} md={8}>
-              <Title level={4} className="!text-black mb-6">MODERN SHOP</Title>
-              <Text className="text-gray-400 block mb-4">
+              <Title level={4} className="text-white mb-6">MODERN SHOP</Title>
+              <Text className="text-gray-400 block mb-6 leading-relaxed">
                 Hệ thống bán lẻ thiết bị công nghệ và thời trang hàng đầu Việt Nam. Cam kết chất lượng, uy tín và dịch vụ sau bán hàng tốt nhất.
               </Text>
               <Space size="large" className="text-xl">
@@ -141,7 +164,7 @@ const MainLayout: React.FC = () => {
             </Col>
             
             <Col xs={12} md={5}>
-              <Title level={5} className="!text-black mb-6">Dịch vụ khách hàng</Title>
+              <Title level={5} className="text-white mb-6">Dịch vụ khách hàng</Title>
               <ul className="list-none p-0 flex flex-col gap-3">
                 <li><Link to="/" className="text-gray-400 hover:text-white">Hướng dẫn mua hàng</Link></li>
                 <li><Link to="/" className="text-gray-400 hover:text-white">Chính sách trả góp</Link></li>
@@ -151,7 +174,7 @@ const MainLayout: React.FC = () => {
             </Col>
 
             <Col xs={12} md={5}>
-              <Title level={5} className="!text-black mb-6">Thông tin liên hệ</Title>
+              <Title level={5} className="text-white mb-6">Thông tin liên hệ</Title>
               <ul className="list-none p-0 flex flex-col gap-3">
                 <li className="text-gray-400">Địa chỉ: 123 Đường ABC, Hà Nội</li>
                 <li className="text-gray-400">Hotline: 1900 1234</li>
@@ -160,7 +183,7 @@ const MainLayout: React.FC = () => {
             </Col>
 
             <Col xs={24} md={6}>
-              <Title level={5} className="!text-black mb-6">Tải ứng dụng mobile</Title>
+              <Title level={5} className="text-white mb-6">Tải ứng dụng mobile</Title>
               <div className="flex flex-col gap-3">
                 <div className="h-12 w-40 bg-gray-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-700">App Store</div>
                 <div className="h-12 w-40 bg-gray-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-700">Google Play</div>
