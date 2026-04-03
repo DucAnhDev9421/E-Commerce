@@ -14,6 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { logout } from '../store/authSlice';
 import type { Role } from '../types/auth';
+import { getAvatarUrl } from '../utils/imageUtils';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -77,7 +78,7 @@ const AdminLayout: React.FC = () => {
         />
       </Sider>
 
-      <Layout>
+      <Layout className="flex flex-col">
         <Header style={{ padding: 0, background: colorBgContainer }} className="flex justify-between items-center px-4 shadow-sm z-10">
           <Button
             type="text"
@@ -101,7 +102,7 @@ const AdminLayout: React.FC = () => {
               }}
             >
               <div className="flex items-center cursor-pointer gap-2 p-2 rounded-lg hover:bg-gray-100 transition-all">
-                <Avatar src={user?.avatarUrl} icon={<UserOutlined />} />
+                <Avatar src={getAvatarUrl(user?.avatarUrl) || undefined} icon={<UserOutlined />} />
                 <div className="hidden sm:block">
                   <div className="font-semibold text-sm leading-none">{user?.fullName}</div>
                   <div className="text-xs text-gray-400">
@@ -115,12 +116,12 @@ const AdminLayout: React.FC = () => {
 
         <Content
           style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-            overflow: 'initial'
+          margin: '24px 16px',
+          padding: 24,
+          // 100vh - 64px (header) - 48px (margin top/bottom)
+          minHeight: 'calc(100vh - 64px - 48px)', 
+          background: colorBgContainer,
+          borderRadius: borderRadiusLG,
           }}
           className="shadow-sm border border-gray-100"
         >

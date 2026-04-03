@@ -1,57 +1,103 @@
 let express = require('express');
 let router = express.Router();
+
 let addressController = require('../controllers/addresses');
+let { verifyToken } = require('../utils/authHandler');
 
-router.post('/', async function (req, res, next) {
+
+/**
+ * Create address
+ * User được lấy từ token
+ */
+router.post('/', verifyToken, async function (req, res, next) {
     try {
-        // Áp dụng gán userId cho trường user trong schema
         let data = req.body;
-        if (data.userId) data.user = data.userId;
-        
+
+        // Gán user từ token
+        data.user = req.user._id;
+
         let result = await addressController.CreateAAddress(data);
-        res.send(result);
+        res.status(201).send(result);
+
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        res.status(400).send({ message: error.message });
     }
 });
 
-router.get('/', async function (req, res, next) {
+
+/**
+ * Get all addresses của user đang đăng nhập
+ */
+router.get('/', verifyToken, async function (req, res, next) {
     try {
-        let result = await addressController.GetAllAddresses();
+
+        let result = await addressController.GetAllAddresses(req.user._id);
         res.send(result);
+
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        res.status(400).send({ message: error.message });
     }
 });
 
+
+/**
+ * Get address theo id
+ */
 router.get('/:id', async function (req, res, next) {
     try {
+
         let result = await addressController.GetAAddressById(req.params.id);
-        if (!result) return res.status(404).send({ message: "Không tìm thấy địa chỉ" });
+
+        if (!result) {
+            return res.status(404).send({ message: "Không tìm thấy địa chỉ" });
+        }
+
         res.send(result);
+
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        res.status(400).send({ message: error.message });
     }
 });
 
+
+/**
+ * Update address
+ */
 router.put('/:id', async function (req, res, next) {
     try {
+
         let result = await addressController.UpdateAAddress(req.params.id, req.body);
-        if (!result) return res.status(404).send({ message: "Không tìm thấy địa chỉ để update" });
+
+        if (!result) {
+            return res.status(404).send({ message: "Không tìm thấy địa chỉ để update" });
+        }
+
         res.send(result);
+
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        res.status(400).send({ message: error.message });
     }
 });
 
+
+/**
+ * Soft delete address
+ */
 router.delete('/:id', async function (req, res, next) {
     try {
+
         let result = await addressController.DeleteAAddress(req.params.id);
-        if (!result) return res.status(404).send({ message: "Không tìm thấy địa chỉ để xóa" });
+
+        if (!result) {
+            return res.status(404).send({ message: "Không tìm thấy địa chỉ để xóa" });
+        }
+
         res.send({ message: "Xóa thành công (soft delete)" });
+
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        res.status(400).send({ message: error.message });
     }
 });
+
 
 module.exports = router;

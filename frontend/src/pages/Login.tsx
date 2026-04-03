@@ -2,8 +2,7 @@ import React from 'react';
 import { Form, Input, Button, Checkbox, Card, Typography, notification } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loginStart, loginSuccess, loginFailure } from '../store/authSlice';
 import authApi from '../api/authApi';
 
@@ -11,25 +10,25 @@ const { Title, Text } = Typography;
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { loading } = useSelector((state: RootState) => state.auth);
+  const dispatch = useAppDispatch();
+  const { loading } = useAppSelector((state) => state.auth);
 
   const onFinish = async (values: any) => {
     dispatch(loginStart());
     try {
       const response: any = await authApi.login(values);
-      // Giả sử API trả về { user, accessToken }
-      const { user, accessToken } = response;
+      // axiosClient trả về response.data, nên kết quả là { success, data: { user, accessToken } }
+      const { user, accessToken } = response.data;
       
       dispatch(loginSuccess({ user, accessToken }));
       notification.success({
         message: 'Đăng nhập thành công',
-        description: `Chào mừng ${user.fullName} đã quay trở lại!`,
+        description: `Chào mừng ${user?.fullName || 'khách'} đã quay trở lại!`,
         placement: 'topRight',
       });
 
       // Điều hướng dựa trên quyền (Role)
-      const roleName = typeof user.role === 'object' ? user.role.name : user.role;
+      const roleName = typeof user?.role === 'object' ? user.role.name : user?.role;
       if (roleName === 'ADMIN' || roleName === 'MANAGER') {
         navigate('/admin');
       } else {

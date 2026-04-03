@@ -3,14 +3,14 @@ const cors = require("cors");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 let path = require('path');
+require('dotenv').config();
 
 const app = express();
 let mongoose = require('mongoose');
 
-// Kết nối với MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/NNPTUD-C4') 
+mongoose.connect(process.env.MONGO_URI) 
   .then(() => {
-    console.log("Đã kết nối thành công với MongoDB!");
+    console.log(`Đã kết nối thành công với MongoDB! Database hiện tại: ${mongoose.connection.name}`);
   })
   .catch((err) => {
     console.log("Lỗi kết nối MongoDB: ", err.message);
@@ -20,13 +20,18 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
+
+// Cấu hình thư mục tĩnh
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Routes API
 app.use('/api/v1/roles', require('./routes/roles'));
 app.use('/api/v1/auth', require('./routes/auth'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/addresses', require('./routes/addresses'));
 app.use('/api/v1/upload', require('./routes/upload'));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.get("/api/health", (req, res) => {
   return res.status(200).json({
     success: true,

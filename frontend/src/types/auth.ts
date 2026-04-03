@@ -14,18 +14,22 @@ export interface User {
   avatarUrl?: string;
   role: Role | string;
   isActive: boolean;
+  lockTime?: string | Date | null;
+  isDeleted: boolean;
   addresses?: Address[];
 }
 
 
 export interface Address {
   _id?: string;
-  street: string;
-  city: string;
-  district: string;
-  ward: string;
+  receiverName: string;
   phoneNumber: string;
+  street: string;
+  ward: string;
+  district: string;
+  city: string;
   isDefault: boolean;
+  userId?: string;
 }
 
 export interface AuthState {
