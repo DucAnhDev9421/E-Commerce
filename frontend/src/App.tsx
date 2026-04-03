@@ -19,17 +19,20 @@ function App() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#2563eb', // Blue-600
-          borderRadius: 12,
+          colorPrimary: '#059669', // Emerald-600
+          colorInfo: '#10B981',    // Emerald-500
+          borderRadius: 16,        // Rounded for glass effect
           fontFamily: 'Inter, system-ui, sans-serif',
         },
         components: {
           Button: {
-            controlHeight: 40,
+            controlHeight: 44,       // Slightly larger, modern
             fontWeight: 600,
+            borderRadius: 9999,      // Pill shape buttons
           },
           Card: {
-            boxShadowSecondary: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+            colorBgContainer: 'rgba(255, 255, 255, 0.6)',
+            boxShadowSecondary: 'none',
           }
         }
       }}

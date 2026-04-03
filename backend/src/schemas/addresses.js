@@ -10,6 +10,10 @@ let addressSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    ward: {
+        type: String,
+        required: true
+    },
     city: {
         type: String,
         required: true

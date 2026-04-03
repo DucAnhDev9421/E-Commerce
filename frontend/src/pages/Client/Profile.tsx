@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Tabs, 
-  Card, 
-  Row, 
-  Col, 
-  Avatar, 
-  Typography, 
-  Button, 
-  Form, 
-  Input, 
-  Upload, 
-  notification, 
+import {
+  Tabs,
+  Row,
+  Col,
+  Avatar,
+  Typography,
+  Button,
+  Form,
+  Input,
+  Upload,
+  notification,
   Spin,
   Divider,
   Tag,
@@ -18,15 +17,14 @@ import {
   Switch,
   Select
 } from 'antd';
-import { 
-  UserOutlined, 
-  EditOutlined, 
-  CameraOutlined, 
-  LockOutlined, 
+import {
+  UserOutlined,
+  EditOutlined,
+  CameraOutlined,
   EnvironmentOutlined,
   SaveOutlined,
   CloseOutlined,
-  DeleteOutlined 
+  DeleteOutlined
 } from '@ant-design/icons';
 import type { RcFile, UploadProps } from 'antd/es/upload/interface';
 import { updateUser } from '../../store/authSlice';
@@ -49,88 +47,88 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [personalForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const [activeTab, setActiveTab ] = useState('1');
+  const [activeTab, setActiveTab] = useState('1');
   const [addressForm] = Form.useForm();
-const [addresses, setAddresses] = useState<Address[]>([]);
-const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-const [avatarLoading, setAvatarLoading] = useState(false);
-const [provinces, setProvinces] = useState<any[]>([]);
-const [districts, setDistricts] = useState<any[]>([]);
-const [wards, setWards] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [provinces, setProvinces] = useState<any[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [wards, setWards] = useState<any[]>([]);
 
-// Tải danh sách Tỉnh/Thành
-useEffect(() => {
+  // Tải danh sách Tỉnh/Thành
+  useEffect(() => {
     const fetchProvinces = async () => {
-        try {
-            const resp = await fetch('https://provinces.open-api.vn/api/p/');
-            const data = await resp.json();
-            setProvinces(data);
-        } catch (error) {
-            console.error('Lỗi tải tỉnh thành:', error);
-        }
+      try {
+        const resp = await fetch('https://provinces.open-api.vn/api/p/');
+        const data = await resp.json();
+        setProvinces(data);
+      } catch (error) {
+        console.error('Lỗi tải tỉnh thành:', error);
+      }
     };
     fetchProvinces();
-}, []);
+  }, []);
 
-// Khi chọn Tỉnh -> Tải Quận
-const handleProvinceChange = async (provinceName: string, option: any) => {
+  // Khi chọn Tỉnh -> Tải Quận
+  const handleProvinceChange = async (provinceName: string, option: any) => {
     addressForm.setFieldsValue({ district: undefined, ward: undefined });
     setDistricts([]);
     setWards([]);
-    
-    try {
-        const provinceCode = option.key;
-        const resp = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-        const data = await resp.json();
-        setDistricts(data.districts || []);
-    } catch (error) {
-        console.error('Lỗi tải quận huyện:', error);
-    }
-};
 
-// Khi chọn Quận -> Tải Phường
-const handleDistrictChange = async (districtName: string, option: any) => {
+    try {
+      const provinceCode = option.key;
+      const resp = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+      const data = await resp.json();
+      setDistricts(data.districts || []);
+    } catch (error) {
+      console.error('Lỗi tải quận huyện:', error);
+    }
+  };
+
+  // Khi chọn Quận -> Tải Phường
+  const handleDistrictChange = async (districtName: string, option: any) => {
     addressForm.setFieldsValue({ ward: undefined });
     setWards([]);
 
     try {
-        const districtCode = option.key;
-        const resp = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-        const data = await resp.json();
-        setWards(data.wards || []);
+      const districtCode = option.key;
+      const resp = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+      const data = await resp.json();
+      setWards(data.wards || []);
     } catch (error) {
-        console.error('Lỗi tải phường xã:', error);
+      console.error('Lỗi tải phường xã:', error);
     }
-};
+  };
 
-const fetchAddresses = async () => {
-  try {
-    const data = await addressApi.getAll();
-    setAddresses(data);
-  } catch (error: any) {
-    console.error('Lỗi lấy địa chỉ:', error);
-  }
-};
+  const fetchAddresses = async () => {
+    try {
+      const data = await addressApi.getAll();
+      setAddresses(data);
+    } catch (error: any) {
+      console.error('Lỗi lấy địa chỉ:', error);
+    }
+  };
 
   // Fetch latest user data
   const fetchUserData = async () => {
     // 1. Lấy ID linh hoạt (fallback từ _id sang id)
     const currentUserId = currentUser?._id || (currentUser as any)?.id;
-    
+
     if (!currentUserId) return;
     setLoading(true);
     try {
       const resp: any = await userApi.getById(currentUserId);
-      
+
       // Map id -> _id ngay tại đây để đồng bộ
       if (resp && !resp._id && resp.id) {
         resp._id = resp.id;
       }
-      
+
       // Đảm bảo state được cập nhật với object mới nhất để UI re-render (bao gồm avatarUrl)
       setUserData({ ...resp });
       personalForm.setFieldsValue(resp);
-      
+
       // 2. Đồng bộ ngược lên Redux để Header và các component khác nhận được avatar mới
       dispatch(updateUser(resp));
     } catch (error: any) {
@@ -180,7 +178,7 @@ const fetchAddresses = async () => {
       notification.error({ message: 'Lỗi', description: error.message });
     }
   };
-  
+
   const handleAddAddress = async (values: any) => {
     setLoading(true);
     try {
@@ -190,9 +188,9 @@ const fetchAddresses = async () => {
       addressForm.resetFields();
       fetchAddresses(); // Tải lại danh sách địa chỉ
     } catch (error: any) {
-      notification.error({ 
-        title: 'Lỗi', 
-        description: error.message || 'Không thể thêm địa chỉ' 
+      notification.error({
+        title: 'Lỗi',
+        description: error.message || 'Không thể thêm địa chỉ'
       });
     } finally {
       setLoading(false);
@@ -226,54 +224,54 @@ const fetchAddresses = async () => {
 
   const handleUpdatePassword = async (values: any) => {
     // Lấy ID an toàn nhất từ mọi nguồn
-    const userId = currentUser?._id || (currentUser as any)?.id || userData?._id || (userData as any)?.id; 
+    const userId = currentUser?._id || (currentUser as any)?.id || userData?._id || (userData as any)?.id;
 
     if (!userId) {
-        return notification.error({ 
-            message: 'Lỗi', 
-            description: 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại' 
-        });
+      return notification.error({
+        message: 'Lỗi',
+        description: 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại'
+      });
     }
 
     setLoading(true);
     try {
-        // 2. Gọi API đổi mật khẩu
-        await userApi.changePassword(userId, {
-            oldPassword: values.oldPassword,
-            newPassword: values.newPassword
-        });
+      // 2. Gọi API đổi mật khẩu
+      await userApi.changePassword(userId, {
+        oldPassword: values.oldPassword,
+        newPassword: values.newPassword
+      });
 
-        notification.success({ message: 'Đổi mật khẩu thành công' });
-        passwordForm.resetFields();
+      notification.success({ message: 'Đổi mật khẩu thành công' });
+      passwordForm.resetFields();
     } catch (error: any) {
-        // 3. Hiển thị lỗi từ Backend (ví dụ: Mật khẩu cũ không khớp)
-        notification.error({ 
-            message: 'Lỗi', 
-            description: error.message || 'Không thể đổi mật khẩu'
-        });
+      // 3. Hiển thị lỗi từ Backend (ví dụ: Mật khẩu cũ không khớp)
+      notification.error({
+        message: 'Lỗi',
+        description: error.message || 'Không thể đổi mật khẩu'
+      });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   const handleAvatarChange: UploadProps['onChange'] = async (info) => {
     // Khi dùng beforeUpload={() => false}, Ant Design sẽ không tự động upload
     // mà sẽ gọi onChange ngay lập tức sau khi chọn file.
     // Chúng ta không check info.file.status vì nó sẽ luôn là 'ready' hoặc rỗng.
     const file = info.file.originFileObj || info.file;
-    
+
     if (file) {
       try {
         setAvatarLoading(true);
         const response: any = await uploadApi.uploadImage(file as RcFile);
-        
+
         if (response.avatarUrl && userData?._id) {
           const updatedUser = await userApi.update(userData._id, { avatarUrl: response.avatarUrl });
           setUserData(updatedUser);
           dispatch(updateUser(updatedUser));
-          notification.success({ 
-            title: 'Thành công', 
-            description: 'Thay đổi ảnh đại diện mới thành công' 
+          notification.success({
+            title: 'Thành công',
+            description: 'Thay đổi ảnh đại diện mới thành công'
           });
         }
       } catch (error: any) {
@@ -305,83 +303,82 @@ const fetchAddresses = async () => {
       requiredMark={false}
       className="profile-form"
     >
-      <div className="p-6 bg-white rounded-xl">
-        <div className="flex justify-between items-center mb-6">
-          <Title level={4} className="!m-0">Thông tin cá nhân</Title>
+      <div className="p-8 glass-panel bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-white/60">
+        <div className="flex justify-between items-center mb-8">
+          <Title level={4} className="!m-0 !font-serif !font-normal tracking-tight">Thông tin cá nhân</Title>
           {!isEditing ? (
-            <Button 
-              type="primary" 
-              ghost 
-              icon={<EditOutlined />} 
+            <Button
+              type="text"
+              icon={<EditOutlined />}
               onClick={() => setIsEditing(true)}
-              className="rounded-full border-gray-300 hover:!border-blue-500"
+              className="rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-bold text-xs"
             >
-              Chỉnh sửa
+              CHỈNH SỬA
             </Button>
           ) : (
-            <div className="space-x-2">
-              <Button 
-                  icon={<CloseOutlined />} 
-                  onClick={() => {
-                      setIsEditing(false);
-                      personalForm.setFieldsValue(userData);
-                  }}
-                  className="rounded-full"
+            <div className="flex gap-3">
+              <Button
+                icon={<CloseOutlined />}
+                onClick={() => {
+                  setIsEditing(false);
+                  personalForm.setFieldsValue(userData);
+                }}
+                className="rounded-full border-text/10 text-text/60 font-bold text-xs"
               >
-                Hủy
+                HỦY
               </Button>
-              <Button 
-                  type="primary" 
-                  icon={<SaveOutlined />} 
-                  htmlType="submit"
-                  className="rounded-full"
-                  loading={loading}
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                htmlType="submit"
+                className="rounded-full bg-primary border-none font-bold text-xs shadow-lg"
+                loading={loading}
               >
-                Lưu
+                LƯU
               </Button>
             </div>
           )}
         </div>
 
-        <Row gutter={24}>
+        <Row gutter={32}>
           <Col xs={24} md={12}>
             <Form.Item
-              label={<span className="font-medium text-gray-600">Họ và tên</span>}
+              label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Họ và tên</span>}
               name="fullName"
               rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
             >
-              <Input size="large" placeholder="Nhập họ và tên" disabled={!isEditing} className="rounded-lg hover:border-blue-400 focus:border-blue-500" />
+              <Input size="large" placeholder="Nhập họ và tên" disabled={!isEditing} className="rounded-2xl bg-white/50 hover:border-primary focus:border-primary border-white/60 h-12" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
             <Form.Item
-              label={<span className="font-medium text-gray-600">Email</span>}
+              label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Email</span>}
               name="email"
               rules={[
                 { required: true, message: 'Vui lòng nhập email' },
                 { type: 'email', message: 'Email không đúng định dạng' }
               ]}
             >
-              <Input size="large" placeholder="Nhập email" disabled={!isEditing} className="rounded-lg" />
+              <Input size="large" placeholder="Nhập email" disabled={!isEditing} className="rounded-2xl bg-white/50 border-white/60 h-12" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
             <Form.Item
-              label={<span className="font-medium text-gray-600">Số điện thoại</span>}
+              label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Số điện thoại</span>}
               name="phone"
               rules={[
                 { pattern: /^[0-9]+$/, message: 'Số điện thoại chỉ được chứa số' }
               ]}
             >
-              <Input size="large" placeholder="Nhập số điện thoại" disabled={!isEditing} className="rounded-lg" />
+              <Input size="large" placeholder="Nhập số điện thoại" disabled={!isEditing} className="rounded-2xl bg-white/50 border-white/60 h-12" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
             <Form.Item
-              label={<span className="font-medium text-gray-600">Tên đăng nhập</span>}
+              label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Tên đăng nhập</span>}
               name="username"
             >
-              <Input size="large" disabled className="bg-gray-50 rounded-lg" />
+              <Input size="large" disabled className="rounded-2xl bg-text/5 border-none h-12 opacity-50" />
             </Form.Item>
           </Col>
         </Row>
@@ -390,36 +387,36 @@ const fetchAddresses = async () => {
   );
 
   const renderChangePassword = () => (
-    <div className="p-6 bg-white rounded-xl">
-      <Title level={4} className="mb-6">Đổi mật khẩu</Title>
-      <Form 
+    <div className="p-8 glass-panel bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-white/60">
+      <Title level={4} className="mb-8 !font-serif !font-normal tracking-tight">Đổi mật khẩu</Title>
+      <Form
         form={passwordForm}
-        layout="vertical" 
-        className="max-w-md" 
+        layout="vertical"
+        className="max-w-md"
         onFinish={handleUpdatePassword}
       >
-        <Form.Item 
-          label="Mật khẩu hiện tại" 
-          name="oldPassword" 
+        <Form.Item
+          label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Mật khẩu hiện tại</span>}
+          name="oldPassword"
           rules={[{ required: true, message: 'Vui lòng nhập mật khẩu hiện tại' }]}
         >
-          <Input.Password size="large" className="rounded-lg" />
+          <Input.Password size="large" className="rounded-2xl bg-white/50 border-white/60 h-12" />
         </Form.Item>
-        
-        <Form.Item 
-          label="Mật khẩu mới" 
-          name="newPassword" 
+
+        <Form.Item
+          label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Mật khẩu mới</span>}
+          name="newPassword"
           rules={[
             { required: true, message: 'Vui lòng nhập mật khẩu mới' },
             { min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên' }
           ]}
         >
-          <Input.Password size="large" className="rounded-lg" />
+          <Input.Password size="large" className="rounded-2xl bg-white/50 border-white/60 h-12" />
         </Form.Item>
-        
-        <Form.Item 
-          label="Xác nhận mật khẩu mới" 
-          name="confirmPassword" 
+
+        <Form.Item
+          label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Xác nhận mật khẩu</span>}
+          name="confirmPassword"
           dependencies={['newPassword']}
           rules={[
             { required: true, message: 'Vui lòng xác nhận mật khẩu mới' },
@@ -433,200 +430,205 @@ const fetchAddresses = async () => {
             }),
           ]}
         >
-          <Input.Password size="large" className="rounded-lg" />
+          <Input.Password size="large" className="rounded-2xl bg-white/50 border-white/60 h-12" />
         </Form.Item>
-        
-        <Button 
-          type="primary" 
-          size="large" 
-          className="rounded-full w-full mt-4" 
+
+        <Button
+          type="primary"
+          size="large"
+          className="rounded-full w-full mt-6 bg-primary border-none font-bold tracking-widest text-xs h-14 shadow-lg shadow-primary/20"
           htmlType="submit"
           loading={loading}
         >
-          Cập nhật mật khẩu
+          CẬP NHẬT MẬT KHẨU
         </Button>
       </Form>
     </div>
   );
 
   const renderAddresses = () => (
-    <div className="p-6 bg-white rounded-xl">
-      <div className="flex justify-between items-center mb-6">
-        <Title level={4} className="!m-0">Địa chỉ giao hàng</Title>
-        <Button 
-          type="primary" 
-          ghost 
-          className="rounded-full"
+    <div className="p-8 glass-panel bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-white/60">
+      <div className="flex justify-between items-center mb-8">
+        <Title level={4} className="!m-0 !font-serif !font-normal tracking-tight">Địa chỉ giao hàng</Title>
+        <Button
+          type="primary"
+          className="rounded-full bg-primary border-none font-bold text-xs shadow-lg"
           onClick={() => setIsAddressModalOpen(true)}
         >
-          Thêm địa chỉ
+          THÊM ĐỊA CHỈ
         </Button>
       </div>
-      
+
       {addresses.length > 0 ? (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {addresses.map((addr, index) => (
-            <Card key={addr._id} className="rounded-xl border-gray-100 shadow-sm hover:shadow-md transition-shadow text-left">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
+            <div key={addr._id} className="glass-card p-6 bg-white/40 backdrop-blur-sm rounded-3xl border border-white/80 shadow-sm hover:shadow-xl transition-all relative group h-full flex flex-col">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Text strong className="text-lg">{addr.receiverName}</Text>
-                    <Tag color="blue">Địa chỉ {index + 1}</Tag>
-                    {addr.isDefault && <Tag color="green">Mặc định</Tag>}
+                    <span className="font-serif text-lg text-text">{addr.receiverName}</span>
+                    {addr.isDefault && (
+                      <Tag className="m-0 bg-primary/10 text-primary border-none rounded-full px-3 font-bold text-[10px] uppercase tracking-wider">MẶC ĐỊNH</Tag>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <EnvironmentOutlined />
-                    <Text>{`${addr.street}, ${addr.ward}, ${addr.district}, ${addr.city}`}</Text>
-                  </div>
-                  <div className="text-gray-500">
-                    <Text type="secondary">Số điện thoại: </Text>
-                    <Text strong>{addr.phoneNumber}</Text>
-                  </div>
-                  {!addr.isDefault && (
-                    <Button 
-                      type="link" 
-                      className="p-0 h-auto text-blue-600 hover:text-blue-700"
-                      onClick={() => handleSetDefaultAddress(addr._id!)}
-                    >
-                      Thiết lập mặc định
-                    </Button>
-                  )}
+                  <div className="text-text/40 text-xs font-bold uppercase tracking-widest">ĐỊA CHỈ {index + 1}</div>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    type="text" 
-                    danger 
-                    icon={<DeleteOutlined />} 
-                    onClick={() => handleDeleteAddress(addr._id!)}
-                    className="hover:bg-red-50 rounded-full"
-                  />
-                </div>
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteAddress(addr._id!)}
+                  className="hover:bg-cta/10 text-cta rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                />
               </div>
-            </Card>
+
+              <div className="flex items-start gap-3 mb-4 flex-1">
+                <EnvironmentOutlined className="text-primary mt-1" />
+                <Text className="text-text/60 font-light leading-relaxed">{`${addr.street}, ${addr.ward}, ${addr.district}, ${addr.city}`}</Text>
+              </div>
+
+              <div className="flex flex-col gap-4 mt-auto">
+                <div className="flex items-center gap-3">
+                  <span className="text-text/30 text-[10px] font-bold uppercase tracking-widest shrink-0">HOTLINE</span>
+                  <Text className="font-bold text-text tracking-tight">{addr.phoneNumber}</Text>
+                </div>
+
+                {!addr.isDefault && (
+                  <Button
+                    type="link"
+                    className="p-0 h-auto text-primary hover:text-primary/70 font-bold text-xs tracking-widest text-left"
+                    onClick={() => handleSetDefaultAddress(addr._id!)}
+                  >
+                    THIẾT LẬP MẶC ĐỊNH
+                  </Button>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       ) : (
-        <div className="py-12 text-center text-gray-400">
-           <EnvironmentOutlined style={{ fontSize: 48 }} />
-           <p className="mt-2 text-lg">Chưa có địa chỉ giao hàng nào</p>
-           <Button 
-            type="primary" 
-            className="mt-4 rounded-full"
+        <div className="py-20 text-center flex flex-col items-center">
+          <div className="w-20 h-20 bg-text/5 rounded-full flex items-center justify-center text-3xl text-text/20 mb-6">
+            <EnvironmentOutlined />
+          </div>
+          <p className="text-text/40 font-serif italic text-xl mb-8">Hành trình trải nghiệm mới bắt đầu từ đây</p>
+          <Button
+            type="primary"
+            size="large"
+            className="rounded-full bg-primary border-none font-bold tracking-widest text-xs h-14 px-10 shadow-lg"
             onClick={() => setIsAddressModalOpen(true)}
-           >
-            Tạo địa chỉ đầu tiên
-           </Button>
+          >
+            KHỞI TẠO ĐỊA CHỈ
+          </Button>
         </div>
       )}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-10 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background py-16 px-4 relative overflow-hidden font-sans">
+      {/* Background Orbs for Liquid Glass */}
+      <div className="absolute top-[5%] right-[-5%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none opacity-50 mix-blend-multiply"></div>
+      <div className="absolute bottom-[15%] left-[-5%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] pointer-events-none opacity-50 mix-blend-multiply"></div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
         <Row gutter={[32, 32]}>
           {/* Cột trái: Profile Summary */}
           <Col xs={24} lg={8}>
-            <Card className="rounded-2xl border-none shadow-sm overflow-hidden sticky top-8">
-              <div className="h-32 bg-gradient-to-r from-blue-500 to-indigo-600 -mx-6 -mt-6 mb-16 relative">
-                 <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-                    <div className="relative group">
-                        <Spin spinning={avatarLoading}>
-                            <Avatar 
-                                size={120} 
-                                src={getAvatarUrl(userData?.avatarUrl) || undefined} 
-                                icon={<UserOutlined />}
-                                className="border-4 border-white shadow-lg bg-white"
-                            />
-                        </Spin>
-                        <Upload
-                            showUploadList={false}
-                            beforeUpload={() => false}
-                            onChange={handleAvatarChange}
-                            className="absolute bottom-1 right-1"
-                        >
-                            <Button 
-                                shape="circle" 
-                                icon={<CameraOutlined />} 
-                                className="shadow-md bg-white border-none group-hover:scale-110 transition-transform"
-                                size="middle"
-                            />
-                        </Upload>
-                    </div>
-                 </div>
-              </div>
-              
-              <div className="text-center pt-2">
-                <Title level={3} className="!mb-1">{userData?.fullName}</Title>
-                <Tag color="gold" className="px-3 rounded-full font-medium">
-                  {(userData?.role as any)?.name || 'Thành viên'}
-                </Tag>
-                
-                <Divider className="my-6" />
-                
-                <div className="space-y-4 px-4 text-left">
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <UserOutlined className="text-blue-500" />
-                    <span>{userData?.username}</span>
+            <div className="glass-panel p-8 rounded-[3rem] border border-white/60 shadow-2xl overflow-hidden sticky top-32">
+              <div className="h-40 bg-gradient-to-br from-primary to-secondary -mx-10 -mt-10 mb-20 relative">
+                <div className="absolute -bottom-14 left-1/2 -translate-x-1/2">
+                  <div className="relative group">
+                    <Spin spinning={avatarLoading}>
+                      <Avatar
+                        size={140}
+                        src={getAvatarUrl(userData?.avatarUrl) || undefined}
+                        icon={<UserOutlined />}
+                        className="border-4 border-white/80 shadow-2xl bg-white backdrop-blur-md"
+                      />
+                    </Spin>
+                    <Upload
+                      showUploadList={false}
+                      beforeUpload={() => false}
+                      onChange={handleAvatarChange}
+                      className="absolute bottom-2 right-2"
+                    >
+                      <Button
+                        shape="circle"
+                        icon={<CameraOutlined />}
+                        className="shadow-lg bg-white border-none hover:scale-110 transition-all flex items-center justify-center p-0"
+                        style={{ width: 40, height: 40 }}
+                      />
+                    </Upload>
                   </div>
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <EnvironmentOutlined className="text-blue-500" />
-                    <span>{userData?.addresses?.[0]?.city || 'Chưa cập nhật địa chỉ'}</span>
+                </div>
+              </div>
+
+              <div className="text-center pt-2">
+                <Title level={3} className="!mb-1 !font-serif !font-normal tracking-tight">{userData?.fullName}</Title>
+                <Tag className="px-3 rounded-full font-bold bg-primary/10 text-primary border-none text-[10px] uppercase tracking-widest">
+                  {(userData?.role as any)?.name || 'THÀNH VIÊN'}
+                </Tag>
+
+                <Divider className="my-8 opacity-40 border-text/10" />
+
+                <div className="space-y-5 px-4 text-left">
+                  <div className="flex items-center gap-3 text-text/60">
+                    <UserOutlined className="text-primary" />
+                    <span className="font-medium">@{userData?.username}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-text/60">
+                    <EnvironmentOutlined className="text-primary" />
+                    <span className="font-medium">{userData?.addresses?.[0]?.city || 'Chưa cập nhật địa chỉ'}</span>
                   </div>
                 </div>
 
-                <div className="mt-8 grid grid-cols-2 gap-4">
-                  <Card className="bg-gray-50 border-none rounded-xl py-2 px-1 text-center">
-                    <Text strong className="text-blue-600 text-lg">0</Text>
-                    <br />
-                    <Text type="secondary" className="text-xs">Đơn hàng</Text>
-                  </Card>
-                  <Card className="bg-gray-50 border-none rounded-xl py-2 px-1 text-center">
-                    <Text strong className="text-blue-600 text-lg">0</Text>
-                    <br />
-                    <Text type="secondary" className="text-xs">Voucher</Text>
-                  </Card>
+                <div className="mt-10 grid grid-cols-2 gap-4">
+                  <div className="bg-white/40 backdrop-blur-sm border border-white/60 rounded-3xl py-4 flex flex-col items-center shadow-sm">
+                    <Text className="text-primary text-xl font-serif">0</Text>
+                    <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">Đơn hàng</Text>
+                  </div>
+                  <div className="bg-white/40 backdrop-blur-sm border border-white/60 rounded-3xl py-4 flex flex-col items-center shadow-sm">
+                    <Text className="text-primary text-xl font-serif">0</Text>
+                    <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">Voucher</Text>
+                  </div>
                 </div>
               </div>
-            </Card>
+            </div>
           </Col>
 
-          {/* Cột phải: Profile Details */}
           <Col xs={24} lg={16}>
-            <div className="bg-white rounded-2xl shadow-sm p-4 h-full min-h-[600px]">
-              <Tabs 
-                activeKey={activeTab} 
+            <div className="glass-panel rounded-[3rem] p-6 md:p-10 border border-white/60 shadow-2xl h-full min-h-[700px]">
+              <Tabs
+                activeKey={activeTab}
                 onChange={setActiveTab}
-                className="custom-tabs"
+                className="premium-tabs-system"
                 size="large"
                 items={[
                   {
                     key: '1',
                     label: (
-                        <span className="flex items-center gap-2 px-2">
-                            <UserOutlined />
-                            Thông tin cá nhân
-                        </span>
+                      <span className="flex items-center gap-2 px-6 py-2 font-serif text-lg tracking-tight">
+                        THÔNG TIN
+                      </span>
                     ),
                     children: renderPersonalInfo()
                   },
                   {
                     key: '2',
                     label: (
-                        <span className="flex items-center gap-2 px-2">
-                            <LockOutlined />
-                            Đổi mật khẩu
-                        </span>
+                      <span className="flex items-center gap-2 px-6 py-2 font-serif text-lg tracking-tight">
+                        BẢO MẬT
+                      </span>
                     ),
                     children: renderChangePassword()
                   },
                   {
                     key: '3',
                     label: (
-                        <span className="flex items-center gap-2 px-2">
-                            <EnvironmentOutlined />
-                            Địa chỉ giao hàng
-                        </span>
+                      <span className="flex items-center gap-2 px-6 py-2 font-serif text-lg tracking-tight">
+                        ĐỊA CHỈ
+                      </span>
                     ),
                     children: renderAddresses()
                   }
@@ -639,155 +641,154 @@ const fetchAddresses = async () => {
 
       <Modal
         title={
-          <div className="flex items-center gap-2 border-b pb-3">
-             <EnvironmentOutlined className="text-blue-600" />
-             <span className="text-lg font-semibold">Thêm địa chỉ giao hàng</span>
+          <div className="flex flex-col border-b border-text/10 pb-6 mb-8">
+            <span className="font-serif text-2xl text-text tracking-tight">Thêm địa chỉ mới</span>
+            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">GIAO HÀNG TẬN TÂM</span>
           </div>
         }
         open={isAddressModalOpen}
         onCancel={() => {
-            setIsAddressModalOpen(false);
-            addressForm.resetFields();
+          setIsAddressModalOpen(false);
+          addressForm.resetFields();
         }}
         footer={null}
         destroyOnClose
         centered
-        width={500}
+        width={550}
         className="premium-modal"
       >
         <Form
-            form={addressForm}
-            layout="vertical"
-            onFinish={handleAddAddress}
-            initialValues={{ isDefault: false }}
-            className="mt-6"
-            requiredMark={false}
+          form={addressForm}
+          layout="vertical"
+          onFinish={handleAddAddress}
+          initialValues={{ isDefault: false }}
+          requiredMark={false}
         >
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Họ và tên người nhận</span>}
-                name="receiverName"
-                rules={[{ required: true, message: 'Vui lòng nhập tên người nhận' }]}
-            >
-                <Input size="large" placeholder="Nhập tên người nhận" className="rounded-lg" />
-            </Form.Item>
+          <Form.Item
+            label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Người nhận</span>}
+            name="receiverName"
+            rules={[{ required: true, message: 'Vui lòng nhập tên người nhận' }]}
+          >
+            <Input size="large" placeholder="Họ và tên khách hàng" className="rounded-2xl h-12 border-text/10" />
+          </Form.Item>
 
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Số điện thoại</span>}
-                name="phoneNumber"
-                rules={[
-                    { required: true, message: 'Vui lòng nhập số điện thoại' },
-                    { pattern: /^[0-9]+$/, message: 'Số điện thoại không hợp lệ' }
-                ]}
-            >
-                <Input size="large" placeholder="Nhập số điện thoại" className="rounded-lg" />
-            </Form.Item>
+          <Form.Item
+            label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Liên hệ</span>}
+            name="phoneNumber"
+            rules={[
+              { required: true, message: 'Vui lòng nhập số điện thoại' },
+              { pattern: /^[0-9]+$/, message: 'Số điện thoại không hợp lệ' }
+            ]}
+          >
+            <Input size="large" placeholder="Số điện thoại di động" className="rounded-2xl h-12 border-text/10" />
+          </Form.Item>
 
-            <Row gutter={12}>
-                <Col span={12}>
-                    <Form.Item
-                        label={<span className="font-medium text-gray-600">Tỉnh/Thành phố</span>}
-                        name="city"
-                        rules={[{ required: true, message: 'Vui lòng chọn Tỉnh/Thành' }]}
-                    >
-                        <Select 
-                            showSearch
-                            size="large" 
-                            placeholder="Chọn Tỉnh/Thành" 
-                            className="rounded-lg w-full"
-                            onChange={handleProvinceChange}
-                            filterOption={(input, option) =>
-                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                            options={provinces.map(p => ({ label: p.name, value: p.name, key: p.code }))}
-                        />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item
-                        label={<span className="font-medium text-gray-600">Quận/Huyện</span>}
-                        name="district"
-                        rules={[{ required: true, message: 'Vui lòng chọn Quận/Huyện' }]}
-                    >
-                        <Select 
-                            showSearch
-                            size="large" 
-                            placeholder="Chọn Quận/Huyện" 
-                            className="rounded-lg w-full"
-                            disabled={!districts.length}
-                            onChange={handleDistrictChange}
-                            filterOption={(input, option) =>
-                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                            options={districts.map(d => ({ label: d.name, value: d.name, key: d.code }))}
-                        />
-                    </Form.Item>
-                </Col>
-            </Row>
-
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Phường/Xã</span>}
-                name="ward"
-                rules={[{ required: true, message: 'Vui lòng chọn Phường/Xã' }]}
-            >
-                <Select 
-                    showSearch
-                    size="large" 
-                    placeholder="Chọn Phường/Xã" 
-                    className="rounded-lg w-full"
-                    disabled={!wards.length}
-                    filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                    }
-                    options={wards.map(w => ({ label: w.name, value: w.name }))}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Tỉnh/Thành</span>}
+                name="city"
+                rules={[{ required: true, message: 'Vui lòng chọn Tỉnh/Thành' }]}
+              >
+                <Select
+                  showSearch
+                  size="large"
+                  placeholder="Chọn Tỉnh"
+                  className="rounded-2xl w-full"
+                  onChange={handleProvinceChange}
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={provinces.map(p => ({ label: p.name, value: p.name, key: p.code }))}
                 />
-            </Form.Item>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Quận/Huyện</span>}
+                name="district"
+                rules={[{ required: true, message: 'Vui lòng chọn Quận/Huyện' }]}
+              >
+                <Select
+                  showSearch
+                  size="large"
+                  placeholder="Chọn Huyện"
+                  className="rounded-2xl w-full"
+                  disabled={!districts.length}
+                  onChange={handleDistrictChange}
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={districts.map(d => ({ label: d.name, value: d.name, key: d.code }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Địa chỉ cụ thể (Số nhà, đường...)</span>}
-                name="street"
-                rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }]}
-            >
-                <Input.TextArea rows={2} placeholder="Nhập số nhà, tên đường..." className="rounded-lg" />
-            </Form.Item>
+          <Form.Item
+            label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Phường/Xã</span>}
+            name="ward"
+            rules={[{ required: true, message: 'Vui lòng chọn Phường/Xã' }]}
+          >
+            <Select
+              showSearch
+              size="large"
+              placeholder="Chọn Xã"
+              className="rounded-2xl w-full"
+              disabled={!wards.length}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={wards.map(w => ({ label: w.name, value: w.name }))}
+            />
+          </Form.Item>
 
-            <Form.Item 
-                name="isDefault" 
-                valuePropName="checked"
-                className="mb-6"
-            >
-                <div className="flex items-center gap-3">
-                    <Switch />
-                    <span className="text-gray-600">Đặt làm địa chỉ mặc định</span>
-                </div>
-            </Form.Item>
+          <Form.Item
+            label={<span className="font-bold text-text/40 text-[10px] uppercase tracking-widest pl-2">Chi tiết</span>}
+            name="street"
+            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }]}
+          >
+            <Input.TextArea rows={2} placeholder="Số nhà, tên đường..." className="rounded-2xl border-text/10" />
+          </Form.Item>
 
-            <div className="flex gap-3 pt-2">
-                <Button 
-                    className="flex-1 h-12 rounded-xl text-gray-600"
-                    onClick={() => {
-                        setIsAddressModalOpen(false);
-                        addressForm.resetFields();
-                    }}
-                >
-                    Hủy
-                </Button>
-                <Button 
-                    type="primary" 
-                    htmlType="submit"
-                    className="flex-1 h-12 rounded-xl bg-blue-600"
-                    loading={loading}
-                >
-                    Thêm địa chỉ
-                </Button>
+          <Form.Item
+            name="isDefault"
+            valuePropName="checked"
+            className="mb-8"
+          >
+            <div className="flex items-center gap-3 bg-primary/5 p-4 rounded-2xl border border-primary/10 w-fit">
+              <Switch />
+              <span className="text-text/60 text-xs font-bold uppercase tracking-wider">Đặt làm mặc định</span>
             </div>
+          </Form.Item>
+
+          <div className="flex gap-4">
+            <Button
+              className="flex-1 h-16 rounded-2xl border-text/10 text-text/60 font-bold tracking-widest text-xs"
+              onClick={() => {
+                setIsAddressModalOpen(false);
+                addressForm.resetFields();
+              }}
+            >
+              HỦY BỎ
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className="flex-1 h-16 rounded-2xl bg-primary border-none font-bold tracking-widest text-xs shadow-lg shadow-primary/20"
+              loading={loading}
+            >
+              LƯU ĐỊA CHỈ
+            </Button>
+          </div>
         </Form>
       </Modal>
 
 
-    
 
-      
-      
+
+
+
       {/* Premium styles for custom elements */}
       <style>{`
         .custom-tabs .ant-tabs-nav::before {
@@ -814,7 +815,7 @@ const fetchAddresses = async () => {
             font-size: 0.9rem;
         }
       `}</style>
-      
+
     </div>
   );
 };

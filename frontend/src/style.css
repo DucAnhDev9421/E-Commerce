@@ -1,7 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #2563eb;
+  --color-primary: #059669;
+  --color-secondary: #10B981;
+  --color-cta: #F97316;
+  
   --animate-slide-up: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-fade-in: fadeIn 0.6s ease-out;
   --animate-blob: blob 7s infinite;
@@ -31,10 +35,14 @@
 
 body {
   margin: 0;
-  background-color: #fcfdfe;
-  color: #1a1a1a;
+  background-color: #ECFDF5;
+  color: #064E3B;
   min-height: 100vh;
   width: 100%;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: 'Playfair Display', serif;
 }
 
 .animate-slideUp {
@@ -54,22 +62,52 @@ body {
   animation-delay: 2s;
 }
 
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Liquid Glass Utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.05);
+  transform: translateY(-4px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
 /* Custom styles for AntD overrides */
 .best-sellers-tabs .ant-tabs-nav::before {
   border-bottom: none !important;
 }
 
 .best-sellers-tabs .ant-tabs-tab {
-  border: 1px solid #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
   border-radius: 99px !important;
-  background: white !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(8px);
   transition: all 0.3s !important;
   margin-right: 12px !important;
 }
 
 .best-sellers-tabs .ant-tabs-tab-active {
-  background: #2563eb !important;
-  border-color: #2563eb !important;
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
 }
 
 .best-sellers-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
@@ -84,7 +122,8 @@ body {
   width: 12px !important;
   height: 12px !important;
   border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(4px);
   transition: all 0.3s !important;
 }
 
@@ -94,17 +133,13 @@ body {
   background: white !important;
 }
 
-/* Ép Header luôn theo màu nền trắng và text theo biến primary */
+/* Ép Header */
 .ant-layout-header {
-  background-color: white !important; /* Hoặc var(--color-primary) nếu bạn muốn nền xanh */
+  background-color: rgba(255, 255, 255, 0.8) !important; 
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   line-height: normal !important;
   padding: 0 !important;
-}
-
-/* Sử dụng biến primary cho các thành phần AntD đã override */
-.best-sellers-tabs .ant-tabs-tab-active {
-  background: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
 }
 
 /* Đồng bộ màu cho nút Search của AntD */
@@ -112,4 +147,5 @@ body {
   background-color: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
 }
+
 

@@ -65,39 +65,53 @@ const MainLayout: React.FC = () => {
   ];
 
   return (
-    <Layout className="min-h-screen bg-white">
-      {/* Top Bar Contact */}
-      <div className="bg-blue-700 text-white py-2 px-10 hidden sm:block">
-        <div className="flex justify-between items-center text-xs">
-          <Space separator={<span className="opacity-50">|</span>}>
-            <span><PhoneOutlined className="mr-1" /> Hot-line: 1900 1234</span>
-            <span><MailOutlined className="mr-1" /> support@ecommerce.com</span>
+    <Layout className="min-h-screen bg-transparent">
+      {/* Top Bar Contact - Refined */}
+      <div className="bg-primary/5 text-primary py-2 px-10 hidden sm:block border-b border-primary/10">
+        <div className="container mx-auto flex justify-between items-center text-[11px] font-bold tracking-wider">
+          <Space size="large">
+            <span><PhoneOutlined className="mr-1.5" /> HOTLINE: 1900 1234</span>
+            <span><MailOutlined className="mr-1.5" /> SUPPORT@MODERN.COM</span>
           </Space>
-          <Space separator={<span className="opacity-50">|</span>}>
-            <Link to="/help" className="text-white hover:text-blue-100">Hỗ trợ</Link>
-            <Link to="/news" className="text-white hover:text-blue-100">Tin tức</Link>
+          <Space size="large">
+            <Link to="/help" className="text-primary hover:text-cta transition-colors text-[11px] font-bold">HỖ TRỢ</Link>
+            <Link to="/news" className="text-primary hover:text-cta transition-colors text-[11px] font-bold">TIN TỨC</Link>
           </Space>
         </div>
       </div>
 
-      {/* Main Header */}
-      <Header className="bg-white px-4 sm:px-10 h-20 flex items-center shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto flex items-center justify-between gap-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <ShoppingCartOutlined className="text-white text-2xl" />
+      {/* Main Header - Liquid Glass */}
+      <Header className="bg-white/70 backdrop-blur-xl px-4 sm:px-10 h-24 flex items-center sticky top-0 z-50 border-b border-white/40 shadow-sm">
+        <div className="container mx-auto flex items-center justify-between gap-8">
+          {/* Logo - Typography Only */}
+          <Link to="/" className="flex items-center group transition-transform hover:scale-105">
+            <div className="flex flex-col leading-none">
+              <span className="font-serif text-3xl tracking-tighter text-text font-light">MODERN</span>
+              <span className="font-serif text-xl tracking-[0.3em] text-primary font-black -mt-1">SHOP</span>
             </div>
-            <Title level={3} className="!mb-0 hidden md:block text-blue-700">MODERN SHOP</Title>
           </Link>
+          
+          {/* Categories - Moved to Left */}
+          <div className="hidden lg:block cursor-pointer group shrink-0">
+            <Dropdown menu={{ items: categoriesItems }}>
+              <div className="flex items-center gap-2">
+                <Text strong className="group-hover:text-primary transition-colors tracking-widest text-xs">DANH MỤC</Text>
+                <div className="w-1.5 h-1.5 rounded-full bg-cta opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              </div>
+            </Dropdown>
+          </div>
 
-          {/* Search */}
-          <div className="flex-1 max-w-2xl mx-10">
+          {/* Search - Elegant */}
+          <div className="flex-1 max-w-3xl hidden md:block">
             <Search 
-              placeholder="Bạn muốn mua gì hôm nay?" 
-              enterButton="Tìm kiếm" 
+              placeholder="Tìm kiếm xu hướng mới nhất..." 
+              enterButton={
+                <Button type="primary" className="h-full !bg-primary border-none rounded-r-full px-8 font-bold">
+                  TÌM KIẾM
+                </Button>
+              }
               size="large"
-              className="w-full"
+              className="w-full search-glass"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               onSearch={(value) => {
@@ -110,34 +124,27 @@ const MainLayout: React.FC = () => {
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-6">
-            <div className="hidden lg:block cursor-pointer">
-              <Dropdown menu={{ items: categoriesItems }}>
-                <Text strong className="hover:text-blue-600 transition-colors">DANH MỤC</Text>
-              </Dropdown>
-            </div>
-
-            <Badge count={totalQuantity} overflowCount={99}>
+          <div className="flex items-center gap-8">
+            <Badge count={totalQuantity} overflowCount={99} color="#059669">
               <div 
-                className="text-gray-600 hover:text-blue-600 cursor-pointer transition-colors"
+                className="text-text hover:text-primary cursor-pointer transition-all hover:scale-110 flex items-center justify-center p-2 rounded-full hover:bg-primary/5"
                 onClick={() => navigate('/cart')}
               >
-                <ShoppingCartOutlined style={{ fontSize: '24px' }} />
+                <ShoppingCartOutlined style={{ fontSize: '26px' }} />
               </div>
             </Badge>
 
             {isAuthenticated ? (
               <Dropdown menu={{ items: userItems }} placement="bottomRight" arrow>
-                <div className="flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-gray-100 pr-3 transition-colors">
-                  <Avatar src={getAvatarUrl(user?.avatarUrl) || undefined} icon={<UserOutlined />} className="bg-blue-600" />
-                  <span className="hidden sm:inline font-medium text-gray-700">{user?.fullName}</span>
+                <div className="flex items-center gap-3 cursor-pointer p-1.5 rounded-full hover:bg-white/60 transition-all border border-transparent hover:border-white/40 glass-panel pl-1.5 pr-4">
+                  <Avatar src={getAvatarUrl(user?.avatarUrl) || undefined} icon={<UserOutlined />} className="bg-primary shadow-sm" />
+                  <span className="hidden sm:inline font-bold text-text text-sm tracking-tight">{user?.fullName?.split(' ').pop()}</span>
                 </div>
               </Dropdown>
             ) : (
               <Link to="/login">
-                <Button type="primary" shape="round" icon={<UserOutlined />} className="bg-blue-600">
-                  Đăng nhập
+                <Button type="primary" shape="round" size="large" icon={<UserOutlined />} className="!bg-primary h-12 px-8 font-bold text-sm shadow-lg border-none hover:scale-105 transition-all">
+                  ĐĂNG NHẬP
                 </Button>
               </Link>
             )}
@@ -146,58 +153,64 @@ const MainLayout: React.FC = () => {
       </Header>
 
       {/* Content */}
-      <Content className="bg-[#f5f7fa]">
+      <Content className="bg-transparent relative z-10">
         <div className="container mx-auto py-0 min-h-[600px]">
           <Outlet />
         </div>
       </Content>
 
-      {/* Footer */}
-      <Footer className="bg-gray-900 text-gray-300 py-16 px-10">
-        <div className="container mx-auto">
-          <Row gutter={[48, 32]}>
+      {/* Footer - Liquid Glass Dark */}
+      <Footer className="bg-text text-white py-24 px-10 relative overflow-hidden">
+        {/* Background Blur for Footer */}
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+        
+        <div className="container mx-auto relative z-10">
+          <Row gutter={[64, 48]}>
             <Col xs={24} md={8}>
-              <Title level={4} className="text-white mb-6">MODERN SHOP</Title>
-              <Text className="text-gray-400 block mb-6 leading-relaxed">
-                Hệ thống bán lẻ thiết bị công nghệ và thời trang hàng đầu Việt Nam. Cam kết chất lượng, uy tín và dịch vụ sau bán hàng tốt nhất.
+              <div className="flex flex-col mb-8">
+                <span className="font-serif text-4xl tracking-tighter text-white font-light">MODERN</span>
+                <span className="font-serif text-2xl tracking-[0.3em] text-primary font-black -mt-1">SHOP</span>
+              </div>
+              <Text className="text-white/60 block mb-10 leading-relaxed font-light text-base max-w-sm">
+                Trải nghiệm kỷ nguyên mua sắm mới với phong cách thanh lịch và công nghệ đón đầu tương lai.
               </Text>
-              <Space size="large" className="text-xl">
-                <FacebookOutlined className="hover:text-blue-500 cursor-pointer" />
-                <InstagramOutlined className="hover:text-pink-500 cursor-pointer" />
-                <YoutubeOutlined className="hover:text-red-500 cursor-pointer" />
+              <Space size="large" className="text-2xl">
+                <FacebookOutlined className="hover:text-primary transition-colors cursor-pointer" />
+                <InstagramOutlined className="hover:text-cta transition-colors cursor-pointer" />
+                <YoutubeOutlined className="hover:text-secondary transition-colors cursor-pointer" />
               </Space>
             </Col>
             
             <Col xs={12} md={5}>
-              <Title level={5} className="text-white mb-6">Dịch vụ khách hàng</Title>
-              <ul className="list-none p-0 flex flex-col gap-3">
-                <li><Link to="/" className="text-gray-400 hover:text-white">Hướng dẫn mua hàng</Link></li>
-                <li><Link to="/" className="text-gray-400 hover:text-white">Chính sách trả góp</Link></li>
-                <li><Link to="/" className="text-gray-400 hover:text-white">Chính sách bảo hành</Link></li>
-                <li><Link to="/" className="text-gray-400 hover:text-white">Giao hàng & lắp đặt</Link></li>
+              <Title level={5} className="!text-white mb-8 !font-serif !tracking-widest !text-sm uppercase opacity-50">DỊCH VỤ</Title>
+              <ul className="list-none p-0 flex flex-col gap-4 font-light">
+                <li><Link to="/" className="text-white/70 hover:text-primary transition-colors">Hướng dẫn mua hàng</Link></li>
+                <li><Link to="/" className="text-white/70 hover:text-primary transition-colors">Chính sách trả góp</Link></li>
+                <li><Link to="/" className="text-white/70 hover:text-primary transition-colors">Chính sách bảo hành</Link></li>
+                <li><Link to="/" className="text-white/70 hover:text-primary transition-colors">Giao hàng & lắp đặt</Link></li>
               </ul>
             </Col>
 
             <Col xs={12} md={5}>
-              <Title level={5} className="text-white mb-6">Thông tin liên hệ</Title>
-              <ul className="list-none p-0 flex flex-col gap-3">
-                <li className="text-gray-400">Địa chỉ: 123 Đường ABC, Hà Nội</li>
-                <li className="text-gray-400">Hotline: 1900 1234</li>
-                <li className="text-gray-400">Email: contact@shop.com</li>
+              <Title level={5} className="!text-white mb-8 !font-serif !tracking-widest !text-sm uppercase opacity-50">LIÊN HỆ</Title>
+              <ul className="list-none p-0 flex flex-col gap-4 font-light">
+                <li className="text-white/70">123 Street Aura, Aura Building, HN</li>
+                <li className="text-white/70">Hotline: 1900 1234</li>
+                <li className="text-white/70">Email: concierge@modern.com</li>
               </ul>
             </Col>
 
             <Col xs={24} md={6}>
-              <Title level={5} className="text-white mb-6">Tải ứng dụng mobile</Title>
-              <div className="flex flex-col gap-3">
-                <div className="h-12 w-40 bg-gray-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-700">App Store</div>
-                <div className="h-12 w-40 bg-gray-800 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-700">Google Play</div>
+              <Title level={5} className="!text-white mb-8 !font-serif !tracking-widest !text-sm uppercase opacity-50">EXPERIENCE MOBILE</Title>
+              <div className="flex flex-col gap-4">
+                <div className="h-14 w-full glass-panel flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all rounded-2xl border border-white/10 text-white font-bold tracking-widest text-xs">APP STORE</div>
+                <div className="h-14 w-full glass-panel flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all rounded-2xl border border-white/10 text-white font-bold tracking-widest text-xs">GOOGLE PLAY</div>
               </div>
             </Col>
           </Row>
           
-          <div className="border-t border-gray-800 mt-16 pt-8 text-center text-gray-500 text-sm">
-            © 2024 MODERN SHOP. All rights reserved. Designed by Antigravity Team.
+          <div className="border-t border-white/10 mt-24 pt-10 text-center text-white/30 text-xs font-bold tracking-[0.4em] uppercase">
+            © 2026 MODERN SHOP • ELEGANCE IN EVERY PIXEL
           </div>
         </div>
       </Footer>

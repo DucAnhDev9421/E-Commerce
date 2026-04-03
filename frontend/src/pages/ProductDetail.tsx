@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Space, Button, InputNumber, Divider, Typography, Row, Col, Empty, Tooltip, notification, Rate, Tag, Breadcrumb, Image, Tabs, List, Spin, Card } from 'antd';
+import { Button, InputNumber, Divider, Typography, Row, Col, Empty, notification, Rate, Breadcrumb, Image, Tabs, Spin } from 'antd';
 import { 
   ShoppingCartOutlined, 
   SafetyCertificateOutlined, 
-  CarOutlined, 
   CheckCircleOutlined,
   EyeOutlined,
   HeartOutlined,
@@ -32,6 +31,7 @@ const ProductDetail: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     const fetchProduct = async () => {
       if (!id) return;
       setLoading(true);
@@ -84,20 +84,24 @@ const ProductDetail: React.FC = () => {
   const oldPrice = discount > 0 ? product.price / (1 - discount / 100) : 0;
 
   return (
-    <div className="bg-[#fcfdfe] min-h-screen pt-6 pb-24 font-sans">
+    <div className="bg-background min-h-screen pt-6 pb-24 font-sans relative overflow-hidden">
+      {/* Background Orbs */}
+      <div className="absolute top-[10%] left-[-5%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none opacity-50 mix-blend-multiply"></div>
+      <div className="absolute bottom-[20%] right-[-5%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] pointer-events-none opacity-50 mix-blend-multiply"></div>
+
       {/* Premium Breadcrumb Overlay */}
-      <div className="container mx-auto px-4 mb-6">
-        <Breadcrumb separator="/" className="bg-white/70 backdrop-blur-md p-4 px-8 rounded-3xl border border-gray-100 shadow-sm inline-flex items-center gap-2">
-          <Breadcrumb.Item><Link to="/" className="hover:text-blue-600 transition-colors"><HomeOutlined className="mr-1" /> Trang chủ</Link></Breadcrumb.Item>
-          <Breadcrumb.Item className="opacity-60">{product.categoryId?.name}</Breadcrumb.Item>
-          <Breadcrumb.Item className="font-black text-blue-600 italic">{product.name}</Breadcrumb.Item>
+      <div className="container mx-auto px-4 mb-8 relative z-10">
+        <Breadcrumb separator="/" className="bg-white/40 backdrop-blur-md p-4 px-8 rounded-full border border-white/60 shadow-sm inline-flex items-center gap-2">
+          <Breadcrumb.Item><Link to="/" className="hover:text-primary transition-colors text-text/60"><HomeOutlined className="mr-1" /> Trang chủ</Link></Breadcrumb.Item>
+          <Breadcrumb.Item className="text-text/40 text-[10px] font-bold uppercase tracking-wider">{product.categoryId?.name}</Breadcrumb.Item>
+          <Breadcrumb.Item className="font-serif text-primary">{product.name}</Breadcrumb.Item>
         </Breadcrumb>
       </div>
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 relative z-10">
         {/* Main Product Showcase Card */}
-        <Card className="shadow-[0_30px_100px_rgba(0,0,0,0.06)] rounded-[3.5rem] border-0 overflow-hidden bg-white/95 backdrop-blur-2xl relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2 opacity-50"></div>
+        <div className="glass-panel p-8 md:p-12 rounded-[4rem] border border-white/60 shadow-2xl overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2 opacity-50"></div>
           
           <Row gutter={[64, 48]}>
             {/* Gallery Section - Redesigned */}
@@ -110,7 +114,7 @@ const ProductDetail: React.FC = () => {
                     return (
                       <div 
                         key={idx} 
-                        className={`w-24 h-24 rounded-3xl border-2 overflow-hidden cursor-pointer transition-all duration-500 p-1.5 shrink-0 hover:scale-105 active:scale-95 ${mainImage === fullUrl ? 'border-blue-600 shadow-xl' : 'border-gray-50 opacity-40 hover:opacity-100 bg-gray-50/50'}`}
+                        className={`w-24 h-24 rounded-3xl border-2 overflow-hidden cursor-pointer transition-all duration-500 p-2 shrink-0 hover:scale-105 active:scale-95 ${mainImage === fullUrl ? 'border-primary shadow-lg bg-white' : 'border-white/40 opacity-40 hover:opacity-100 bg-white/20'}`}
                         onClick={() => setMainImage(fullUrl)}
                       >
                         <img src={fullUrl} className="w-full h-full object-contain rounded-2xl" alt={`thumb ${idx}`} />
@@ -121,19 +125,19 @@ const ProductDetail: React.FC = () => {
 
                 {/* Main Image Showcase */}
                 <div className="flex-1">
-                  <div className="relative w-full h-[450px] md:h-[520px] flex items-center justify-center bg-gray-50/30 rounded-[3rem] overflow-hidden border border-gray-100 group shadow-inner">
+                  <div className="relative w-full h-[450px] md:h-[550px] flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-[3.5rem] overflow-hidden border border-white/60 group shadow-xl transition-all duration-700">
                     <Image
                       src={mainImage}
-                      className="w-full h-full object-contain p-8 md:p-12 transition-transform duration-1000 group-hover:scale-110"
+                      className="w-full h-full object-contain p-8 md:p-14 transition-transform duration-1000 group-hover:scale-110"
                       preview={{
-                        mask: <div className="text-white flex flex-col items-center gap-3 font-black italic tracking-widest drop-shadow-lg"><EyeOutlined style={{ fontSize: 48 }} /> <span className="text-lg">XEM CẬN CẢNH</span></div>
+                        mask: <div className="text-white flex flex-col items-center gap-3 font-black italic tracking-widest drop-shadow-lg"><EyeOutlined style={{ fontSize: 48 }} /> <span className="text-lg">KHÁM PHÁ CHI TIẾT</span></div>
                       }}
                     />
                     
                     {/* Discount Badge */}
                     {discount > 0 && (
                       <div className="absolute top-8 right-8 animate-bounce">
-                        <div className="bg-red-600 text-white px-6 py-2.5 rounded-full font-black text-xl shadow-2xl flex items-center gap-2">
+                        <div className="bg-cta text-white px-6 py-2.5 rounded-full font-serif font-black text-xl shadow-2xl flex items-center gap-2">
                            <ThunderboltOutlined /> -{discount}%
                         </div>
                       </div>
@@ -141,7 +145,7 @@ const ProductDetail: React.FC = () => {
 
                     {/* Like Button */}
                     <div className="absolute bottom-8 right-8">
-                       <Button shape="circle" icon={<HeartOutlined className="text-xl" />} className="h-16 w-16 bg-white/80 backdrop-blur-md border-none shadow-xl hover:text-red-500 transition-all hover:scale-110 flex items-center justify-center" />
+                       <Button shape="circle" icon={<HeartOutlined className="text-xl" />} className="h-16 w-16 bg-white/60 backdrop-blur-md border border-white/60 shadow-xl hover:text-cta transition-all hover:scale-110 flex items-center justify-center" />
                     </div>
                   </div>
                 </div>
@@ -153,39 +157,39 @@ const ProductDetail: React.FC = () => {
               <div className="flex flex-col h-full space-y-8 py-2">
                 <header>
                   <div className="flex flex-wrap items-center gap-3 mb-4">
-                    <span className="bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full tracking-[0.2em] shadow-lg shadow-blue-200">LUXURY CATEGORY</span>
-                    <span className="bg-green-50 text-green-600 text-[10px] font-black px-4 py-1.5 rounded-full border border-green-100 tracking-[0.1em] flex items-center gap-1">
-                       <CheckCircleOutlined /> GUARANTEED 
+                    <span className="bg-primary text-white text-[10px] font-bold px-4 py-1.5 rounded-full tracking-[0.2em] shadow-lg shadow-primary/20">PREMIUM SELECTION</span>
+                    <span className="bg-secondary/10 text-secondary text-[10px] font-bold px-4 py-1.5 rounded-full border border-secondary/20 tracking-[0.1em] flex items-center gap-1">
+                       <CheckCircleOutlined /> CHÍNH HÃNG 100% 
                     </span>
                   </div>
-                  <Title level={1} className="!text-4xl md:!text-6xl !font-black !mb-4 !text-gray-900 tracking-tighter italic uppercase leading-[0.95] drop-shadow-sm">
+                  <Title level={1} className="!text-3xl md:!text-5xl !font-serif !font-normal !mb-4 text-text tracking-tight leading-tight">
                     {product.name}
                   </Title>
-                  <div className="flex items-center gap-6 bg-gray-50/50 w-fit px-6 py-2.5 rounded-3xl border border-gray-100">
-                    <Rate disabled defaultValue={5} className="text-yellow-400 text-lg" />
-                    <Divider type="vertical" className="bg-gray-300 h-4" />
-                    <Text className="font-bold text-gray-500 italic tracking-tight">4.9/5 • 2.5K Lượt xem • 800+ Sản phẩm đã bay</Text>
+                  <div className="flex items-center gap-6 bg-white/40 backdrop-blur-sm w-fit px-6 py-2.5 rounded-full border border-white/60">
+                    <Rate disabled defaultValue={5} className="text-cta text-sm" />
+                    <Divider type="vertical" className="bg-text/10 h-4" />
+                    <Text className="text-text/60 text-xs font-light">4.9/5 • 2.5K Lượt xem • 800+ Đã bán</Text>
                   </div>
                 </header>
 
-                <div className="bg-[#f0f4f8]/50 p-10 rounded-[3rem] border border-white/50 shadow-inner relative group transition-all duration-500 hover:shadow-2xl">
-                  <div className="absolute top-0 right-0 p-8 opacity-10 font-bold italic text-6xl tracking-tighter select-none">PREMIUM</div>
+                <div className="bg-primary/5 p-10 rounded-[3rem] border border-white/60 shadow-sm relative group transition-all duration-500 overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 font-serif italic text-6xl tracking-tighter select-none">EXCLUSIVE</div>
                   <div className="flex flex-col md:flex-row md:items-center gap-6">
                     <div className="flex flex-col">
-                        <Title level={1} className="!m-0 !text-blue-700 !font-black !text-6xl tracking-tighter italic leading-none drop-shadow-sm">
+                        <Title level={1} className="!m-0 !text-primary !font-serif !text-5xl tracking-tighter leading-none">
                           {product.price.toLocaleString('vi-VN')}₫
                         </Title>
                         {oldPrice > product.price && (
-                          <Text delete className="text-gray-400 text-2xl font-black italic opacity-40 mt-1">
+                          <Text delete className="text-text/30 text-xl font-light mt-2">
                             {Math.floor(oldPrice).toLocaleString('vi-VN')}₫
                           </Text>
                         )}
                     </div>
                     {discount > 0 && (
-                        <div className="bg-white/80 backdrop-blur-md px-6 py-4 rounded-3xl border border-blue-100 shadow-sm">
-                           <Text type="secondary" className="block text-[10px] font-black uppercase text-blue-400 tracking-widest mb-1">Tiết kiệm ngay</Text>
-                           <Text strong className="text-xl text-green-600 font-mono tracking-tighter italic">
-                              +{Math.floor(oldPrice - product.price).toLocaleString('vi-VN')}₫
+                        <div className="bg-white/60 backdrop-blur-md px-6 py-4 rounded-3xl border border-white shadow-sm">
+                           <Text className="block text-[10px] font-bold uppercase text-primary/60 tracking-wider mb-1">TIẾT KIỆM NGAY</Text>
+                           <Text strong className="text-xl text-secondary font-serif">
+                              -{Math.floor(oldPrice - product.price).toLocaleString('vi-VN')}₫
                            </Text>
                         </div>
                     )}
@@ -194,13 +198,13 @@ const ProductDetail: React.FC = () => {
 
                 <div className="space-y-6">
                    {/* Quantity Selection Redesign */}
-                   <div className="flex items-center gap-6">
-                      <span className="text-lg font-black italic text-gray-400 uppercase tracking-tighter shrink-0">CHỌN SỐ LƯỢNG</span>
-                      <div className="bg-gray-100/50 p-1.5 rounded-[2rem] border border-gray-100 inline-flex items-center gap-2 shadow-inner">
+                   <div className="flex items-center gap-8">
+                      <span className="text-xs font-bold text-text/40 uppercase tracking-widest shrink-0">SỐ LƯỢNG</span>
+                      <div className="bg-white/40 backdrop-blur-sm p-1 rounded-full border border-white/60 inline-flex items-center gap-2 shadow-sm">
                          <Button 
-                            type="primary" 
+                            type="text" 
                             shape="circle"
-                            className="bg-white text-gray-900 border-none shadow-md h-12 w-12 flex items-center justify-center font-bold text-2xl hover:bg-blue-600 hover:text-white transition-all transform active:scale-90"
+                            className="bg-white/80 text-text border-none shadow-sm h-10 w-10 flex items-center justify-center font-bold text-xl hover:bg-primary hover:text-white transition-all transition-colors active:scale-90"
                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
                          >-</Button>
                          <InputNumber 
@@ -208,132 +212,131 @@ const ProductDetail: React.FC = () => {
                             max={product.stock} 
                             value={quantity} 
                             onChange={(val) => setQuantity(val || 1)}
-                            className="w-16 text-center border-none !bg-transparent font-black text-2xl flex items-center justify-center"
+                            className="w-12 text-center border-none !bg-transparent font-bold text-xl flex items-center justify-center"
                             controls={false}
                          />
                          <Button 
-                            type="primary" 
+                            type="text" 
                             shape="circle"
-                            className="bg-white text-gray-900 border-none shadow-md h-12 w-12 flex items-center justify-center font-bold text-2xl hover:bg-blue-600 hover:text-white transition-all transform active:scale-90"
+                            className="bg-white/80 text-text border-none shadow-sm h-10 w-10 flex items-center justify-center font-bold text-xl hover:bg-primary hover:text-white transition-all transition-colors active:scale-90"
                             onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                          >+</Button>
                       </div>
                       <div className="flex flex-col">
-                        <Text strong className="text-lg text-gray-900 italic font-black leading-none">{product.stock}</Text>
-                        <Text className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">In Stock</Text>
+                        <Text className="text-sm text-text font-bold leading-none">{product.stock}</Text>
+                        <Text className="text-[10px] text-text/40 font-bold uppercase tracking-widest">CÓ SẴN</Text>
                       </div>
                    </div>
 
                    {/* Action Buttons Hub */}
-                   <div className="flex flex-col sm:flex-row gap-6 pt-4">
+                   <div className="flex flex-col sm:flex-row gap-6 pt-6">
                       <Button 
                         type="primary" 
                         size="large" 
-                        icon={<ShoppingCartOutlined className="scale-125" />}
-                        className="flex-3 h-24 rounded-[2.5rem] bg-gray-900 hover:bg-black font-black text-2xl transition-all shadow-2xl hover:scale-102 flex items-center justify-center gap-4 italic tracking-tighter uppercase relative group overflow-hidden border-none"
+                        icon={<ShoppingCartOutlined className="scale-110" />}
+                        className="flex-[1.5] h-16 rounded-full bg-text hover:bg-primary font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2 border-none"
                         onClick={handleAddToCart}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <span className="relative z-10 text-white">BỎ GIỎ HÀNG</span>
+                        Thêm vào giỏ hàng
                       </Button>
                       <Button 
                         type="primary" 
                         size="large"
-                        icon={<ThunderboltOutlined className="scale-125" />}
-                        className="flex-2 h-24 rounded-[2.5rem] bg-gradient-to-tr from-orange-500 to-yellow-400 hover:from-orange-600 hover:to-orange-500 font-black text-2xl transition-all shadow-orange-200 shadow-2xl hover:scale-105 flex items-center justify-center gap-4 border-none italic tracking-tighter uppercase"
+                        icon={<ThunderboltOutlined className="scale-110" />}
+                        className="flex-1 h-16 rounded-full bg-cta hover:bg-cta/90 font-bold text-lg transition-all shadow-cta/20 shadow-xl flex items-center justify-center gap-2 border-none"
                         onClick={handleBuyNow}
                       >
-                        MUA NGAY
+                        Mua ngay
                       </Button>
                    </div>
                 </div>
 
-                {/* Vertical Badges */}
-                <div className="pt-8 border-t border-gray-100">
-                   <Row gutter={[24, 24]}>
-                      {[
-                        { icon: <HistoryOutlined />, label: 'BẢO HÀNH TRỌN ĐỜI', desc: 'An tâm tuyệt đối', color: 'blue' },
-                        { icon: <GlobalOutlined />, label: 'XUẤT XỨ CHÍNH HÃNG', desc: 'Nguồn hàng uy tín', color: 'green' },
-                        { icon: <TruckOutlined />, label: 'GIAO FREE TRONG GIỜ', desc: 'Nhanh như chớp', color: 'orange' }
-                      ].map((item: any, idx: number) => (
-                        <Col span={8} key={idx}>
-                          <div className="flex flex-col items-center gap-3 p-4 group cursor-help text-center">
-                             <div className={`w-14 h-14 bg-gray-100/50 rounded-[1.5rem] flex items-center justify-center text-3xl shadow-sm transition-all duration-500 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-12`}>
-                               {item.icon}
-                             </div>
-                             <div>
-                                <Text className="block text-[9px] font-black tracking-[0.1em] text-gray-900 italic uppercase mb-0.5">{item.label}</Text>
-                                <Text className="text-[10px] text-gray-400 font-medium italic block opacity-70">{item.desc}</Text>
-                             </div>
-                          </div>
-                        </Col>
-                      ))}
-                   </Row>
-                </div>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+                 {/* Vertical Badges */}
+                 <div className="pt-10 border-t border-text/5">
+                    <Row gutter={[24, 24]}>
+                       {[
+                         { icon: <HistoryOutlined />, label: 'BẢO HÀNH TRỌN ĐỜI', desc: 'An tâm tuyệt đối', color: 'primary' },
+                         { icon: <GlobalOutlined />, label: 'XUẤT XỨ CHÍNH HÃNG', desc: 'Nguồn hàng uy tín', color: 'secondary' },
+                         { icon: <TruckOutlined />, label: 'GIAO FREE NHANH', desc: 'Nhanh như chớp', color: 'cta' }
+                       ].map((item: any, idx: number) => (
+                         <Col span={8} key={idx}>
+                           <div className="flex flex-col items-center gap-3 p-4 group cursor-help text-center">
+                              <div className={`w-14 h-14 bg-white/40 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-all duration-500 group-hover:bg-primary group-hover:text-white border border-white/60`}>
+                                {item.icon}
+                              </div>
+                              <div>
+                                 <Text className="block text-[9px] font-bold tracking-widest text-text/80 uppercase mb-0.5">{item.label}</Text>
+                                 <Text className="text-[10px] text-text/40 font-medium block">{item.desc}</Text>
+                              </div>
+                           </div>
+                         </Col>
+                       ))}
+                    </Row>
+                 </div>
+               </div>
+             </Col>
+           </Row>
+         </div>
 
         {/* Dynamic Multi-Section Tabs - Revamped */}
         <div className="mt-32">
           <Tabs 
             defaultActiveKey="1" 
-            className="premium-tabs-system"
+            className="premium-tabs-system h-full"
             centered
             items={[
               {
                 key: '1',
-                label: <span className="text-3xl px-12 py-3 font-black italic tracking-tighter uppercase transition-all duration-300">KIỆT TÁC CÔNG NGHỆ</span>,
+                label: <span className="text-base md:text-lg px-8 py-3 font-serif tracking-tight">CHI TIẾT SẢN PHẨM</span>,
                 children: (
                   <div className="animate-slideUp pt-12">
                     <Row gutter={[64, 64]}>
                        <Col xs={24} lg={14}>
-                          <div className="bg-white p-12 md:p-16 rounded-[4rem] shadow-2xl border border-gray-50/50 relative overflow-hidden">
-                             <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 scale-150"><GlobalOutlined style={{ fontSize: 400 }} /></div>
-                             <Title level={2} className="!text-5xl !font-black !mb-10 italic underline decoration-blue-500 decoration-8 underline-offset-[16px] uppercase tracking-tighter leading-none">CÂU CHUYỆN SẢN PHẨM</Title>
-                             <Paragraph className="text-gray-500 text-2xl leading-relaxed font-medium italic opacity-90 first-letter:text-7xl first-letter:font-black first-letter:text-blue-600 first-letter:mr-3 first-letter:float-left">
-                               {product.description || 'Sản phẩm này không chỉ là một món hàng công nghệ, mà là sự kết tinh của tư duy đột phá và kỹ nghệ chế tác thượng thừa. Mỗi đường nét đều được tối ưu hóa để mang lại trải nghiệm hoàn hảo nhất cho người dùng.'}
+                          <div className="bg-white/40 backdrop-blur-md p-10 md:p-14 rounded-[3.5rem] shadow-xl border border-white/60 relative overflow-hidden h-full">
+                             <div className="absolute top-0 right-0 p-12 opacity-[0.02] rotate-12 scale-150 text-primary"><GlobalOutlined style={{ fontSize: 400 }} /></div>
+                             <Title level={2} className="!text-3xl !font-serif !mb-8 text-text tracking-tight border-b border-primary/20 pb-4">CÂU CHUYỆN SẢN PHẨM</Title>
+                             <Paragraph className="text-text/70 text-lg leading-relaxed font-light">
+                               {product.description || 'Sản phẩm này không chỉ là một món hàng công nghệ, mà là sự kết tinh của tư duy đột phá và kỹ nghệ chế tác thượng thừa.'}
                              </Paragraph>
                              
-                             <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="p-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[3rem] shadow-xl shadow-blue-100 flex flex-col gap-4 text-white hover:scale-102 transition-transform cursor-default">
-                                   <Title level={3} className="!text-white !font-black !mb-0 italic flex items-center gap-3"><ThunderboltOutlined /> HIỆU NĂNG</Title>
-                                   <Text className="text-blue-100 text-lg font-medium italic leading-relaxed">Xử lý mọi tác vụ trong nháy mắt với công nghệ chip tiên tiến nhất, mang lại sức mạnh vượt mọi giới hạn.</Text>
+                             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="p-8 glass-panel bg-primary/10 rounded-3xl shadow-sm flex flex-col gap-3 text-text border border-primary/20">
+                                   <Title level={4} className="!text-primary !font-serif !mb-0 flex items-center gap-2"><ThunderboltOutlined className="text-xs" /> HIỆU NĂNG</Title>
+                                   <Text className="text-text/60 text-sm font-light leading-relaxed">Xử lý mọi tác vụ trong nháy mắt với công nghệ chip tiên tiến nhất.</Text>
                                 </div>
-                                <div className="p-10 bg-gray-900 rounded-[3rem] shadow-xl flex flex-col gap-4 text-white hover:scale-102 transition-transform cursor-default">
-                                   <Title level={3} className="!text-white !font-black !mb-0 italic flex items-center gap-3"><SafetyCertificateOutlined /> BỀN BỈ</Title>
-                                   <Text className="text-gray-400 text-lg font-medium italic leading-relaxed">Chế tác từ vật liệu hàng không cao cấp, đảm bảo tuổi thọ lên đến hàng thập kỷ với sự tin cậy tối đa.</Text>
+                                <div className="p-8 glass-panel bg-text/5 rounded-3xl shadow-sm flex flex-col gap-3 text-text border border-white/20">
+                                   <Title level={4} className="!text-text !font-serif !mb-0 flex items-center gap-2"><SafetyCertificateOutlined className="text-xs" /> BỀN BỈ</Title>
+                                   <Text className="text-text/60 text-sm font-light leading-relaxed">Chế tác từ vật liệu cao cấp, đảm bảo tuổi thọ lên đến hàng thập kỷ.</Text>
                                 </div>
                              </div>
                           </div>
                        </Col>
                        <Col xs={24} lg={10}>
                           <div className="flex flex-col gap-8 h-full">
-                             <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border border-gray-100 flex-1">
-                                <Title level={4} className="!font-black !mb-8 uppercase tracking-widest italic flex items-center gap-3 text-gray-900"> THÔNG SỐ KỸ THUẬT</Title>
-                                <div className="space-y-6">
+                             <div className="bg-white/40 backdrop-blur-md p-10 rounded-[3rem] shadow-xl border border-white/60 flex-1">
+                                <Title level={4} className="!font-serif !mb-8 uppercase tracking-widest text-text/50"> THÔNG SỐ KỸ THUẬT</Title>
+                                <div className="space-y-4">
                                    {[
                                       { l: 'THƯƠNG HIỆU', v: 'Modern Luxury' },
-                                      { l: 'MÃ SẢN PHẨM', v: product.slug?.toUpperCase() },
+                                      { l: 'MÃ SẢN PHẨM', v: product.slug?.toUpperCase() || 'MOD-001' },
                                       { l: 'DANH MỤC', v: product.categoryId?.name },
                                       { l: 'CHẤT LIỆU', v: 'Hợp kim siêu bền' },
                                       { l: 'XUẤT XỨ', v: 'Chính hãng (Full Box)' }
                                    ].map((item, i) => (
-                                      <div key={i} className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0 hover:translate-x-2 transition-transform group">
-                                         <Text className="text-[10px] font-black text-gray-400 group-hover:text-blue-600 transition-colors uppercase italic tracking-widest">{item.l}</Text>
-                                         <Text className="font-black text-gray-800 text-lg italic tracking-tight">{item.v}</Text>
+                                      <div key={i} className="flex justify-between items-center py-3 border-b border-text/5 last:border-0 hover:translate-x-1 transition-transform">
+                                         <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">{item.l}</Text>
+                                         <span className="font-serif text-text text-base italic">{item.v}</span>
                                       </div>
                                    ))}
                                 </div>
                              </div>
                              
-                             <div className="bg-gradient-to-r from-yellow-100/50 to-orange-100/50 p-12 rounded-[3rem] border-2 border-dashed border-orange-200">
-                                <Title level={4} className="!font-black italic uppercase !mb-4">Dịch vụ v.i.p</Title>
-                                <ul className="space-y-4 font-black italic text-gray-600 list-none p-0 m-0">
-                                   <li className="flex items-center gap-3">✨ Miễn phí bảo trì 5 năm</li>
-                                   <li className="flex items-center gap-3">✈️ Giao tận tay người mua</li>
-                                   <li className="flex items-center gap-3">💎 Quà tặng độc bản đi kèm</li>
+                             <div className="bg-primary/5 p-10 rounded-[3rem] border border-primary/10">
+                                <Title level={4} className="!font-serif uppercase !text-primary !mb-4">Dịch vụ v.i.p</Title>
+                                <ul className="space-y-3 font-light text-text list-none p-0 m-0">
+                                   <li className="flex items-center gap-2">✨ Miễn phí bảo trì 5 năm</li>
+                                   <li className="flex items-center gap-2">✈️ Giao tận tay người mua</li>
+                                   <li className="flex items-center gap-2">💎 Quà tặng độc bản đi kèm</li>
                                 </ul>
                              </div>
                           </div>
@@ -344,10 +347,10 @@ const ProductDetail: React.FC = () => {
               },
               {
                  key: '2',
-                 label: <span className="text-3xl px-12 py-3 font-black italic tracking-tighter uppercase transition-all duration-300">ĐÁNH GIÁ (99+)</span>,
+                 label: <span className="text-base md:text-lg px-8 py-3 font-serif tracking-tight transition-all duration-300">ĐÁNH GIÁ (99+)</span>,
                  children: (
                   <div className="animate-slideUp pt-12 flex flex-col items-center">
-                    <Empty description={<Text className="text-3xl font-black italic text-gray-300 uppercase tracking-tighter">Đang cập nhật những phản hồi tích cực nhất</Text>} />
+                    <Empty description={<Text className="text-xl font-serif text-text/20 uppercase tracking-tighter">Đang cập nhật những phản hồi từ khách hàng</Text>} />
                   </div>
                  )
               }
@@ -358,22 +361,22 @@ const ProductDetail: React.FC = () => {
 
       {/* Extreme Sticky Bottom Hub (Mobile) */}
       <div className="fixed bottom-6 left-6 right-6 z-[100] md:hidden">
-         <div className="bg-gray-900/95 backdrop-blur-3xl p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-4 border border-white/20">
+         <div className="bg-text/90 backdrop-blur-3xl p-6 rounded-[2.5rem] shadow-2xl flex items-center justify-between gap-4 border border-white/20">
             <div className="flex flex-col pl-4">
-               <Text className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">TOTAL PRICE</Text>
-               <Text className="text-2xl text-white font-black italic leading-none">{product.price?.toLocaleString('vi-VN')}₫</Text>
+               <Text className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">TỔNG CỘNG</Text>
+               <span className="text-2xl text-white font-serif leading-none">{product.price?.toLocaleString('vi-VN')}₫</span>
             </div>
             <div className="flex gap-3">
                 <Button 
                    shape="circle" 
                    icon={<ShoppingCartOutlined className="text-xl" />} 
-                   className="h-16 w-16 bg-white/10 text-white border-none flex items-center justify-center hover:bg-blue-600 transition-all active:scale-90"
+                   className="h-16 w-16 bg-white/10 text-white border-none flex items-center justify-center hover:bg-primary transition-all active:scale-90"
                    onClick={handleAddToCart}
                 />
                 <Button 
                    type="primary" 
                    icon={<ThunderboltOutlined />}
-                   className="h-16 px-10 rounded-3xl bg-blue-600 font-black italic uppercase border-none text-base shadow-xl shadow-blue-500/20 active:scale-95"
+                   className="h-16 px-10 rounded-3xl bg-primary font-bold uppercase border-none text-base shadow-xl shadow-primary/20 active:scale-95"
                    onClick={handleBuyNow}
                 >
                   MUA
