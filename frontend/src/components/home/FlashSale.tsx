@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Typography, Progress, Button, Spin, Empty } from 'antd';
+import { Row, Col, Typography, Button, Spin } from 'antd';
 import { ThunderboltOutlined, RightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import ProductCard from './ProductCard';
@@ -84,30 +84,9 @@ const FlashSale: React.FC = () => {
 
       <Row gutter={[20, 20]}>
         {products.map(product => {
-          const sold = Math.floor(Math.random() * 100) + 10;
           return (
             <Col xs={12} sm={8} lg={6} key={product._id}>
-               <div className="relative h-full flex flex-col group">
-                  <ProductCard product={product} />
-                  <div className="px-4 pb-4 -mt-[3.5rem] pt-14 bg-white/40 backdrop-blur-md rounded-[2rem] shadow-sm z-10 border border-white/60">
-                      <div className="mt-2">
-                          <div className="flex justify-between items-center mb-1">
-                              <Text className="text-[11px] font-bold text-text/70">ĐÃ BÁN {sold}</Text>
-                              <Text className="text-[11px] font-bold text-cta uppercase">Sắp hết hàng</Text>
-                          </div>
-                          <Progress 
-                              percent={Math.min(95, (sold / (sold + 15)) * 100)} 
-                              showInfo={false} 
-                              strokeColor={{
-                                  '0%': '#ef4444',
-                                  '100%': '#f87171',
-                              }}
-                              className="m-0"
-                              size="small"
-                          />
-                      </div>
-                  </div>
-               </div>
+               <ProductCard product={product} />
             </Col>
           );
         })}
