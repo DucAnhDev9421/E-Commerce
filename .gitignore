@@ -9,3 +9,6 @@ frontend/.env
 dist/
 coverage/
 .DS_Store
+
+
+**/.env

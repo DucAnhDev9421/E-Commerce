@@ -24,6 +24,7 @@ let orderSchema = new mongoose.Schema({
     },
     paymentMethod: {
         type: String,
+        enum: ['COD', 'VNPAY'],
         default: 'COD'
     },
     paymentStatus: {

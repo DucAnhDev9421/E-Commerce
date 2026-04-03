@@ -4,8 +4,9 @@ const CartModel = require('../schemas/carts');
 const ProductModel = require('../schemas/products');
 const AddressModel = require('../schemas/addresses');
 const mongoose = require('mongoose');
+const { createVnpayUrl, verifyVnpayReturn } = require('../utils/vnpayHelper');
 
-let checkout = async function(req, res) {
+let checkout = async function (req, res) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -35,7 +36,7 @@ let checkout = async function(req, res) {
         // 3. Kiểm tra Stock sản phẩm
         for (const item of cart.items) {
             const product = item.productId; // Đã populate nên nó là object Product
-            
+
             if (!product) {
                 throw new Error("Có sản phẩm trong giỏ hàng không tồn tại");
             }
@@ -77,23 +78,43 @@ let checkout = async function(req, res) {
 
         const savedOrder = await newOrder.save({ session });
 
-        // 5. Tạo OrderItems
+        // 5. Tạo OrderItems (cho cả COD và VNPAY)
         const orderItemsDocs = itemIdsAndPrices.map(item => ({
             order: savedOrder._id,
             product: item.product,
             quantity: item.quantity,
             price: item.price
         }));
-
         await OrderItemModel.insertMany(orderItemsDocs, { session });
 
         // 6. Xóa các mặt hàng trong Cart
         cart.items = [];
         await cart.save({ session });
 
+        // 7. Commit transaction - lưu TẤT CẢ vào DB trước khi làm bất kỳ điều gì
         await session.commitTransaction();
         session.endSession();
 
+        // 8. Sau khi đã commit xong, xử lý theo phương thức thanh toán
+        if (paymentMethod === 'VNPAY') {
+            // Order đã lưu thành công → tạo URL VNPAY để redirect
+            const ipAddr = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+
+            const paymentUrl = createVnpayUrl({
+                orderId: savedOrder._id.toString(),
+                amount: totalAmount,
+                returnUrl: `http://localhost:${process.env.PORT || 5000}/api/v1/orders/vnpay-return`,
+                ipAddr: ipAddr
+            });
+
+            return res.status(200).send({
+                success: true,
+                message: "Vui lòng chuyển hướng sang VNPAY",
+                data: { paymentUrl }
+            });
+        }
+
+        // COD: đã commit ở trên, trả về thành công
         return res.status(200).send({
             success: true,
             message: "Đặt hàng thành công",
@@ -111,7 +132,7 @@ let checkout = async function(req, res) {
     }
 };
 
-let getMyOrders = async function(req, res) {
+let getMyOrders = async function (req, res) {
     try {
         const userId = req.user._id;
         const { page = 1, limit = 10, status } = req.query;
@@ -123,7 +144,7 @@ let getMyOrders = async function(req, res) {
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
-        
+
         const total = await OrderModel.countDocuments(query);
 
         return res.status(200).send({
@@ -141,7 +162,7 @@ let getMyOrders = async function(req, res) {
     }
 };
 
-let getAllOrders = async function(req, res) {
+let getAllOrders = async function (req, res) {
     try {
         const { page = 1, limit = 10, status } = req.query;
 
@@ -153,7 +174,7 @@ let getAllOrders = async function(req, res) {
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
-        
+
         const total = await OrderModel.countDocuments(query);
 
         return res.status(200).send({
@@ -171,7 +192,7 @@ let getAllOrders = async function(req, res) {
     }
 };
 
-let getOrderById = async function(req, res) {
+let getOrderById = async function (req, res) {
     try {
         const orderId = req.params.id;
         const userId = req.user._id;
@@ -200,7 +221,7 @@ let getOrderById = async function(req, res) {
     }
 };
 
-let updateOrderStatus = async function(req, res) {
+let updateOrderStatus = async function (req, res) {
     try {
         const orderId = req.params.id;
         const { status } = req.body;
@@ -228,7 +249,7 @@ let updateOrderStatus = async function(req, res) {
     }
 };
 
-let cancelOrder = async function(req, res) {
+let cancelOrder = async function (req, res) {
     try {
         const orderId = req.params.id;
         const userId = req.user._id;
@@ -284,11 +305,39 @@ let cancelOrder = async function(req, res) {
     }
 };
 
+let vnpayReturn = async function(req, res) {
+    const vnpParams = req.query;
+    const isValid = verifyVnpayReturn(vnpParams);
+
+    if (!isValid) {
+        return res.redirect(`${process.env.CORS_ORIGIN}/payment-result?status=error`);
+    }
+
+    const orderId = vnpParams['vnp_TxnRef'];
+    const responseCode = vnpParams['vnp_ResponseCode'];
+
+    const order = await OrderModel.findById(orderId);
+    if (!order) return res.redirect(`${process.env.CORS_ORIGIN}/payment-result?status=not_found`);
+
+    if (responseCode === '00') {
+        order.paymentStatus = 'COMPLETED';
+        order.status = 'PROCESSING';
+        await order.save();
+        return res.redirect(`${process.env.CORS_ORIGIN}/payment-result?status=success&orderId=${orderId}`);
+    } else {
+        order.paymentStatus = 'FAILED';
+        await order.save();
+        return res.redirect(`${process.env.CORS_ORIGIN}/payment-result?status=failed`);
+    }
+};
+
+
 module.exports = {
     checkout,
     getMyOrders,
     getAllOrders,
     getOrderById,
     updateOrderStatus,
-    cancelOrder
+    cancelOrder,
+    vnpayReturn
 };
