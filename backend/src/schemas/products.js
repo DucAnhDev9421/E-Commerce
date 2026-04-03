@@ -8,7 +8,6 @@ let productSchema = new mongoose.Schema({
     },
     slug: {
         type: String,
-        required: true,
         unique: true
     },
     description: {
@@ -48,6 +47,33 @@ let productSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
+});
+
+// Middleware tự động tạo slug trước khi validate
+productSchema.pre('validate', function (next) {
+    if (this.name && (!this.slug || this.isModified('name'))) {
+        const slugify = require('slugify');
+        this.slug = slugify(this.name, {
+            lower: true,
+            strict: true,
+            locale: 'vi'
+        });
+    }
+    next();
+});
+
+// Middleware cho findOneAndUpdate (Update slug)
+productSchema.pre('findOneAndUpdate', function (next) {
+    const update = this.getUpdate();
+    if (update.name) {
+        const slugify = require('slugify');
+        update.slug = slugify(update.name, {
+            lower: true,
+            strict: true,
+            locale: 'vi'
+        });
+    }
+    next();
 });
 
 module.exports = mongoose.model('products', productSchema);

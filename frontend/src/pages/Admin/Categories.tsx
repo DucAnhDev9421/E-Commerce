@@ -10,7 +10,9 @@ import {
   CheckCircleOutlined, StopOutlined, PictureOutlined,
   HistoryOutlined,
   ThunderboltOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  CompassOutlined,
+  SkinOutlined
 } from '@ant-design/icons';
 import categoryApi from '../../api/categoryApi';
 import productApi from '../../api/productApi';
@@ -175,14 +177,17 @@ const Categories: React.FC = () => {
                 onError={(e: any) => { e.target.style.display = 'none'; }}
               />
             ) : (
-              <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-100">
-                <TagsOutlined className="text-white text-xl" />
+              <div className="w-14 h-14 rounded-2xl bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center shadow-lg shadow-emerald-50 text-emerald-600">
+                <AppstoreOutlined className="text-xl" />
               </div>
             )}
           </div>
           <div className="flex flex-col">
-            <Text strong className="text-base tracking-tight leading-tight mb-1">{text}</Text>
-            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em]">SLUG: /{record.slug}</Text>
+            <Text strong className="text-[15px] tracking-tight leading-tight mb-0.5">{text}</Text>
+            <div className="flex items-center gap-1.5 opacity-40">
+                <CompassOutlined className="text-[10px]" />
+                <Text className="text-[9px] font-bold uppercase tracking-[0.2em]">SLUG: /{record.slug}</Text>
+            </div>
           </div>
         </Space>
       ),
@@ -388,10 +393,10 @@ const Categories: React.FC = () => {
             <Input placeholder="Ví dụ: Điện thoại, Laptop..." className="h-12 rounded-2xl bg-white/60 border-none shadow-sm" />
           </Form.Item>
 
-          <Form.Item name="slug" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Đường dẫn nội bộ (Slug)</Text>}
-            rules={[{ required: true }]}
+          <Form.Item name="slug" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Đường dẫn SEO (Tự động)</Text>}
+            extra={<Text className="text-[10px] text-text/40 italic ml-2 mt-1 block">* Để trống nếu bạn muốn hệ thống tự động tạo từ tên danh mục mới</Text>}
           >
-            <Input placeholder="dien-thoai" addonBefore="/" className="h-12 rounded-2xl overflow-hidden border-none" />
+            <Input placeholder="dien-thoai-da-nang" addonBefore="/" className="h-12 rounded-2xl overflow-hidden border-none bg-white/40" />
           </Form.Item>
 
           <Form.Item name="description" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Mô tả tóm tắt</Text>}>
@@ -452,21 +457,25 @@ const Categories: React.FC = () => {
         {viewCategory && (
           <div className="space-y-10">
             <div className="relative group">
-                <div className="aspect-video rounded-[2.5rem] overflow-hidden bg-white/40 border border-white/60 p-4 flex items-center justify-center shadow-inner">
+                <div className="aspect-video rounded-[3rem] overflow-hidden bg-white/40 border-4 border-white p-4 flex items-center justify-center shadow-2xl relative">
+                    <div className="absolute inset-0 bg-emerald-600/5 backdrop-blur-sm" />
                     {viewCategory.image ? (
                         <Image
                             src={getImageUrl(viewCategory.image)}
-                            className="h-full w-full object-contain rounded-2xl shadow-2xl"
+                            className="h-full w-full object-contain rounded-3xl relative z-10 transition-transform group-hover:scale-105 duration-500"
                         />
                     ) : (
-                        <div className="w-24 h-24 bg-emerald-600 rounded-3xl flex items-center justify-center text-white text-4xl shadow-2xl shadow-emerald-200">
-                             <TagsOutlined />
+                        <div className="w-24 h-24 bg-emerald-600 rounded-[2rem] flex items-center justify-center text-white text-5xl shadow-2xl shadow-emerald-200 relative z-10">
+                             <AppstoreOutlined />
                         </div>
                     )}
                 </div>
-                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-10 py-4 bg-white/80 backdrop-blur-xl rounded-[2rem] border border-white shadow-xl text-center min-w-[280px]">
-                    <Title level={4} className="!m-0 !font-serif truncate">{viewCategory.name}</Title>
-                    <Text className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SLUG: /{viewCategory.slug}</Text>
+                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-12 py-5 bg-white/95 backdrop-blur-2xl rounded-[2.5rem] border border-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] text-center min-w-[320px]">
+                    <Title level={3} className="!m-0 !font-serif tracking-tighter">{viewCategory.name}</Title>
+                    <div className="flex items-center justify-center gap-2 mt-1 opacity-60">
+                        <CompassOutlined className="text-emerald-600" />
+                        <Text className="text-[11px] font-bold uppercase tracking-[0.2em]">{viewCategory.slug}</Text>
+                    </div>
                 </div>
             </div>
 
