@@ -1,34 +1,115 @@
-* {
-  box-sizing: border-box;
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563eb;
+  --animate-slide-up: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-fade-in: fadeIn 0.6s ease-out;
+  --animate-blob: blob 7s infinite;
+
+  @keyframes slideUp {
+    0% { transform: translateY(30px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes blob {
+    0% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+}
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f7f8fa;
-  color: #1f2937;
-}
-
-#app {
+  background-color: #fcfdfe;
+  color: #1a1a1a;
   min-height: 100vh;
+  width: 100%;
 }
 
-.app {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 48px 20px;
+.animate-slideUp {
+  animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  opacity: 0;
 }
 
-.app h1 {
-  margin: 0 0 12px;
+.animate-fadeIn {
+  animation: fadeIn 1s ease-out forwards;
 }
 
-.app p {
-  margin: 0 0 8px;
+.animate-blob {
+  animation: blob 10s infinite;
 }
 
-.app code {
-  background: #eef2ff;
-  padding: 2px 6px;
-  border-radius: 4px;
+.animation-delay-2000 {
+  animation-delay: 2s;
 }
+
+/* Custom styles for AntD overrides */
+.best-sellers-tabs .ant-tabs-nav::before {
+  border-bottom: none !important;
+}
+
+.best-sellers-tabs .ant-tabs-tab {
+  border: 1px solid #f1f5f9 !important;
+  border-radius: 99px !important;
+  background: white !important;
+  transition: all 0.3s !important;
+  margin-right: 12px !important;
+}
+
+.best-sellers-tabs .ant-tabs-tab-active {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.best-sellers-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: white !important;
+}
+
+.best-sellers-tabs .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+.hero-dots .ant-carousel-dot button {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.3s !important;
+}
+
+.hero-dots .ant-carousel-dot.ant-carousel-dot-active button {
+  width: 32px !important;
+  border-radius: 99px !important;
+  background: white !important;
+}
+
+/* Ép Header luôn theo màu nền trắng và text theo biến primary */
+.ant-layout-header {
+  background-color: white !important; /* Hoặc var(--color-primary) nếu bạn muốn nền xanh */
+  line-height: normal !important;
+  padding: 0 !important;
+}
+
+/* Sử dụng biến primary cho các thành phần AntD đã override */
+.best-sellers-tabs .ant-tabs-tab-active {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+/* Đồng bộ màu cho nút Search của AntD */
+.ant-input-search .ant-input-search-button {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
