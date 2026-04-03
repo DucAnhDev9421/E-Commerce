@@ -62,7 +62,7 @@ const Users: React.FC = () => {
       setUsers(response as any);
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi tải danh sách người dùng',
+        title: 'Lỗi tải danh sách người dùng',
         description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     } finally {
@@ -130,10 +130,10 @@ const Users: React.FC = () => {
       setImageUrl(fullUrl);
       form.setFieldsValue({ avatarUrl: photoPath });
       
-      notification.success({ message: 'Tải ảnh lên thành công' });
+      notification.success({ title: 'Tải ảnh lên thành công' });
       if (onSuccess) onSuccess("ok");
     } catch (error: any) {
-      notification.error({ message: 'Tải ảnh lên thất bại' });
+      notification.error({ title: 'Tải ảnh lên thất bại' });
       if (onError) onError(error);
     } finally {
       setUploading(false);
@@ -143,11 +143,11 @@ const Users: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await userApi.delete(id);
-      notification.success({ message: 'Xóa người dùng thành công' });
+      notification.success({ title: 'Xóa người dùng thành công' });
       fetchUsers();
     } catch (error: any) {
       notification.error({
-        message: 'Xóa người dùng thất bại',
+        title: 'Xóa người dùng thất bại',
         description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     }
@@ -161,12 +161,12 @@ const Users: React.FC = () => {
     try {
       await userApi.update(user._id, { lockTime: newLockTime });
       notification.success({ 
-        message: isLocked ? 'Mở khóa người dùng thành công' : 'Khóa người dùng thành công' 
+        title: isLocked ? 'Mở khóa người dùng thành công' : 'Khóa người dùng thành công' 
       });
       fetchUsers();
     } catch (error: any) {
       notification.error({
-        message: 'Thao tác thất bại',
+        title: 'Thao tác thất bại',
         description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     }
@@ -182,12 +182,12 @@ const Users: React.FC = () => {
         role: values.roleId,
         avatarUrl: values.avatarUrl
       });
-      notification.success({ message: 'Cập nhật người dùng thành công' });
+      notification.success({ title: 'Cập nhật người dùng thành công' });
       setIsEditModalOpen(false);
       fetchUsers();
     } catch (error: any) {
       notification.error({
-        message: 'Cập nhật thất bại',
+        title: 'Cập nhật thất bại',
         description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     }
@@ -200,14 +200,14 @@ const Users: React.FC = () => {
         role: values.roleId,
         avatarUrl: values.avatarUrl
       });
-      notification.success({ message: 'Thêm người dùng mới thành công' });
+      notification.success({ title: 'Thêm người dùng mới thành công' });
       setIsAddModalOpen(false);
       addForm.resetFields();
       setImageUrl(null);
       fetchUsers();
     } catch (error: any) {
       notification.error({
-        message: 'Thêm người dùng thất bại',
+        title: 'Thêm người dùng thất bại',
         description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     }

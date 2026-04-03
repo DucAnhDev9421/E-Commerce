@@ -1,210 +1,388 @@
-import React, { useState } from 'react';
-import { Row, Col, Typography, Button, Rate, Tag, InputNumber, Divider, Space, Breadcrumb, Card, Image, Tabs, List, Avatar } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Table, Space, Button, InputNumber, Divider, Typography, Row, Col, Empty, Tooltip, notification, Rate, Tag, Breadcrumb, Image, Tabs, List, Spin, Card } from 'antd';
 import { 
   ShoppingCartOutlined, 
-  LeftOutlined, 
   SafetyCertificateOutlined, 
   CarOutlined, 
   CheckCircleOutlined,
-  HeartOutlined
+  EyeOutlined,
+  HeartOutlined,
+  ThunderboltOutlined,
+  HistoryOutlined,
+  GlobalOutlined,
+  HomeOutlined,
+  TruckOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addItem } from '../store/cartSlice';
+import productApi from '../api/productApi';
 
 const { Title, Text, Paragraph } = Typography;
 
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+
 const ProductDetail: React.FC = () => {
-  const navigate = useNavigate();
   const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [mainImage, setMainImage] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
 
-  // Giả lập data sản phẩm
-  const product = {
-    id: id,
-    name: 'iPhone 15 Pro Max 256GB - VN/A Chính hãng Titan Tự Nhiên',
-    price: 32000000,
-    oldPrice: 34990000,
-    rating: 5,
-    reviews: 1240,
-    sold: 5000,
-    description: 'iPhone 15 Pro Max là mẫu điện thoại cao cấp nhất của Apple trong năm 2023, với khung viền Titan siêu nhẹ và bền bỉ, chip A17 Pro mạnh mẽ nhất thế giới và camera zoom quang học 5x hiện đại.',
-    images: [
-      'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1695048133142-13ef86b403ec?auto=format&fit=crop&q=80&w=800',
-      'https://images.unsplash.com/photo-1695642435728-660c6d59ce6c?auto=format&fit=crop&q=80&w=800',
-    ]
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return;
+      setLoading(true);
+      try {
+        const res: any = await productApi.getById(id);
+        setProduct(res);
+        if (res.images && res.images.length > 0) {
+          const firstImage = res.images[0].startsWith('http') ? res.images[0] : `${BASE_URL}${res.images[0]}`;
+          setMainImage(firstImage);
+        }
+      } catch (error: any) {
+        notification.error({
+          title: 'Lỗi tải chi tiết sản phẩm',
+          description: error?.message || 'Không thể lấy thông tin sản phẩm',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    dispatch(addItem({ ...product, qty: quantity }));
+    notification.success({ 
+      title: 'Đã thêm vào giỏ hàng',
+      description: `${product.name} (x${quantity}) đã vào giỏ hàng.`,
+      placement: 'bottomRight'
+    });
+    navigate('/cart');
   };
 
+  const handleBuyNow = () => {
+    if (!product) return;
+    dispatch(addItem({ ...product, qty: quantity }));
+    navigate('/checkout');
+  };
+
+  if (loading) return (
+    <div className="flex flex-col justify-center items-center h-[80vh] gap-4">
+      <Spin size="large" />
+      <Text className="text-blue-500 animate-pulse font-bold tracking-widest uppercase">Đang tải tuyệt phẩm...</Text>
+    </div>
+  );
+  
+  if (!product) return <div className="py-20 flex justify-center"><Empty description="Sản phẩm không tồn tại" /></div>;
+
+  const discount = product.discount || 0;
+  const oldPrice = discount > 0 ? product.price / (1 - discount / 100) : 0;
+
   return (
-    <div className="py-10 container mx-auto px-4 lg:px-0">
-      <Breadcrumb className="mb-8 text-lg font-medium">
-        <Breadcrumb.Item><Link to="/">Trang chủ</Link></Breadcrumb.Item>
-        <Breadcrumb.Item><Link to="/category/dienthoai">Điện thoại</Link></Breadcrumb.Item>
-        <Breadcrumb.Item>iPhone 15 Pro Max</Breadcrumb.Item>
-      </Breadcrumb>
+    <div className="bg-[#fcfdfe] min-h-screen pt-6 pb-24 font-sans">
+      {/* Premium Breadcrumb Overlay */}
+      <div className="container mx-auto px-4 mb-6">
+        <Breadcrumb separator="/" className="bg-white/70 backdrop-blur-md p-4 px-8 rounded-3xl border border-gray-100 shadow-sm inline-flex items-center gap-2">
+          <Breadcrumb.Item><Link to="/" className="hover:text-blue-600 transition-colors"><HomeOutlined className="mr-1" /> Trang chủ</Link></Breadcrumb.Item>
+          <Breadcrumb.Item className="opacity-60">{product.categoryId?.name}</Breadcrumb.Item>
+          <Breadcrumb.Item className="font-black text-blue-600 italic">{product.name}</Breadcrumb.Item>
+        </Breadcrumb>
+      </div>
 
-      <Row gutter={[48, 24]}>
-        {/* Left Gallery */}
-        <Col xs={24} lg={12}>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center">
-            <Image
-              src={product.images[0]}
-              className="rounded-2xl max-h-[500px] object-contain mb-6"
-            />
-            <div className="flex gap-4 overflow-x-auto pb-2 w-full justify-center">
-              {product.images.map((img, idx) => (
-                <div key={idx} className="w-24 h-24 rounded-xl border-2 border-gray-100 overflow-hidden cursor-pointer hover:border-blue-500 transition-all p-1">
-                  <img src={img} className="w-full h-full object-cover rounded-lg" alt={`thumb ${idx}`} />
+      <div className="container mx-auto px-4">
+        {/* Main Product Showcase Card */}
+        <Card className="shadow-[0_30px_100px_rgba(0,0,0,0.06)] rounded-[3.5rem] border-0 overflow-hidden bg-white/95 backdrop-blur-2xl relative">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-50 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2 opacity-50"></div>
+          
+          <Row gutter={[64, 48]}>
+            {/* Gallery Section - Redesigned */}
+            <Col xs={24} lg={11}>
+              <div className="flex flex-col md:flex-row gap-6 h-full">
+                {/* Thumbnails vertical (side gallery) */}
+                <div className="hidden md:flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide shrink-0">
+                  {product.images?.map((img: string, idx: number) => {
+                    const fullUrl = img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`w-24 h-24 rounded-3xl border-2 overflow-hidden cursor-pointer transition-all duration-500 p-1.5 shrink-0 hover:scale-105 active:scale-95 ${mainImage === fullUrl ? 'border-blue-600 shadow-xl' : 'border-gray-50 opacity-40 hover:opacity-100 bg-gray-50/50'}`}
+                        onClick={() => setMainImage(fullUrl)}
+                      >
+                        <img src={fullUrl} className="w-full h-full object-contain rounded-2xl" alt={`thumb ${idx}`} />
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          </div>
-        </Col>
 
-        {/* Right Info */}
-        <Col xs={24} lg={12}>
-          <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100 h-full">
-            <div className="mb-4">
-              <Tag color="blue" className="px-3 py-1 font-bold rounded-lg border-none text-sm mb-4">CHÍNH HÃNG VN/A</Tag>
-              <Title level={2} className="!mb-2 leading-tight">{product.name}</Title>
-              <div className="flex items-center gap-6">
-                <Space>
-                  <Rate disabled defaultValue={product.rating} style={{ fontSize: '16px' }} />
-                  <Text className="text-gray-400">({product.reviews} đánh giá)</Text>
-                </Space>
-                <Divider type="vertical" className="bg-gray-200 h-4" />
-                <Text className="text-gray-400">Đã bán {product.sold}+</Text>
-              </div>
-            </div>
+                {/* Main Image Showcase */}
+                <div className="flex-1">
+                  <div className="relative w-full h-[450px] md:h-[520px] flex items-center justify-center bg-gray-50/30 rounded-[3rem] overflow-hidden border border-gray-100 group shadow-inner">
+                    <Image
+                      src={mainImage}
+                      className="w-full h-full object-contain p-8 md:p-12 transition-transform duration-1000 group-hover:scale-110"
+                      preview={{
+                        mask: <div className="text-white flex flex-col items-center gap-3 font-black italic tracking-widest drop-shadow-lg"><EyeOutlined style={{ fontSize: 48 }} /> <span className="text-lg">XEM CẬN CẢNH</span></div>
+                      }}
+                    />
+                    
+                    {/* Discount Badge */}
+                    {discount > 0 && (
+                      <div className="absolute top-8 right-8 animate-bounce">
+                        <div className="bg-red-600 text-white px-6 py-2.5 rounded-full font-black text-xl shadow-2xl flex items-center gap-2">
+                           <ThunderboltOutlined /> -{discount}%
+                        </div>
+                      </div>
+                    )}
 
-            <div className="bg-blue-50/50 p-8 rounded-2xl mb-8 flex flex-col gap-2">
-              <Text delete className="text-xl text-gray-400">{product.oldPrice.toLocaleString('vi-VN')}₫</Text>
-              <div className="flex items-center gap-4">
-                <span className="text-4xl font-extrabold text-blue-600 font-mono tracking-tighter">
-                  {product.price.toLocaleString('vi-VN')}₫
-                </span>
-                <Tag color="red" className="text-lg px-2 rounded-lg font-bold">GIẢM 9%</Tag>
+                    {/* Like Button */}
+                    <div className="absolute bottom-8 right-8">
+                       <Button shape="circle" icon={<HeartOutlined className="text-xl" />} className="h-16 w-16 bg-white/80 backdrop-blur-md border-none shadow-xl hover:text-red-500 transition-all hover:scale-110 flex items-center justify-center" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-green-600 mt-2 font-medium">
-                <CheckCircleOutlined /> Còn hàng - Giao hàng nhanh trong 2h
-              </div>
-            </div>
+            </Col>
 
-            <div className="mb-8 p-6 border-2 border-gray-50 rounded-2xl">
-              <Text strong className="block mb-4 text-lg">Số lượng</Text>
-              <Space size="large">
-                <InputNumber 
-                  min={1} 
-                  max={10} 
-                  defaultValue={1} 
-                  size="large" 
-                  className="w-32 rounded-xl h-12 flex items-center" 
-                  value={quantity}
-                  onChange={(val) => setQuantity(val || 1)}
+            {/* Content & Action Section - Redesigned */}
+            <Col xs={24} lg={13}>
+              <div className="flex flex-col h-full space-y-8 py-2">
+                <header>
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <span className="bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full tracking-[0.2em] shadow-lg shadow-blue-200">LUXURY CATEGORY</span>
+                    <span className="bg-green-50 text-green-600 text-[10px] font-black px-4 py-1.5 rounded-full border border-green-100 tracking-[0.1em] flex items-center gap-1">
+                       <CheckCircleOutlined /> GUARANTEED 
+                    </span>
+                  </div>
+                  <Title level={1} className="!text-4xl md:!text-6xl !font-black !mb-4 !text-gray-900 tracking-tighter italic uppercase leading-[0.95] drop-shadow-sm">
+                    {product.name}
+                  </Title>
+                  <div className="flex items-center gap-6 bg-gray-50/50 w-fit px-6 py-2.5 rounded-3xl border border-gray-100">
+                    <Rate disabled defaultValue={5} className="text-yellow-400 text-lg" />
+                    <Divider type="vertical" className="bg-gray-300 h-4" />
+                    <Text className="font-bold text-gray-500 italic tracking-tight">4.9/5 • 2.5K Lượt xem • 800+ Sản phẩm đã bay</Text>
+                  </div>
+                </header>
+
+                <div className="bg-[#f0f4f8]/50 p-10 rounded-[3rem] border border-white/50 shadow-inner relative group transition-all duration-500 hover:shadow-2xl">
+                  <div className="absolute top-0 right-0 p-8 opacity-10 font-bold italic text-6xl tracking-tighter select-none">PREMIUM</div>
+                  <div className="flex flex-col md:flex-row md:items-center gap-6">
+                    <div className="flex flex-col">
+                        <Title level={1} className="!m-0 !text-blue-700 !font-black !text-6xl tracking-tighter italic leading-none drop-shadow-sm">
+                          {product.price.toLocaleString('vi-VN')}₫
+                        </Title>
+                        {oldPrice > product.price && (
+                          <Text delete className="text-gray-400 text-2xl font-black italic opacity-40 mt-1">
+                            {Math.floor(oldPrice).toLocaleString('vi-VN')}₫
+                          </Text>
+                        )}
+                    </div>
+                    {discount > 0 && (
+                        <div className="bg-white/80 backdrop-blur-md px-6 py-4 rounded-3xl border border-blue-100 shadow-sm">
+                           <Text type="secondary" className="block text-[10px] font-black uppercase text-blue-400 tracking-widest mb-1">Tiết kiệm ngay</Text>
+                           <Text strong className="text-xl text-green-600 font-mono tracking-tighter italic">
+                              +{Math.floor(oldPrice - product.price).toLocaleString('vi-VN')}₫
+                           </Text>
+                        </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                   {/* Quantity Selection Redesign */}
+                   <div className="flex items-center gap-6">
+                      <span className="text-lg font-black italic text-gray-400 uppercase tracking-tighter shrink-0">CHỌN SỐ LƯỢNG</span>
+                      <div className="bg-gray-100/50 p-1.5 rounded-[2rem] border border-gray-100 inline-flex items-center gap-2 shadow-inner">
+                         <Button 
+                            type="primary" 
+                            shape="circle"
+                            className="bg-white text-gray-900 border-none shadow-md h-12 w-12 flex items-center justify-center font-bold text-2xl hover:bg-blue-600 hover:text-white transition-all transform active:scale-90"
+                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                         >-</Button>
+                         <InputNumber 
+                            min={1} 
+                            max={product.stock} 
+                            value={quantity} 
+                            onChange={(val) => setQuantity(val || 1)}
+                            className="w-16 text-center border-none !bg-transparent font-black text-2xl flex items-center justify-center"
+                            controls={false}
+                         />
+                         <Button 
+                            type="primary" 
+                            shape="circle"
+                            className="bg-white text-gray-900 border-none shadow-md h-12 w-12 flex items-center justify-center font-bold text-2xl hover:bg-blue-600 hover:text-white transition-all transform active:scale-90"
+                            onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                         >+</Button>
+                      </div>
+                      <div className="flex flex-col">
+                        <Text strong className="text-lg text-gray-900 italic font-black leading-none">{product.stock}</Text>
+                        <Text className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">In Stock</Text>
+                      </div>
+                   </div>
+
+                   {/* Action Buttons Hub */}
+                   <div className="flex flex-col sm:flex-row gap-6 pt-4">
+                      <Button 
+                        type="primary" 
+                        size="large" 
+                        icon={<ShoppingCartOutlined className="scale-125" />}
+                        className="flex-3 h-24 rounded-[2.5rem] bg-gray-900 hover:bg-black font-black text-2xl transition-all shadow-2xl hover:scale-102 flex items-center justify-center gap-4 italic tracking-tighter uppercase relative group overflow-hidden border-none"
+                        onClick={handleAddToCart}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <span className="relative z-10 text-white">BỎ GIỎ HÀNG</span>
+                      </Button>
+                      <Button 
+                        type="primary" 
+                        size="large"
+                        icon={<ThunderboltOutlined className="scale-125" />}
+                        className="flex-2 h-24 rounded-[2.5rem] bg-gradient-to-tr from-orange-500 to-yellow-400 hover:from-orange-600 hover:to-orange-500 font-black text-2xl transition-all shadow-orange-200 shadow-2xl hover:scale-105 flex items-center justify-center gap-4 border-none italic tracking-tighter uppercase"
+                        onClick={handleBuyNow}
+                      >
+                        MUA NGAY
+                      </Button>
+                   </div>
+                </div>
+
+                {/* Vertical Badges */}
+                <div className="pt-8 border-t border-gray-100">
+                   <Row gutter={[24, 24]}>
+                      {[
+                        { icon: <HistoryOutlined />, label: 'BẢO HÀNH TRỌN ĐỜI', desc: 'An tâm tuyệt đối', color: 'blue' },
+                        { icon: <GlobalOutlined />, label: 'XUẤT XỨ CHÍNH HÃNG', desc: 'Nguồn hàng uy tín', color: 'green' },
+                        { icon: <TruckOutlined />, label: 'GIAO FREE TRONG GIỜ', desc: 'Nhanh như chớp', color: 'orange' }
+                      ].map((item: any, idx: number) => (
+                        <Col span={8} key={idx}>
+                          <div className="flex flex-col items-center gap-3 p-4 group cursor-help text-center">
+                             <div className={`w-14 h-14 bg-gray-100/50 rounded-[1.5rem] flex items-center justify-center text-3xl shadow-sm transition-all duration-500 group-hover:bg-blue-600 group-hover:text-white group-hover:rotate-12`}>
+                               {item.icon}
+                             </div>
+                             <div>
+                                <Text className="block text-[9px] font-black tracking-[0.1em] text-gray-900 italic uppercase mb-0.5">{item.label}</Text>
+                                <Text className="text-[10px] text-gray-400 font-medium italic block opacity-70">{item.desc}</Text>
+                             </div>
+                          </div>
+                        </Col>
+                      ))}
+                   </Row>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Dynamic Multi-Section Tabs - Revamped */}
+        <div className="mt-32">
+          <Tabs 
+            defaultActiveKey="1" 
+            className="premium-tabs-system"
+            centered
+            items={[
+              {
+                key: '1',
+                label: <span className="text-3xl px-12 py-3 font-black italic tracking-tighter uppercase transition-all duration-300">KIỆT TÁC CÔNG NGHỆ</span>,
+                children: (
+                  <div className="animate-slideUp pt-12">
+                    <Row gutter={[64, 64]}>
+                       <Col xs={24} lg={14}>
+                          <div className="bg-white p-12 md:p-16 rounded-[4rem] shadow-2xl border border-gray-50/50 relative overflow-hidden">
+                             <div className="absolute top-0 right-0 p-12 opacity-[0.03] rotate-12 scale-150"><GlobalOutlined style={{ fontSize: 400 }} /></div>
+                             <Title level={2} className="!text-5xl !font-black !mb-10 italic underline decoration-blue-500 decoration-8 underline-offset-[16px] uppercase tracking-tighter leading-none">CÂU CHUYỆN SẢN PHẨM</Title>
+                             <Paragraph className="text-gray-500 text-2xl leading-relaxed font-medium italic opacity-90 first-letter:text-7xl first-letter:font-black first-letter:text-blue-600 first-letter:mr-3 first-letter:float-left">
+                               {product.description || 'Sản phẩm này không chỉ là một món hàng công nghệ, mà là sự kết tinh của tư duy đột phá và kỹ nghệ chế tác thượng thừa. Mỗi đường nét đều được tối ưu hóa để mang lại trải nghiệm hoàn hảo nhất cho người dùng.'}
+                             </Paragraph>
+                             
+                             <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="p-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[3rem] shadow-xl shadow-blue-100 flex flex-col gap-4 text-white hover:scale-102 transition-transform cursor-default">
+                                   <Title level={3} className="!text-white !font-black !mb-0 italic flex items-center gap-3"><ThunderboltOutlined /> HIỆU NĂNG</Title>
+                                   <Text className="text-blue-100 text-lg font-medium italic leading-relaxed">Xử lý mọi tác vụ trong nháy mắt với công nghệ chip tiên tiến nhất, mang lại sức mạnh vượt mọi giới hạn.</Text>
+                                </div>
+                                <div className="p-10 bg-gray-900 rounded-[3rem] shadow-xl flex flex-col gap-4 text-white hover:scale-102 transition-transform cursor-default">
+                                   <Title level={3} className="!text-white !font-black !mb-0 italic flex items-center gap-3"><SafetyCertificateOutlined /> BỀN BỈ</Title>
+                                   <Text className="text-gray-400 text-lg font-medium italic leading-relaxed">Chế tác từ vật liệu hàng không cao cấp, đảm bảo tuổi thọ lên đến hàng thập kỷ với sự tin cậy tối đa.</Text>
+                                </div>
+                             </div>
+                          </div>
+                       </Col>
+                       <Col xs={24} lg={10}>
+                          <div className="flex flex-col gap-8 h-full">
+                             <div className="bg-white p-12 rounded-[3.5rem] shadow-xl border border-gray-100 flex-1">
+                                <Title level={4} className="!font-black !mb-8 uppercase tracking-widest italic flex items-center gap-3 text-gray-900"> THÔNG SỐ KỸ THUẬT</Title>
+                                <div className="space-y-6">
+                                   {[
+                                      { l: 'THƯƠNG HIỆU', v: 'Modern Luxury' },
+                                      { l: 'MÃ SẢN PHẨM', v: product.slug?.toUpperCase() },
+                                      { l: 'DANH MỤC', v: product.categoryId?.name },
+                                      { l: 'CHẤT LIỆU', v: 'Hợp kim siêu bền' },
+                                      { l: 'XUẤT XỨ', v: 'Chính hãng (Full Box)' }
+                                   ].map((item, i) => (
+                                      <div key={i} className="flex justify-between items-center py-4 border-b border-gray-50 last:border-0 hover:translate-x-2 transition-transform group">
+                                         <Text className="text-[10px] font-black text-gray-400 group-hover:text-blue-600 transition-colors uppercase italic tracking-widest">{item.l}</Text>
+                                         <Text className="font-black text-gray-800 text-lg italic tracking-tight">{item.v}</Text>
+                                      </div>
+                                   ))}
+                                </div>
+                             </div>
+                             
+                             <div className="bg-gradient-to-r from-yellow-100/50 to-orange-100/50 p-12 rounded-[3rem] border-2 border-dashed border-orange-200">
+                                <Title level={4} className="!font-black italic uppercase !mb-4">Dịch vụ v.i.p</Title>
+                                <ul className="space-y-4 font-black italic text-gray-600 list-none p-0 m-0">
+                                   <li className="flex items-center gap-3">✨ Miễn phí bảo trì 5 năm</li>
+                                   <li className="flex items-center gap-3">✈️ Giao tận tay người mua</li>
+                                   <li className="flex items-center gap-3">💎 Quà tặng độc bản đi kèm</li>
+                                </ul>
+                             </div>
+                          </div>
+                       </Col>
+                    </Row>
+                  </div>
+                ),
+              },
+              {
+                 key: '2',
+                 label: <span className="text-3xl px-12 py-3 font-black italic tracking-tighter uppercase transition-all duration-300">ĐÁNH GIÁ (99+)</span>,
+                 children: (
+                  <div className="animate-slideUp pt-12 flex flex-col items-center">
+                    <Empty description={<Text className="text-3xl font-black italic text-gray-300 uppercase tracking-tighter">Đang cập nhật những phản hồi tích cực nhất</Text>} />
+                  </div>
+                 )
+              }
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* Extreme Sticky Bottom Hub (Mobile) */}
+      <div className="fixed bottom-6 left-6 right-6 z-[100] md:hidden">
+         <div className="bg-gray-900/95 backdrop-blur-3xl p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between gap-4 border border-white/20">
+            <div className="flex flex-col pl-4">
+               <Text className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">TOTAL PRICE</Text>
+               <Text className="text-2xl text-white font-black italic leading-none">{product.price?.toLocaleString('vi-VN')}₫</Text>
+            </div>
+            <div className="flex gap-3">
+                <Button 
+                   shape="circle" 
+                   icon={<ShoppingCartOutlined className="text-xl" />} 
+                   className="h-16 w-16 bg-white/10 text-white border-none flex items-center justify-center hover:bg-blue-600 transition-all active:scale-90"
+                   onClick={handleAddToCart}
                 />
-                <Text type="secondary" className="text-sm italic italic">Chỉ còn 15 sản phẩm trong kho.</Text>
-              </Space>
+                <Button 
+                   type="primary" 
+                   icon={<ThunderboltOutlined />}
+                   className="h-16 px-10 rounded-3xl bg-blue-600 font-black italic uppercase border-none text-base shadow-xl shadow-blue-500/20 active:scale-95"
+                   onClick={handleBuyNow}
+                >
+                  MUA
+                </Button>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 mb-10">
-              <Button 
-                type="primary" 
-                size="large" 
-                icon={<ShoppingCartOutlined />} 
-                className="flex-1 h-16 rounded-2xl bg-blue-600 font-bold text-lg hover:scale-102 transition-transform"
-                onClick={() => navigate('/cart')}
-              >
-                THÊM VÀO GIỎ HÀNG
-              </Button>
-              <Button 
-                size="large" 
-                className="flex-1 h-16 rounded-2xl border-2 border-blue-600 text-blue-600 font-bold text-lg hover:bg-blue-50 transition-colors"
-                onClick={() => navigate('/checkout')}
-              >
-                MUA NGAY
-              </Button>
-            </div>
-
-            <Divider />
-            
-            <div className="grid grid-cols-2 gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 shrink-0">
-                  <SafetyCertificateOutlined style={{ fontSize: '24px' }} />
-                </div>
-                <div>
-                  <Text strong className="block">Bảo hành 12 tháng</Text>
-                  <Text type="secondary" className="text-xs">Chính hãng tại các trung tâm bảo hành Apple.</Text>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 shrink-0">
-                  <CarOutlined style={{ fontSize: '24px' }} />
-                </div>
-                <div>
-                  <Text strong className="block">Miễn phí vận chuyển</Text>
-                  <Text type="secondary" className="text-xs">Đơn hàng từ 1.000.000₫.</Text>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Col>
-      </Row>
-
-      {/* Tabs and More details */}
-      <div className="mt-16 bg-white p-10 rounded-3xl shadow-sm border border-gray-100">
-        <Tabs
-          defaultActiveKey="1"
-          size="large"
-          items={[
-            {
-              key: '1',
-              label: 'Mô tả sản phẩm',
-              children: (
-                <div className="py-6">
-                  <Paragraph className="text-lg leading-relaxed text-gray-700">
-                    {product.description}
-                  </Paragraph>
-                  <Paragraph className="text-lg leading-relaxed text-gray-700">
-                    iPhone 15 Pro Max mang đến những cải tiến mạnh mẽ nhất từ trước đến nay. Thiết kế Titan không chỉ bền bỉ mà còn mang lại cảm giác nhẹ nhàng chưa từng có mẫu Pro Max nào trước đây. Hệ thống camera được nâng cấp toàn diện giúp người dùng có thể sáng tạo chuyên nghiệp nhất.
-                  </Paragraph>
-                </div>
-              ),
-            },
-            {
-              key: '2',
-              label: 'Thông số kỹ thuật',
-              children: (
-                <List
-                  bordered
-                  className="my-6 rounded-2xl border-gray-100"
-                  dataSource={[
-                    { label: 'Chip set', value: 'A17 Pro (3nm)' },
-                    { label: 'Màn hình', value: '6.7 inch, Super Retina XDR OLED' },
-                    { label: 'RAM', value: '8 GB' },
-                    { label: 'Pin', value: '4441 mAh, Li-Ion' }
-                  ]}
-                  renderItem={(item) => (
-                    <List.Item className="px-8 h-12">
-                      <Text strong className="w-1/3">{item.label}</Text>
-                      <Text className="text-gray-600">{item.value}</Text>
-                    </List.Item>
-                  )}
-                />
-              ),
-            },
-            {
-              key: '3',
-              label: 'Đánh giá từ khách hàng (1240)',
-              children: <div className="py-20 text-center text-gray-400">Đang tải đánh giá...</div>,
-            },
-          ]}
-        />
+         </div>
       </div>
     </div>
   );
 };
-
-// Cần tạo dummy Link vì import từ router-dom
-const Link = ({ to, children, ...props }: any) => <a onClick={(e) => { e.preventDefault(); /* setup custom logic simple */ }} href={to} {...props}>{children}</a>;
 
 export default ProductDetail;

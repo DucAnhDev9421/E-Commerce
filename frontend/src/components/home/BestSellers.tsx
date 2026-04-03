@@ -1,31 +1,46 @@
-import React from 'react';
-import { Tabs, Row, Col, Typography, Button } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Tabs, Row, Col, Typography, Button, Spin, Empty } from 'antd';
 import { RiseOutlined, FireOutlined, StarOutlined } from '@ant-design/icons';
-import ProductCard, { type Product } from './ProductCard';
+import { useNavigate } from 'react-router-dom';
+import ProductCard from './ProductCard';
+import productApi from '../../api/productApi';
 
 const { Title, Text } = Typography;
 
 const BestSellers: React.FC = () => {
-    const products: Record<string, Product[]> = {
-        trending: [
-            { id: 201, name: 'iPad Air 5 M1 Wi-Fi 64GB - Chính hãng Apple', price: 14500000, oldPrice: 15990000, discount: 10, rating: 5, reviews: 312, image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 1200, category: 'Máy tính bảng' },
-            { id: 202, name: 'Bàn phím cơ không dây AKKO 3068B Multi-mode', price: 1850000, oldPrice: 2250000, discount: 18, rating: 4.8, reviews: 215, image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 850, category: 'Phụ kiện' },
-            { id: 203, name: 'Chuột Logitech MX Master 3S For Mac', price: 2350000, oldPrice: 2850000, discount: 17, rating: 5, reviews: 450, image: 'https://images.unsplash.com/photo-1527814732934-94a195507575?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 620, category: 'Phụ kiện' },
-            { id: 204, name: 'Loa Marshall Emberton II Chính hãng', price: 3450000, oldPrice: 3990000, discount: 13, rating: 4.9, reviews: 180, image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 410, category: 'Âm thanh' },
-        ],
-        fashion: [
-             { id: 301, name: 'Áo Hoodie Essentials Fear of God - Grey', price: 2450000, oldPrice: 2990000, discount: 18, rating: 5, reviews: 85, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 250, category: 'Thời trang' },
-             { id: 302, name: 'Giày Nike Air Jordan 1 Low "Panda"', price: 3850000, oldPrice: 4500000, discount: 14, rating: 4.9, reviews: 142, image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 560, category: 'Giày dép' },
-             { id: 303, name: 'Quần Jeans Levi\'s 501 Original Fit', price: 1850000, oldPrice: 2200000, discount: 16, rating: 4.7, reviews: 96, image: 'https://images.unsplash.com/photo-1542272604-787c3835535d?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 342, category: 'Thời trang' },
-             { id: 304, name: 'Đồng hồ Casio G-Shock GA-2100-1A1DR', price: 2950000, oldPrice: 3400000, discount: 13, rating: 5, reviews: 220, image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&q=80&w=400', isBestSeller: true, sold: 185, category: 'Phụ kiện' },
-        ],
-        new: [
-             { id: 401, name: 'MacBook Pro 14 inch M3 Pro Space Black', price: 49500000, oldPrice: 54990000, discount: 10, rating: 5, reviews: 45, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400', isNew: true, sold: 24, category: 'Laptop' },
-             { id: 402, name: 'Sony PlayStation 5 Slim Standard Edition', price: 12500000, oldPrice: 14990000, discount: 16, rating: 4.9, reviews: 68, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400', isNew: true, sold: 156, category: 'Gaming' },
-             { id: 403, name: 'Samsung Galaxy Ring - Đen Nhám', price: 9500000, oldPrice: 10990000, discount: 13, rating: 4.8, reviews: 15, image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=400', isNew: true, sold: 12, category: 'Smartwatch' },
-             { id: 404, name: 'DJI Osmo Pocket 3 Creator Combo', price: 15800000, oldPrice: 17500000, discount: 10, rating: 5, reviews: 34, image: 'https://images.unsplash.com/photo-1621330396173-e41b1cafd17f?auto=format&fit=crop&q=80&w=400', isNew: true, sold: 48, category: 'Camera' },
-        ]
-    };
+    const navigate = useNavigate();
+    const [products, setProducts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const res: any = await productApi.getAll();
+                // Backend returns { items, page, ... }
+                setProducts(res.items || []);
+            } catch (error) {
+                console.error("Fetch best sellers error:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProducts();
+    }, []);
+
+    if (loading) {
+        return <div className="mt-32 text-center"><Spin size="large" description="Đang tải sản phẩm..." /></div>;
+    }
+
+    if (products.length === 0) {
+        return <div className="mt-32"><Empty description="Chưa có sản phẩm nào" /></div>;
+    }
+
+    // Categorization logic
+    const trending = products.slice(0, 4);
+    const fashion = products.filter(p => (p.categoryId?.name || '').toLowerCase().includes('phụ kiện') || (p.categoryId?.name || '').toLowerCase().includes('thời trang')).slice(0, 4);
+    const newArrivals = [...products]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 4);
 
     const tabItems = [
         {
@@ -37,8 +52,8 @@ const BestSellers: React.FC = () => {
             ),
             children: (
                 <Row gutter={[20, 20]} className="mt-8">
-                    {products.trending.map(p => (
-                        <Col xs={12} sm={8} lg={6} key={p.id}>
+                    {trending.map(p => (
+                        <Col xs={12} sm={8} lg={6} key={p._id}>
                             <ProductCard product={p} />
                         </Col>
                     ))}
@@ -49,16 +64,20 @@ const BestSellers: React.FC = () => {
             key: 'fashion',
              label: (
                 <span className="flex items-center gap-2 px-6 py-2">
-                    <StarOutlined /> THỜI TRANG
+                    <StarOutlined /> LINH KIỆN
                 </span>
             ),
             children: (
                 <Row gutter={[20, 20]} className="mt-8">
-                    {products.fashion.map(p => (
-                        <Col xs={12} sm={8} lg={6} key={p.id}>
-                            <ProductCard product={p} />
-                        </Col>
-                    ))}
+                    {fashion.length > 0 ? (
+                        fashion.map(p => (
+                            <Col xs={12} sm={8} lg={6} key={p._id}>
+                                <ProductCard product={p} />
+                            </Col>
+                        ))
+                    ) : (
+                        <Col span={24} className="text-center py-20 text-gray-400">Chưa có sản phẩm thuộc nhóm này</Col>
+                    )}
                 </Row>
             )
         },
@@ -71,8 +90,8 @@ const BestSellers: React.FC = () => {
             ),
             children: (
                 <Row gutter={[20, 20]} className="mt-8">
-                    {products.new.map(p => (
-                        <Col xs={12} sm={8} lg={6} key={p.id}>
+                    {newArrivals.map(p => (
+                        <Col xs={12} sm={8} lg={6} key={p._id}>
                             <ProductCard product={p} />
                         </Col>
                     ))}
@@ -95,6 +114,7 @@ const BestSellers: React.FC = () => {
                  <Button 
                     type="primary" 
                     size="large" 
+                    onClick={() => navigate('/?view=all')}
                     className="h-12 px-8 rounded-full font-bold bg-black text-white hover:bg-gray-800 hidden md:flex items-center justify-center border-none mt-6 md:mt-0"
                 >
                     XEM TOÀN BỘ CỬA HÀNG

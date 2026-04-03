@@ -13,11 +13,10 @@ router.get('/', verifyToken, checkRole('ADMIN'), async function (req, res, next)
     try {
 
         let result = await userController.GetAllUsers();
-        res.send(result);
+        res.status(200).json({ success: true, message: "Lấy danh sách user thành công", data: result });
 
     } catch (error) {
-        console.log("LỖI TẠI ROUTE GET USERS:", error);
-        res.status(500).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -32,13 +31,13 @@ router.get('/:id', verifyToken, async function (req, res, next) {
         let result = await userController.GetAnUserById(req.params.id);
 
         if (!result) {
-            return res.status(404).send({ message: "Không tìm thấy user" });
+            return res.status(404).json({ success: false, message: "Không tìm thấy user", data: null });
         }
 
-        res.send(result);
+        res.status(200).json({ success: true, message: "Lấy chi tiết user thành công", data: result });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -51,15 +50,13 @@ router.post('/', verifyToken, checkRole('ADMIN'), async function (req, res, next
     try {
 
         let result = await userController.CreateAnUser(req.body);
-        res.status(201).send(result);
+        res.status(201).json({ success: true, message: "Tạo user thành công", data: result });
 
     } catch (error) {
-
         if (error.code === 11000) {
-            return res.status(409).send({ message: "Email hoặc tên đăng nhập đã tồn tại" });
+            return res.status(409).json({ success: false, message: "Email hoặc tên đăng nhập đã tồn tại", data: null });
         }
-
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -74,13 +71,13 @@ router.delete('/:id', verifyToken, checkRole('ADMIN'), async function (req, res,
         let result = await userController.DeleteAnUser(req.params.id);
 
         if (!result) {
-            return res.status(404).send({ message: "Không tìm thấy user để xóa" });
+            return res.status(404).json({ success: false, message: "Không tìm thấy user để xóa", data: null });
         }
 
-        res.send({ message: "Xóa User thành công (soft delete)" });
+        res.status(200).json({ success: true, message: "Xóa User thành công (soft delete)", data: null });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -99,13 +96,14 @@ router.put('/:id/change-password', verifyToken, async function (req, res) {
             newPassword
         );
 
-        res.send({
+        res.status(200).json({
             success: true,
-            message: "Đổi mật khẩu thành công"
+            message: "Đổi mật khẩu thành công",
+            data: null
         });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -123,29 +121,30 @@ router.put('/:id', verifyToken, async function (req, res, next) {
         roleName !== 'ADMIN' &&
         req.user?._id?.toString() !== req.params.id
     ) {
-        return res.status(403).send({
-            message: "Bạn không có quyền sửa thông tin người khác"
+        return res.status(403).json({
+            success: false,
+            message: "Bạn không có quyền sửa thông tin người khác",
+            data: null
         });
     }
 
     try {
-
         let result = await userController.UpdateAnUser(
             req.params.id,
             req.body
         );
 
-        res.send(result);
+        res.status(200).json({ success: true, message: "Cập nhật user thành công", data: result });
 
     } catch (error) {
-
         if (error.code === 11000) {
-            return res.status(409).send({
-                message: "Email hoặc tên đăng nhập đã tồn tại"
+            return res.status(409).json({
+                success: false,
+                message: "Email hoặc tên đăng nhập đã tồn tại",
+                data: null
             });
         }
-
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 

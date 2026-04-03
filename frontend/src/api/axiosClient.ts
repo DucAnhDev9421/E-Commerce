@@ -48,7 +48,11 @@ axiosClient.interceptors.request.use(
 // Response Interceptor: Xử lý lỗi 401 (Hết hạn Access Token)
 axiosClient.interceptors.response.use(
   (response) => {
-    return response.data; // Trả về data trực tiếp để tiện sử dụng
+    // Nếu response có cấu trúc { success, message, data }
+    if (response.data && response.data.success === true) {
+      return response.data.data;
+    }
+    return response.data; // Trường hợp khác trả về data nguyên bản
   },
   async (error: AxiosError) => {
     const originalRequest: any = error.config;
@@ -82,6 +86,7 @@ axiosClient.interceptors.response.use(
           { withCredentials: true }
         );
 
+        // API backend trả về { success, data: { accessToken } }
         const { accessToken } = response.data.data;
         
         // Cập nhật token vào Redux Store

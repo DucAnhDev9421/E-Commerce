@@ -17,10 +17,10 @@ router.post('/', verifyToken, async function (req, res, next) {
         data.user = req.user._id;
 
         let result = await addressController.CreateAAddress(data);
-        res.status(201).send(result);
+        res.status(201).json({ success: true, message: "Tạo địa chỉ thành công", data: result });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -32,10 +32,10 @@ router.get('/', verifyToken, async function (req, res, next) {
     try {
 
         let result = await addressController.GetAllAddresses(req.user._id);
-        res.send(result);
+        res.status(200).json({ success: true, message: "Lấy danh sách địa chỉ thành công", data: result });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -49,13 +49,13 @@ router.get('/:id', async function (req, res, next) {
         let result = await addressController.GetAAddressById(req.params.id);
 
         if (!result) {
-            return res.status(404).send({ message: "Không tìm thấy địa chỉ" });
+            return res.status(404).json({ success: false, message: "Không tìm thấy địa chỉ", data: null });
         }
 
-        res.send(result);
+        res.status(200).json({ success: true, message: "Lấy chi tiết địa chỉ thành công", data: result });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -69,13 +69,13 @@ router.put('/:id', async function (req, res, next) {
         let result = await addressController.UpdateAAddress(req.params.id, req.body);
 
         if (!result) {
-            return res.status(404).send({ message: "Không tìm thấy địa chỉ để update" });
+            return res.status(404).json({ success: false, message: "Không tìm thấy địa chỉ để update", data: null });
         }
 
-        res.send(result);
+        res.status(200).json({ success: true, message: "Cập nhật địa chỉ thành công", data: result });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -89,13 +89,13 @@ router.delete('/:id', async function (req, res, next) {
         let result = await addressController.DeleteAAddress(req.params.id);
 
         if (!result) {
-            return res.status(404).send({ message: "Không tìm thấy địa chỉ để xóa" });
+            return res.status(404).json({ success: false, message: "Không tìm thấy địa chỉ để xóa", data: null });
         }
 
-        res.send({ message: "Xóa thành công (soft delete)" });
+        res.status(200).json({ success: true, message: "Xóa địa chỉ thành công (soft delete)", data: null });
 
     } catch (error) {
-        res.status(400).send({ message: error.message });
+        next(error);
     }
 });
 
