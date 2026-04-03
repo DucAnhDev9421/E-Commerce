@@ -2,18 +2,21 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Table, Button, Space, Modal, Form, Input, notification,
   Popconfirm, Typography, Tag, Select, Tooltip, InputNumber,
-  Upload, Image, Row, Col, Empty, Drawer, Divider, Badge
+  Upload, Image, Row, Col, Empty, Drawer, Divider
 } from 'antd';
 import {
   EditOutlined, DeleteOutlined, PlusOutlined, ShoppingOutlined,
   SearchOutlined, ReloadOutlined, EyeOutlined,
   CheckCircleOutlined, StopOutlined,
-  PictureOutlined
+  PictureOutlined,
+  ThunderboltOutlined,
+  RiseOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 import productApi from '../../api/productApi';
 import categoryApi from '../../api/categoryApi';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
 
@@ -157,49 +160,37 @@ const Products: React.FC = () => {
   };
 
   // Stats
-  const inStockCount = products.filter(p => p.status === 'in_stock').length;
   const outStockCount = products.filter(p => p.status === 'out_of_stock').length;
-  const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock || 0), 0);
+  const totalValue = products.reduce((sum, p) => sum + (p.price * (p.stock || 0)), 0);
 
   const columns = [
     {
       title: '#',
-      key: 'index', width: 50,
-      render: (_: any, __: any, idx: number) => <Text type="secondary" style={{ fontSize: 13 }}>{idx + 1}</Text>,
+      key: 'index', width: 60,
+      render: (_: any, __: any, idx: number) => <Text className="text-text/30 font-mono font-bold">{idx + 1}</Text>,
     },
     {
       title: 'Sản phẩm',
       dataIndex: 'name', key: 'name',
       render: (text: string, record: any) => (
-        <Space>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
+        <Space size="middle" className="py-2">
+          <div className="relative shrink-0 group">
             {record.images?.[0] ? (
               <img
                 src={getImageUrl(record.images[0])}
                 alt={text}
-                style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 10, border: '2px solid #f1f5f9' }}
+                className="w-16 h-16 object-contain rounded-2xl bg-white p-2 border border-emerald-50 shadow-sm transition-transform group-hover:scale-110"
                 onError={(e: any) => { e.target.style.display = 'none'; }}
               />
             ) : (
-              <div style={{
-                width: 52, height: 52, borderRadius: 10, background: '#f8fafc',
-                border: '2px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <PictureOutlined style={{ color: '#cbd5e1', fontSize: 20 }} />
-              </div>
-            )}
-            {record.images?.length > 1 && (
-              <div style={{
-                position: 'absolute', bottom: -4, right: -4, background: '#3b82f6',
-                color: 'white', borderRadius: 10, fontSize: 10, padding: '1px 5px', fontWeight: 700
-              }}>
-                +{record.images.length - 1}
+              <div className="w-16 h-16 rounded-2xl bg-white/50 border border-white flex items-center justify-center">
+                <PictureOutlined className="text-text/10 text-2xl" />
               </div>
             )}
           </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</div>
-            <div style={{ fontSize: 12, color: '#94a3b8' }}>{record.categoryId?.name || '—'}</div>
+          <div className="flex flex-col">
+            <Text strong className="text-base tracking-tight leading-tight mb-1">{text}</Text>
+            <Text className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">{record.categoryId?.name || 'KHÔNG CÓ DANH MỤC'}</Text>
           </div>
         </Space>
       ),
@@ -207,71 +198,81 @@ const Products: React.FC = () => {
     {
       title: 'Giá bán',
       dataIndex: 'price', key: 'price',
+      width: 150,
       render: (price: number) => (
-        <Text strong style={{ color: '#2563eb', fontSize: 14 }}>
-          {price?.toLocaleString('vi-VN')}₫
-        </Text>
+        <div className="flex flex-col">
+          <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">ĐƠN GIÁ</Text>
+          <Text strong className="text-emerald-600 text-lg">
+            {price?.toLocaleString('vi-VN')}₫
+          </Text>
+        </div>
       ),
       sorter: (a: any, b: any) => a.price - b.price,
     },
     {
-      title: 'Kho',
-      dataIndex: 'stock', key: 'stock', width: 90,
+      title: 'Kho hàng',
+      dataIndex: 'stock', key: 'stock', width: 120,
       render: (stock: number) => (
-        <Tag color={stock > 10 ? 'blue' : stock > 0 ? 'warning' : 'error'} style={{ borderRadius: 20, fontWeight: 600 }}>
-          {stock}
-        </Tag>
+        <div className="flex flex-col">
+            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">TỒN KHO</Text>
+            <div className={`mt-1 inline-flex items-center gap-2 font-bold ${stock > 10 ? 'text-emerald-600' : stock > 0 ? 'text-amber-500' : 'text-red-500'}`}>
+                {stock} <Text className="text-[10px] font-light text-text/40">SẢN PHẨM</Text>
+            </div>
+        </div>
       ),
       sorter: (a: any, b: any) => a.stock - b.stock,
     },
     {
-      title: 'Ảnh',
-      key: 'images', width: 80,
-      render: (_: any, record: any) => (
-        <Badge count={record.images?.length || 0} color="#3b82f6">
-          <div style={{
-            width: 36, height: 36, borderRadius: 8, background: '#eff6ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'default'
-          }}>
-            <PictureOutlined style={{ color: '#3b82f6' }} />
-          </div>
-        </Badge>
-      ),
-    },
-    {
       title: 'Trạng thái',
-      dataIndex: 'status', key: 'status', width: 130,
+      dataIndex: 'status', key: 'status', width: 150,
       render: (status: string) => {
         const cfg = statusConfig[status] || statusConfig.in_stock;
         return (
-          <Tag icon={cfg.icon} color={cfg.color} style={{ borderRadius: 20, padding: '2px 10px', fontWeight: 500 }}>
-            {cfg.label}
-          </Tag>
+          <div className={`px-4 py-1.5 rounded-full inline-flex items-center gap-2 border ${
+            status === 'in_stock' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 
+            status === 'out_of_stock' ? 'bg-red-50 border-red-100 text-red-600' : 
+            'bg-gray-50 border-gray-100 text-gray-600'
+          }`}>
+             <div className="w-1.5 h-1.5 rounded-full bg-current" />
+             <Text strong className="text-[10px] uppercase tracking-widest text-current">{cfg.label}</Text>
+          </div>
         );
       },
     },
     {
       title: 'Hành động',
-      key: 'action', width: 160,
+      key: 'action', width: 180,
       render: (_: any, record: any) => (
-        <Space size={6}>
+        <Space size={8}>
           <Tooltip title="Xem chi tiết">
-            <Button type="text" icon={<EyeOutlined />} onClick={() => handleView(record)}
-              style={{ color: '#6366f1', borderRadius: 8 }} />
+            <Button 
+                shape="circle" 
+                icon={<EyeOutlined />} 
+                onClick={() => handleView(record)}
+                className="bg-blue-50 text-blue-600 border-none hover:bg-blue-100 transition-colors" 
+            />
           </Tooltip>
           <Tooltip title="Chỉnh sửa">
-            <Button type="primary" ghost icon={<EditOutlined />} onClick={() => handleEdit(record)}
-              style={{ borderRadius: 8 }} />
+            <Button 
+                shape="circle" 
+                icon={<EditOutlined />} 
+                onClick={() => handleEdit(record)}
+                className="bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 transition-colors" 
+            />
           </Tooltip>
           <Popconfirm
             title="Xóa sản phẩm này?"
             description="Hành động này không thể hoàn tác."
             onConfirm={() => handleDelete(record._id)}
             okText="Xóa" cancelText="Hủy"
-            okButtonProps={{ danger: true }}
           >
             <Tooltip title="Xóa">
-              <Button danger ghost icon={<DeleteOutlined />} style={{ borderRadius: 8 }} />
+              <Button 
+                shape="circle" 
+                danger 
+                icon={<DeleteOutlined />} 
+                className="bg-red-50 text-red-600 border-none hover:bg-red-100 transition-colors" 
+              />
             </Tooltip>
           </Popconfirm>
         </Space>
@@ -280,76 +281,84 @@ const Products: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '0 4px' }}>
-      {/* Page Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+    <div className="space-y-8">
+      {/* Header & Stats Island */}
+      <div className="bg-white/40 backdrop-blur-md rounded-[3rem] p-8 border border-white/60 shadow-xl">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div>
-            <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-              <ShoppingOutlined style={{ color: '#3b82f6', marginRight: 10 }} />
-              Quản lý Sản Phẩm
-            </Title>
-            <Text type="secondary">Quản lý toàn bộ sản phẩm và hình ảnh</Text>
+            <Title level={2} className="!m-0 !font-serif tracking-tight">Quản lý Sản phẩm</Title>
+            <Text className="text-text/30 font-bold uppercase tracking-[0.3em] text-[10px]">TOTAL INVENTORY & CATALOG CONTROL</Text>
           </div>
+          
+          <div className="flex flex-wrap justify-center gap-4">
+              {[
+                { label: 'Sản phẩm', value: products.length, icon: <ShoppingOutlined />, color: '#059669' },
+                { label: 'Hết hàng', value: outStockCount, icon: <ThunderboltOutlined />, color: '#ef4444' },
+                { label: 'Giá trị', value: (Math.round(totalValue / 1000000)) + 'M₫', icon: <RiseOutlined />, color: '#7c3aed' },
+              ].map((stat, i) => (
+                <div key={i} className="px-6 py-3 bg-white/60 rounded-[2rem] border border-white shadow-sm flex items-center gap-4 min-w-[160px]">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-lg" style={{ background: stat.color }}>
+                        {stat.icon}
+                    </div>
+                    <div>
+                        <Title level={4} className="!m-0 !font-black !leading-none">{stat.value}</Title>
+                        <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">{stat.label}</Text>
+                    </div>
+                </div>
+              ))}
+          </div>
+
           <Button
-            type="primary" icon={<PlusOutlined />} size="large"
+            type="primary" 
+            size="large"
+            icon={<PlusOutlined />}
             onClick={handleAdd}
-            style={{
-              borderRadius: 10, height: 44, paddingInline: 24, fontWeight: 600,
-              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-              border: 'none', boxShadow: '0 4px 15px rgba(59,130,246,0.4)'
-            }}
+            className="h-16 px-10 rounded-[2rem] bg-emerald-600 border-none font-bold tracking-widest text-xs uppercase shadow-xl shadow-emerald-200 hover:scale-105 transition-all"
           >
-            Thêm Sản Phẩm
+            THÊM SẢN PHẨM MỚI
           </Button>
         </div>
-
-        {/* Stats */}
-        <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
-          {[
-            { label: 'Tổng sản phẩm', value: products.length, color: '#3b82f6', bg: '#eff6ff' },
-            { label: 'Còn hàng', value: inStockCount, color: '#10b981', bg: '#f0fdf4' },
-            { label: 'Hết hàng', value: outStockCount, color: '#ef4444', bg: '#fef2f2' },
-            { label: 'Tổng giá trị kho', value: totalValue.toLocaleString('vi-VN') + '₫', color: '#f59e0b', bg: '#fffbeb', isText: true },
-          ].map((stat, i) => (
-            <Col key={i} xs={12} sm={6} md={6}>
-              <div style={{ background: stat.bg, borderRadius: 12, padding: '14px 18px', border: `1px solid ${stat.color}22` }}>
-                <div style={{ fontSize: stat.isText ? 16 : 24, fontWeight: 700, color: stat.color, lineHeight: 1.3 }}>{stat.value}</div>
-                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{stat.label}</div>
-              </div>
-            </Col>
-          ))}
-        </Row>
       </div>
 
-      {/* Table Card */}
-      <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 1px 12px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      {/* Main Table - Premium Glass */}
+      <div className="bg-white/40 backdrop-blur-md rounded-[3.5rem] border border-white/80 shadow-2xl overflow-hidden glass-panel relative">
         {/* Toolbar */}
-        <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #f1f5f9',
-          display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center'
-        }}>
-          <Input
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            placeholder="Tìm kiếm sản phẩm..."
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            allowClear
-            style={{ maxWidth: 280, borderRadius: 8 }}
-          />
-          <Select
-            placeholder="Lọc theo danh mục"
-            allowClear style={{ width: 200, borderRadius: 8 }}
-            onChange={v => setFilterCategory(v || '')}
-            value={filterCategory || undefined}
-          >
-            {categories.map(c => (
-              <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>
-            ))}
-          </Select>
-          <Tooltip title="Làm mới">
-            <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading} style={{ borderRadius: 8 }} />
-          </Tooltip>
+        <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+                <Input
+                    prefix={<SearchOutlined className="text-emerald-600" />}
+                    placeholder="Tìm kiếm theo tên sản phẩm..."
+                    value={searchText}
+                    onChange={e => setSearchText(e.target.value)}
+                    allowClear
+                    className="h-12 w-full md:w-80 rounded-2xl border-none bg-white/60 shadow-sm focus:bg-white transition-all pl-4"
+                />
+                <Select
+                    placeholder="Lọc danh mục"
+                    allowClear 
+                    className="h-12 w-full md:w-60 custom-glass-select"
+                    onChange={v => setFilterCategory(v || '')}
+                    value={filterCategory || undefined}
+                >
+                    {categories.map(c => (
+                    <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>
+                    ))}
+                </Select>
+            </div>
+            
+            <div className="flex items-center gap-3">
+                <Tooltip title="Làm mới dữ liệu">
+                    <Button 
+                        shape="circle" 
+                        icon={<ReloadOutlined />} 
+                        onClick={fetchData} 
+                        loading={loading}
+                        className="bg-white/60 text-emerald-600 border-none shadow-sm hover:scale-110"
+                    />
+                </Tooltip>
+                <div className="h-6 w-px bg-text/10" />
+                <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">SẮP XẾP MỚI NHẤT</Text>
+            </div>
         </div>
 
         <Table
@@ -357,42 +366,121 @@ const Products: React.FC = () => {
           dataSource={filtered}
           rowKey="_id"
           loading={loading}
+          className="premium-admin-table"
           pagination={{
-            pageSize: 10, showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} sản phẩm`,
-            style: { padding: '16px 20px' }
+            pageSize: 10, 
+            showSizeChanger: true,
+            showTotal: (total) => <Text className="font-bold text-text/30 text-xs">TỔNG CỘNG {total} SẢN PHẨM</Text>,
+            className: "px-8 py-6"
           }}
-          locale={{ emptyText: <Empty description="Chưa có sản phẩm nào" style={{ padding: '40px 0' }} /> }}
+          locale={{ emptyText: <Empty description="Chưa có sản phẩm nào" className="p-20" /> }}
         />
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              {editingProduct ? <EditOutlined style={{ color: 'white' }} /> : <PlusOutlined style={{ color: 'white' }} />}
-            </div>
-            <span style={{ fontWeight: 700 }}>{editingProduct ? 'Chỉnh sửa Sản Phẩm' : 'Thêm Sản Phẩm Mới'}</span>
-          </div>
+      {/* Product Drawer (View) */}
+      <Drawer
+        title={<Title level={3} className="!m-0 !font-serif">Chi tiết sản phẩm</Title>}
+        placement="right"
+        width={560}
+        onClose={() => setIsViewOpen(false)}
+        open={isViewOpen}
+        className="glass-panel"
+        extra={
+          <Button 
+            type="primary" 
+            icon={<EditOutlined />}
+            onClick={() => { setIsViewOpen(false); if (viewProduct) handleEdit(viewProduct); }}
+            className="h-12 px-6 rounded-2xl bg-emerald-600 border-none font-bold text-xs tracking-widest uppercase shadow-xl"
+          >
+            SỬA NGAY
+          </Button>
         }
+      >
+        {viewProduct && (
+          <div className="space-y-10">
+            {/* Image Gallery */}
+            <div className="bg-white/40 rounded-[2.5rem] p-6 border border-white/60">
+                {viewProduct.images?.length > 0 ? (
+                    <Image.PreviewGroup>
+                    <div className="grid grid-cols-3 gap-4">
+                        {viewProduct.images.map((url: string, i: number) => (
+                        <Image
+                            key={i}
+                            src={getImageUrl(url)}
+                            className="w-full aspect-square object-contain rounded-2xl bg-white border border-emerald-50 p-2 shadow-sm"
+                        />
+                        ))}
+                    </div>
+                    </Image.PreviewGroup>
+                ) : (
+                    <div className="h-48 flex flex-col items-center justify-center text-text/20">
+                        <PictureOutlined className="text-5xl mb-4" />
+                        <Text strong>Chưa có hình ảnh</Text>
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-2">
+                <Text className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.3em]">MÃ SẢN PHẨM: {viewProduct._id}</Text>
+                <Title level={2} className="!m-0 !font-serif">{viewProduct.name}</Title>
+                <Text italic className="text-text/40 block">Slug: /{viewProduct.slug}</Text>
+            </div>
+
+            <Divider className="border-white/20" />
+
+            <div className="grid grid-cols-2 gap-8">
+                 <div className="bg-white/40 p-6 rounded-3xl border border-white">
+                      <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">GIÁ BÁN HIỆN TẠI</Text>
+                      <Title level={3} className="!m-0 !text-emerald-700">{(viewProduct.price).toLocaleString('vi-VN')}₫</Title>
+                 </div>
+                 <div className="bg-white/40 p-6 rounded-3xl border border-white">
+                      <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">SỐ LƯỢNG TRONG KHO</Text>
+                      <Title level={3} className="!m-0 !text-blue-700">{viewProduct.stock} Sp</Title>
+                 </div>
+            </div>
+
+            <div className="p-8 rounded-[2.5rem] bg-white/40 border border-white space-y-6">
+                <div className="flex justify-between items-center">
+                    <Text className="font-bold text-text/40 uppercase text-xs tracking-widest">DANH MỤC</Text>
+                    <Tag color="blue" className="rounded-full px-4 border-none font-bold uppercase text-[10px] tracking-widest">{viewProduct.categoryId?.name}</Tag>
+                </div>
+                <div className="flex justify-between items-center">
+                    <Text className="font-bold text-text/40 uppercase text-xs tracking-widest">TRẠNG THÁI</Text>
+                    <Tag color={viewProduct.status === 'in_stock' ? 'success' : 'error'} className="rounded-full px-4 border-none font-bold uppercase text-[10px] tracking-widest">
+                        {statusConfig[viewProduct.status]?.label}
+                    </Tag>
+                </div>
+                <div>
+                     <Text className="font-bold text-text/40 uppercase text-xs tracking-widest block mb-2">MÔ TẢ CHI TIẾT</Text>
+                     <Paragraph className="text-text/60 leading-relaxed italic">
+                        {viewProduct.description || "Sản phẩm chưa có mô tả chi tiết."}
+                     </Paragraph>
+                </div>
+            </div>
+            
+            <div className="flex items-center gap-4 text-text/30 text-[10px] font-bold uppercase tracking-widest justify-center">
+                 <HistoryOutlined /> NGÀY TẠO: {new Date(viewProduct.createdAt).toLocaleString('vi-VN')}
+            </div>
+          </div>
+        )}
+      </Drawer>
+
+      {/* Add/Edit Modal - Premium Glass */}
+      <Modal
+        title={<Title level={4} className="!m-0 !font-serif">{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</Title>}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={() => setIsModalOpen(false)}
-        okText="Lưu lại" cancelText="Hủy bỏ"
+        okText="LƯU THÔNG TIN"
+        cancelText="HỦY BỎ"
         confirmLoading={saving}
-        okButtonProps={{ style: { borderRadius: 8, background: '#3b82f6', border: 'none', fontWeight: 600 } }}
-        cancelButtonProps={{ style: { borderRadius: 8 } }}
-        destroyOnClose
-        width={720}
+        className="premium-admin-modal"
+        centered
+        width={800}
       >
         <Form
           form={form} layout="vertical"
-          style={{ marginTop: 16 }}
+          className="mt-8"
           onValuesChange={(changed) => {
             if (changed.name) {
               const slug = changed.name
@@ -403,50 +491,49 @@ const Products: React.FC = () => {
             }
           }}
         >
-          <Row gutter={16}>
+          <Row gutter={24}>
             <Col span={12}>
-              <Form.Item name="name" label={<b>Tên Sản Phẩm</b>}
-                rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm!' }]}
+              <Form.Item name="name" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Tên sản phẩm</Text>}
+                rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}
               >
-                <Input placeholder="iPhone 15 Pro Max..." size="large" style={{ borderRadius: 8 }} />
+                <Input placeholder="Ví dụ: iPhone 15 Pro Max" className="h-12 rounded-2xl bg-white/60 border-none shadow-sm" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="slug" label={<b>Slug (tự động)</b>}
-                rules={[{ required: true, message: 'Slug không được trống!' }]}
+              <Form.Item name="slug" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Đường dẫn (Slug)</Text>}
+                rules={[{ required: true }]}
               >
-                <Input placeholder="iphone-15-pro-max" size="large" style={{ borderRadius: 8 }} addonBefore="/" />
+                <Input placeholder="iphone-15-pro-max" addonBefore="/" className="h-12 rounded-2xl overflow-hidden border-none" />
               </Form.Item>
             </Col>
           </Row>
 
-          <Row gutter={16}>
+          <Row gutter={24}>
             <Col span={8}>
-              <Form.Item name="price" label={<b>Giá bán (VNĐ)</b>}
-                rules={[{ required: true, message: 'Vui lòng nhập giá!' }]}
+              <Form.Item name="price" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Giá bán (VNĐ)</Text>}
+                rules={[{ required: true }]}
               >
                 <InputNumber
-                  className="w-full" style={{ width: '100%', borderRadius: 8 }}
-                  min={0} size="large"
+                  className="w-full h-12 rounded-2xl bg-white/60 border-none pt-1" 
+                  min={0}
                   formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                   parser={v => v!.replace(/,/g, '') as any}
-                  placeholder="32,000,000"
                   addonAfter="₫"
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="stock" label={<b>Số lượng kho</b>}
-                rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}
+              <Form.Item name="stock" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Tồn kho</Text>}
+                rules={[{ required: true }]}
               >
-                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={0} size="large" placeholder="100" />
+                <InputNumber className="w-full h-12 rounded-2xl bg-white/60 border-none pt-1" min={0} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="categoryId" label={<b>Danh mục</b>}
-                rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
+              <Form.Item name="categoryId" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Danh mục</Text>}
+                rules={[{ required: true }]}
               >
-                <Select placeholder="Chọn danh mục" size="large" style={{ borderRadius: 8 }}>
+                <Select className="h-12 custom-glass-select" placeholder="Chọn...">
                   {categories.map(cat => (
                     <Select.Option key={cat._id} value={cat._id}>{cat.name}</Select.Option>
                   ))}
@@ -455,21 +542,20 @@ const Products: React.FC = () => {
             </Col>
           </Row>
 
-          <Form.Item name="description" label={<b>Mô tả sản phẩm</b>}>
-            <Input.TextArea rows={3} placeholder="Nhập mô tả chi tiết về sản phẩm..." style={{ borderRadius: 8 }} />
+          <Form.Item name="description" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Mô tả sản phẩm</Text>}>
+            <Input.TextArea rows={4} className="rounded-3xl bg-white/60 border-none p-4" placeholder="Môt tả ngắn gọn..." />
           </Form.Item>
 
-          <Form.Item name="status" label={<b>Trạng thái</b>} initialValue="in_stock">
-            <Select size="large" style={{ borderRadius: 8 }}>
+          <Form.Item name="status" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Trạng thái kinh doanh</Text>}>
+            <Select className="h-12 custom-glass-select">
               <Select.Option value="in_stock">✅ Còn hàng</Select.Option>
               <Select.Option value="out_of_stock">❌ Hết hàng</Select.Option>
               <Select.Option value="discontinued">🚫 Ngừng kinh doanh</Select.Option>
             </Select>
           </Form.Item>
 
-          {/* Image Upload Section */}
-          <Divider orientation={"left" as any}>
-            <Space><PictureOutlined /><b>Hình ảnh sản phẩm</b></Space>
+          <Divider orientation={"left" as any} className="border-white/20">
+            <Space><PictureOutlined className="text-emerald-600" /><Text className="font-bold text-[11px] uppercase tracking-widest">Album hình ảnh (Tối đa 8)</Text></Space>
           </Divider>
 
           <Form.Item>
@@ -479,99 +565,90 @@ const Products: React.FC = () => {
               fileList={fileList}
               onChange={({ fileList: newList }) => setFileList(newList)}
               accept="image/*"
+              className="glass-uploader"
               multiple
             >
               {fileList.length >= 8 ? null : (
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8, fontSize: 12 }}>Tải ảnh lên</div>
+                <div className="flex flex-col items-center">
+                  <PlusOutlined className="text-xl mb-2" />
+                  <Text className="text-[10px] font-bold text-text/30">UPLOAD</Text>
                 </div>
               )}
             </Upload>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              Hỗ trợ JPG, PNG, WebP. Tối đa 8 ảnh. Ảnh đầu tiên sẽ là ảnh đại diện.
-            </Text>
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* View Product Drawer */}
-      <Drawer
-        title="Chi tiết Sản Phẩm"
-        placement="right"
-        width={480}
-        onClose={() => setIsViewOpen(false)}
-        open={isViewOpen}
-        extra={
-          <Button type="primary" icon={<EditOutlined />}
-            onClick={() => { setIsViewOpen(false); if (viewProduct) handleEdit(viewProduct); }}
-            style={{ borderRadius: 8 }}
-          >
-            Chỉnh sửa
-          </Button>
+      <style>{`
+        .premium-admin-table .ant-table {
+            background: transparent !important;
         }
-      >
-        {viewProduct && (
-          <div>
-            {/* Images Gallery */}
-            {viewProduct.images?.length > 0 ? (
-              <div style={{ marginBottom: 20 }}>
-                <Image.PreviewGroup>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                    {viewProduct.images.map((url: string, i: number) => (
-                      <Image
-                        key={i}
-                        src={getImageUrl(url)}
-                        style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: 8 }}
-                        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsEAAA7BAbiRa+0AAAANSURBVBhXYzAAAQEABQABMjKGgAAAABJRU5ErkJggg=="
-                      />
-                    ))}
-                  </div>
-                </Image.PreviewGroup>
-              </div>
-            ) : (
-              <div style={{
-                height: 160, background: '#f8fafc', borderRadius: 12, marginBottom: 20,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8
-              }}>
-                <PictureOutlined style={{ fontSize: 32, color: '#cbd5e1' }} />
-                <Text type="secondary">Chưa có hình ảnh</Text>
-              </div>
-            )}
-
-            <Title level={4} style={{ margin: '0 0 4px' }}>{viewProduct.name}</Title>
-            <Text type="secondary" style={{ fontSize: 13 }}>/{viewProduct.slug}</Text>
-
-            <Divider />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {[
-                { label: 'Danh mục', value: viewProduct.categoryId?.name || '—' },
-                { label: 'Giá bán', value: `${viewProduct.price?.toLocaleString('vi-VN')}₫`, bold: true, color: '#2563eb' },
-                { label: 'Tồn kho', value: `${viewProduct.stock} sản phẩm` },
-                { label: 'Số ảnh', value: `${viewProduct.images?.length || 0} ảnh` },
-                { label: 'Mô tả', value: viewProduct.description || '(Không có mô tả)' },
-                { label: 'Ngày tạo', value: new Date(viewProduct.createdAt).toLocaleString('vi-VN') },
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #f1f5f9', paddingBottom: 10 }}>
-                  <Text type="secondary" style={{ fontSize: 13, minWidth: 90 }}>{item.label}</Text>
-                  <Text strong={item.bold} style={{ color: item.color, textAlign: 'right', maxWidth: 260 }}>{item.value}</Text>
-                </div>
-              ))}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: 10 }}>
-                <Text type="secondary" style={{ fontSize: 13 }}>Trạng thái</Text>
-                <Tag
-                  icon={statusConfig[viewProduct.status]?.icon}
-                  color={statusConfig[viewProduct.status]?.color}
-                  style={{ borderRadius: 20, padding: '2px 10px', fontWeight: 500 }}
-                >
-                  {statusConfig[viewProduct.status]?.label}
-                </Tag>
-              </div>
-            </div>
-          </div>
-        )}
-      </Drawer>
+        .premium-admin-table .ant-table-thead > tr > th {
+            background: rgba(0, 0, 0, 0.02) !important;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.1em !important;
+            color: #94a3b8 !important;
+            padding: 24px !important;
+        }
+        .premium-admin-table .ant-table-tbody > tr > td {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03) !important;
+            padding: 20px 24px !important;
+            transition: all 0.3s ease;
+        }
+        .premium-admin-table .ant-table-tbody > tr:hover > td {
+            background: rgba(5, 150, 105, 0.03) !important;
+        }
+        .custom-glass-select .ant-select-selector {
+            height: 48px !important;
+            border-radius: 1rem !important;
+            border: none !important;
+            background: rgba(255, 255, 255, 0.6) !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 16px !important;
+        }
+        .premium-admin-modal .ant-modal-content {
+            border-radius: 3rem !important;
+            background: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid white !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            padding: 40px !important;
+        }
+        .premium-admin-modal .ant-modal-header {
+            background: transparent !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+            padding-bottom: 24px !important;
+        }
+        .premium-admin-modal .ant-modal-footer {
+            border-top: none !important;
+            margin-top: 32px !important;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+        .premium-admin-modal .ant-modal-footer .ant-btn {
+            height: 56px !important;
+            padding: 0 40px !important;
+            border-radius: 2rem !important;
+            font-weight: 700 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.1em !important;
+        }
+        .glass-uploader .ant-upload-list-item {
+            border-radius: 1.5rem !important;
+            border: 2px dashed rgba(5, 150, 105, 0.1) !important;
+        }
+        .glass-uploader .ant-upload-select {
+            border-radius: 1.5rem !important;
+            border: 2px dashed rgba(5, 150, 105, 0.2) !important;
+            background: rgba(5, 150, 105, 0.02) !important;
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Typography, Statistic, Tag, Avatar, Spin, Empty, Progress, List } from 'antd';
+import { Row, Col, Card, Typography, Statistic, Tag, Avatar, Spin, Empty, Progress, List, Button } from 'antd';
 import {
   UserOutlined, SafetyCertificateOutlined, ShoppingCartOutlined,
   TagsOutlined, ShoppingOutlined, ArrowUpOutlined, ArrowDownOutlined,
-  RiseOutlined, AppstoreOutlined, CheckCircleOutlined
+  RiseOutlined, AppstoreOutlined, CheckCircleOutlined, ArrowRightOutlined,
+  ThunderboltOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import type { RootState } from '../../store';
 import type { Role } from '../../types/auth';
 import categoryApi from '../../api/categoryApi';
@@ -26,41 +29,43 @@ const StatCard: React.FC<{
   loading?: boolean;
 }> = ({ title, value, icon, color, bg, suffix, trend, loading }) => (
   <Card
-    style={{
-      borderRadius: 20, border: 'none', overflow: 'hidden',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '100%'
-    }}
-    bodyStyle={{ padding: 24 }}
+    className="rounded-[2.5rem] border-none shadow-xl bg-white/40 backdrop-blur-md overflow-hidden relative group hover:scale-102 transition-all duration-500"
+    bodyStyle={{ padding: 32 }}
   >
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <div style={{ flex: 1 }}>
-        <Text type="secondary" style={{ fontSize: 13, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    {/* Decorative Background Shape */}
+    <div 
+        className="absolute top-[-10%] right-[-10%] w-24 h-24 rounded-full blur-3xl opacity-20 transition-all duration-700 group-hover:scale-150 group-hover:opacity-40" 
+        style={{ background: color }}
+    />
+    
+    <div className="flex justify-between items-start relative z-10">
+      <div className="flex-1">
+        <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em] mb-2 block">
           {title}
         </Text>
         {loading ? (
-          <div style={{ marginTop: 12 }}><Spin size="small" /></div>
+          <div className="mt-2"><Spin size="small" /></div>
         ) : (
-          <div style={{ fontSize: 32, fontWeight: 800, color: '#0f172a', marginTop: 6, lineHeight: 1.2 }}>
-            {value}{suffix}
+          <div className="flex items-baseline gap-1 mt-2">
+            <span className="text-4xl font-serif font-black text-text tracking-tighter">
+                {value}
+            </span>
+            {suffix && <span className="text-lg font-bold text-text/40">{suffix}</span>}
           </div>
         )}
+        
         {trend !== undefined && !loading && (
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-            {trend >= 0
-              ? <ArrowUpOutlined style={{ color: '#10b981', fontSize: 12 }} />
-              : <ArrowDownOutlined style={{ color: '#ef4444', fontSize: 12 }} />
-            }
-            <Text style={{ fontSize: 12, color: trend >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-              {Math.abs(trend)}% so với tháng trước
-            </Text>
+          <div className={`mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${trend >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+            {trend >= 0 ? <ArrowUpOutlined size={10} /> : <ArrowDownOutlined size={10} />}
+            {Math.abs(trend)}% <span className="opacity-40 ml-1">so với tháng trước</span>
           </div>
         )}
       </div>
-      <div style={{
-        width: 56, height: 56, borderRadius: 16, background: bg,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0, fontSize: 24, color
-      }}>
+      
+      <div 
+        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg transition-all duration-500 group-hover:rotate-12 group-hover:scale-110" 
+        style={{ background: color, color: '#fff', boxShadow: `0 8px 16px ${color}40` }}
+      >
         {icon}
       </div>
     </div>
@@ -68,6 +73,7 @@ const StatCard: React.FC<{
 );
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState({ users: 0, categories: 0, products: 0, roles: 0, inStock: 0, outOfStock: 0 });
   const [products, setProducts] = useState<any[]>([]);
@@ -118,228 +124,225 @@ const Dashboard: React.FC = () => {
 
   const recentProducts = [...products]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5);
-
-  const quickLinks = [
-    { label: 'Quản lý Danh mục', icon: <TagsOutlined />, color: '#3b82f6', bg: '#eff6ff', path: '/admin/categories', count: stats.categories },
-    { label: 'Quản lý Sản phẩm', icon: <ShoppingOutlined />, color: '#10b981', bg: '#f0fdf4', path: '/admin/products', count: stats.products },
-    { label: 'Quản lý Người dùng', icon: <UserOutlined />, color: '#f59e0b', bg: '#fffbeb', path: '/admin/users', count: stats.users },
-    { label: 'Phân quyền', icon: <SafetyCertificateOutlined />, color: '#8b5cf6', bg: '#f5f3ff', path: '/admin/roles', count: stats.roles },
-  ];
+    .slice(0, 4);
 
   return (
-    <div>
-      {/* Hero Greeting */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)',
-        borderRadius: 24, padding: '32px 36px', marginBottom: 28,
-        position: 'relative', overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute', right: -40, top: -40,
-          width: 200, height: 200, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.04)'
-        }} />
-        <div style={{
-          position: 'absolute', right: 60, bottom: -60,
-          width: 280, height: 280, borderRadius: '50%',
-          background: 'rgba(59,130,246,0.15)'
-        }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, position: 'relative' }}>
-          <Avatar
-            src={user?.avatarUrl}
-            icon={<UserOutlined />}
-            size={64}
-            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', border: '3px solid rgba(255,255,255,0.2)', flexShrink: 0 }}
-          />
-          <div>
-            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, marginBottom: 4 }}>
-              {greeting}, 👋
-            </div>
-            <Title level={2} style={{ margin: 0, color: 'white', fontWeight: 800 }}>
-              {user?.fullName || 'Admin'}!
-            </Title>
-            <div style={{ marginTop: 6 }}>
-              <Tag color="blue" style={{ borderRadius: 20, fontWeight: 700, border: '1px solid rgba(59,130,246,0.5)', background: 'rgba(59,130,246,0.2)', color: '#93c5fd' }}>
-                {roleName}
-              </Tag>
-              <Text style={{ color: 'rgba(255,255,255,0.5)', marginLeft: 8, fontSize: 13 }}>
-                {now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </Text>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-10">
+      {/* Immersive Greeting */}
+      <div className="relative p-10 md:p-12 rounded-[3.5rem] bg-text overflow-hidden group shadow-2xl">
+         {/* Abstract Glass Background Shapes */}
+         <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-emerald-600/20 rounded-full blur-[100px] -z-10 group-hover:scale-110 transition-transform duration-1000" />
+         <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[80px] -z-10" />
+         
+         <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+             <div className="relative">
+                <Avatar 
+                    src={user?.avatarUrl} 
+                    icon={<UserOutlined />} 
+                    size={120} 
+                    className="bg-emerald-600 shadow-2xl ring-8 ring-white/5"
+                />
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center border-4 border-text shadow-lg">
+                    <CheckCircleOutlined className="text-white text-lg" />
+                </div>
+             </div>
+
+             <div className="flex-1 text-center md:text-left">
+                <Text className="text-white/40 font-bold uppercase tracking-[0.4em] text-xs block mb-4">HỆ THỐNG QUẢN TRỊ TRỰC TUYẾN</Text>
+                <Title level={1} className="!m-0 !font-serif !text-5xl md:!text-6xl !text-white tracking-tighter leading-none mb-4">
+                    {greeting}, {user?.fullName?.split(' ').pop()}!
+                </Title>
+                <div className="flex items-center justify-center md:justify-start gap-4 mt-8 flex-wrap">
+                    <div className="px-6 py-2 bg-emerald-600 text-white rounded-full font-bold text-xs tracking-widest uppercase shadow-xl shadow-emerald-900/20">
+                        {roleName}
+                    </div>
+                    <div className="px-6 py-2 bg-white/5 backdrop-blur-xl border border-white/10 text-white/60 rounded-full font-bold text-xs tracking-widest uppercase flex items-center gap-2">
+                        <HistoryOutlined /> {now.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                </div>
+             </div>
+
+             <div className="hidden lg:flex flex-col gap-4">
+                <Button 
+                    type="primary" 
+                    icon={<AppstoreOutlined />} 
+                    className="h-14 px-10 rounded-3xl bg-white text-text border-none font-bold text-xs tracking-widest uppercase shadow-xl hover:scale-105 transition-all w-full flex items-center justify-center"
+                    onClick={() => navigate('/admin/products')}
+                >
+                    QUẢN LÝ KHO HÀNG
+                </Button>
+                <Button 
+                    className="h-14 px-10 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 text-white font-bold text-xs tracking-widest uppercase shadow-xl hover:bg-white/10 transition-all w-full flex items-center justify-center"
+                    onClick={() => navigate('/admin/users')}
+                >
+                    NGƯỜI DÙNG MỚI
+                </Button>
+             </div>
+         </div>
       </div>
 
-      {/* Stat Cards */}
-      <Row gutter={[20, 20]} style={{ marginBottom: 28 }}>
+      {/* Stats row */}
+      <Row gutter={[24, 24]}>
         <Col xs={24} sm={12} lg={6}>
-          <StatCard title="Tổng người dùng" value={stats.users} icon={<UserOutlined />} color="#3b82f6" bg="#eff6ff" trend={12} loading={loading} />
+          <StatCard title="Người dùng" value={stats.users} icon={<UserOutlined />} color="#059669" bg="#059669" trend={12} loading={loading} />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <StatCard title="Tổng danh mục" value={stats.categories} icon={<TagsOutlined />} color="#10b981" bg="#f0fdf4" trend={5} loading={loading} />
+          <StatCard title="Danh mục" value={stats.categories} icon={<TagsOutlined />} color="#10b981" bg="#10b981" trend={5} loading={loading} />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <StatCard title="Tổng sản phẩm" value={stats.products} icon={<ShoppingOutlined />} color="#f59e0b" bg="#fffbeb" trend={8} loading={loading} />
+          <StatCard title="Sản phẩm" value={stats.products} icon={<ShoppingOutlined />} color="#1d4ed8" bg="#1d4ed8" trend={8} loading={loading} />
         </Col>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
-            title="Giá trị kho hàng"
+            title="Giá trị kho"
             value={loading ? 0 : Math.round(totalValue / 1000000)}
             suffix="M₫"
             icon={<RiseOutlined />}
-            color="#8b5cf6"
-            bg="#f5f3ff"
+            color="#7c3aed"
+            bg="#7c3aed"
             trend={3}
             loading={loading}
           />
         </Col>
       </Row>
 
-      <Row gutter={[20, 20]}>
-        {/* Quick Links */}
-        <Col xs={24} lg={8}>
-          <Card
-            title={<><AppstoreOutlined style={{ marginRight: 8, color: '#3b82f6' }} /><b>Truy cập nhanh</b></>}
-            style={{ borderRadius: 20, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '100%' }}
-            bodyStyle={{ padding: '16px 24px 24px' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {quickLinks.map((link, i) => (
-                <a key={i} href={link.path} style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '14px 16px', borderRadius: 14,
-                    background: link.bg, transition: 'all 0.2s',
-                    cursor: 'pointer', border: `1px solid ${link.color}18`
-                  }}
-                    onMouseEnter={e => (e.currentTarget.style.transform = 'translateX(4px)')}
-                    onMouseLeave={e => (e.currentTarget.style.transform = 'translateX(0)')}
-                  >
-                    <div style={{
-                      width: 40, height: 40, borderRadius: 12,
-                      background: link.color, display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      color: 'white', fontSize: 18, flexShrink: 0
-                    }}>
-                      {link.icon}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{link.label}</div>
-                    </div>
-                    <div style={{
-                      background: link.color, color: 'white',
-                      borderRadius: 20, padding: '2px 10px',
-                      fontSize: 13, fontWeight: 700
-                    }}>
-                      {loading ? '...' : link.count}
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </Card>
-        </Col>
-
-        {/* Inventory Status */}
-        <Col xs={24} lg={8}>
-          <Card
-            title={<><ShoppingOutlined style={{ marginRight: 8, color: '#3b82f6' }} /><b>Tình trạng kho</b></>}
-            style={{ borderRadius: 20, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '100%' }}
-            bodyStyle={{ padding: '16px 24px 24px' }}
-          >
-            {loading ? <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div> : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={{ fontWeight: 600 }}>Còn hàng</Text>
-                    <Text strong style={{ color: '#10b981' }}>{stats.inStock} / {stats.products}</Text>
-                  </div>
-                  <Progress
-                    percent={stats.products ? Math.round((stats.inStock / stats.products) * 100) : 0}
-                    strokeColor="#10b981" trailColor="#f0fdf4"
-                    style={{ marginBottom: 0 }}
-                  />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={{ fontWeight: 600 }}>Hết hàng</Text>
-                    <Text strong style={{ color: '#ef4444' }}>{stats.outOfStock} / {stats.products}</Text>
-                  </div>
-                  <Progress
-                    percent={stats.products ? Math.round((stats.outOfStock / stats.products) * 100) : 0}
-                    strokeColor="#ef4444" trailColor="#fef2f2"
-                  />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={{ fontWeight: 600 }}>Danh mục đang hoạt động</Text>
-                    <Text strong style={{ color: '#3b82f6' }}>{activeCategories} / {stats.categories}</Text>
-                  </div>
-                  <Progress
-                    percent={stats.categories ? Math.round((activeCategories / stats.categories) * 100) : 0}
-                    strokeColor="#3b82f6" trailColor="#eff6ff"
-                  />
-                </div>
-              </div>
-            )}
-          </Card>
-        </Col>
-
-        {/* Recent Products */}
-        <Col xs={24} lg={8}>
-          <Card
-            title={<><CheckCircleOutlined style={{ marginRight: 8, color: '#3b82f6' }} /><b>Sản phẩm mới nhất</b></>}
-            style={{ borderRadius: 20, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '100%' }}
-            bodyStyle={{ padding: '8px 24px 24px' }}
-          >
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>
-            ) : recentProducts.length === 0 ? (
-              <Empty description="Chưa có sản phẩm nào" style={{ padding: '40px 0' }} />
-            ) : (
-              <List
-                dataSource={recentProducts}
-                renderItem={(item: any) => (
-                  <List.Item style={{ padding: '10px 0', borderBottom: '1px solid #f8fafc' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
-                      <div style={{
-                        width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                        background: '#f8fafc', border: '1px solid #e2e8f0',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        overflow: 'hidden'
-                      }}>
-                        {item.images?.[0]
-                          ? <img src={item.images[0].startsWith('http') ? item.images[0] : `${(import.meta.env.VITE_API_URL || '').replace('/api/v1', '')}${item.images[0]}`}
-                            alt={item.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            onError={(e: any) => { e.target.style.display = 'none'; }}
-                          />
-                          : <ShoppingOutlined style={{ color: '#cbd5e1' }} />
-                        }
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {item.name}
+      <Row gutter={[32, 32]}>
+        {/* Inventory Status - Modern Glass */}
+        <Col xs={24} lg={12}>
+           <Card 
+             title={<Text className="font-serif text-2xl tracking-tight !m-0">Tình trạng kho hàng</Text>}
+             className="rounded-[3rem] border-none shadow-2xl bg-white/50 backdrop-blur-xl h-full"
+             bodyStyle={{ padding: 40 }}
+             extra={<Button type="link" className="text-emerald-600 font-bold">XEM CHI TIẾT</Button>}
+           >
+                {loading ? <div className="text-center py-20"><Spin size="large" /></div> : (
+                  <div className="space-y-10">
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-emerald-600/10 rounded-2xl flex items-center justify-center text-emerald-600 text-2xl">
+                             <CheckCircleOutlined />
                         </div>
-                        <div style={{ fontSize: 12, color: '#3b82f6', fontWeight: 600 }}>
-                          {item.price?.toLocaleString('vi-VN')}₫
+                        <div className="flex-1">
+                            <div className="flex justify-between mb-2">
+                                <Text strong className="text-lg">Sản phẩm còn hàng</Text>
+                                <Text strong className="text-emerald-600 text-lg">{stats.inStock} / {stats.products}</Text>
+                            </div>
+                            <Progress 
+                                percent={stats.products ? Math.round((stats.inStock / stats.products) * 100) : 0} 
+                                strokeColor="#059669" 
+                                trailColor="rgba(5, 150, 105, 0.05)"
+                                strokeWidth={12}
+                                className="progress-rounded"
+                            />
                         </div>
-                      </div>
-                      <Tag
-                        color={item.status === 'in_stock' ? 'success' : 'error'}
-                        style={{ borderRadius: 20, fontSize: 11 }}
-                      >
-                        {item.status === 'in_stock' ? 'Còn' : 'Hết'}
-                      </Tag>
                     </div>
-                  </List.Item>
+                    
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-red-600/10 rounded-2xl flex items-center justify-center text-red-600 text-2xl">
+                             <ThunderboltOutlined />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex justify-between mb-2">
+                                <Text strong className="text-lg">Sản phẩm hết hàng</Text>
+                                <Text strong className="text-red-600 text-lg">{stats.outOfStock} / {stats.products}</Text>
+                            </div>
+                            <Progress 
+                                percent={stats.products ? Math.round((stats.outOfStock / stats.products) * 100) : 0} 
+                                strokeColor="#ef4444" 
+                                trailColor="rgba(239, 68, 68, 0.05)"
+                                strokeWidth={12}
+                                className="progress-rounded"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-600 text-2xl">
+                             <TagsOutlined />
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex justify-between mb-2">
+                                <Text strong className="text-lg">Danh mục đang chạy</Text>
+                                <Text strong className="text-blue-600 text-lg">{activeCategories} / {stats.categories}</Text>
+                            </div>
+                            <Progress 
+                                percent={stats.categories ? Math.round((activeCategories / stats.categories) * 100) : 0} 
+                                strokeColor="#1d4ed8" 
+                                trailColor="rgba(29, 78, 216, 0.05)"
+                                strokeWidth={12}
+                                className="progress-rounded"
+                            />
+                        </div>
+                    </div>
+                  </div>
                 )}
-              />
-            )}
-          </Card>
+           </Card>
+        </Col>
+
+        {/* Recent Products - Glass List */}
+        <Col xs={24} lg={12}>
+           <Card 
+             title={<Text className="font-serif text-2xl tracking-tight !m-0">Sản phẩm mới cập nhật</Text>}
+             className="rounded-[3rem] border-none shadow-2xl bg-white/50 backdrop-blur-xl h-full overflow-hidden"
+             bodyStyle={{ padding: 0 }}
+             extra={<Button shape="circle" icon={<ArrowRightOutlined />} className="bg-emerald-600 text-white border-none shadow-lg" onClick={() => navigate('/admin/products')} />}
+           >
+                <div className="p-8 pb-0">
+                    <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em] mb-8 block">DANH SÁCH 4 SẢN PHẨM GẦN NHẤT</Text>
+                </div>
+                {loading ? (
+                    <div className="text-center py-20"><Spin /></div>
+                ) : (
+                    <div className="divide-y divide-gray-100/50">
+                        {recentProducts.map((item: any) => (
+                            <div key={item._id} className="p-6 hover:bg-emerald-600/5 transition-all flex items-center gap-6 group cursor-pointer" onClick={() => navigate('/admin/products')}>
+                                <div className="w-20 h-20 bg-white rounded-3xl overflow-hidden shadow-sm p-2 group-hover:scale-105 transition-transform">
+                                    {item.images?.[0] ? (
+                                        <img 
+                                            src={item.images[0].startsWith('http') ? item.images[0] : `http://localhost:5000${item.images[0]}`} 
+                                            alt={item.name}
+                                            className="w-full h-full object-contain"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-text/10 text-2xl">
+                                             <ShoppingOutlined />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <Text strong className="text-lg block truncate">{item.name}</Text>
+                                    <div className="flex items-center gap-3 mt-1">
+                                        <Text className="text-emerald-600 font-bold">{(item.price).toLocaleString('vi-VN')}₫</Text>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-text/10" />
+                                        <Text className="text-xs text-text/40">{item.categoryId?.name}</Text>
+                                    </div>
+                                </div>
+                                <div className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${item.status === 'in_stock' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                                    {item.status === 'in_stock' ? 'Còn' : 'Hết'}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {recentProducts.length === 0 && !loading && (
+                    <div className="py-20 flex flex-col items-center">
+                        <Empty description="Chưa có dữ liệu" />
+                    </div>
+                )}
+           </Card>
         </Col>
       </Row>
+
+      <style>{`
+        .ant-progress-bg {
+            border-radius: 9999px !important;
+        }
+        .progress-rounded .ant-progress-inner {
+            border-radius: 9999px !important;
+        }
+        .hover\:scale-102:hover {
+            transform: scale(1.02);
+        }
+      `}</style>
     </div>
   );
 };

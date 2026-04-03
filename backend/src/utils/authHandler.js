@@ -62,7 +62,8 @@ let checkRole = function (...requiredRole) {
         if (
             req.user &&
             req.user.role &&
-            requiredRole.includes(req.user.role.name)
+            req.user.role.name &&
+            requiredRole.some(r => r.toUpperCase() === req.user.role.name.toUpperCase())
         ) {
             next();
         } else {

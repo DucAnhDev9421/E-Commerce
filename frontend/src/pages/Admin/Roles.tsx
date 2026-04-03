@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Table, Button, Space, Modal, Form, Input, notification,
-  Popconfirm, Typography, Tag, Tooltip, Row, Col, Empty, Card
+  Popconfirm, Typography, Tooltip, Empty
 } from 'antd';
 import {
   EditOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined,
-  SearchOutlined, ReloadOutlined, CheckCircleOutlined,
-  StopOutlined, KeyOutlined, SolutionOutlined
+  SearchOutlined, ReloadOutlined, KeyOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 import roleApi from '../../api/roleApi';
 import type { Role } from '../../types/auth';
@@ -104,72 +104,82 @@ const Roles: React.FC = () => {
 
   const columns = [
     {
-      title: 'Tên Quyền',
+      title: '#',
+      key: 'index',
+      width: 60,
+      render: (_: any, __: any, index: number) => (
+        <Text className="text-text/30 font-mono font-bold">{index + 1}</Text>
+      ),
+    },
+    {
+      title: 'Quyền Hạn',
       dataIndex: 'name',
       key: 'name',
       render: (text: string) => (
-        <Space>
-          <div style={{
-            width: 36, height: 36, borderRadius: 10,
-            background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <SafetyCertificateOutlined style={{ color: 'white', fontSize: 18 }} />
+        <Space size="middle" className="py-2">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-100 shrink-0">
+            <SafetyCertificateOutlined className="text-white text-xl" />
           </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>{text}</div>
-            <Text type="secondary" style={{ fontSize: 11 }}>Định danh hệ thống</Text>
+            <Text strong className="text-base tracking-tight leading-tight">{text}</Text>
+            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em] block">HỆ THỐNG ĐỊNH DANH</Text>
           </div>
         </Space>
       ),
     },
     {
-      title: 'Mô tả',
+      title: 'Mô tả chi tiết',
       dataIndex: 'description',
       key: 'description',
       render: (text: string) => (
-        <Text type="secondary" style={{ fontSize: 14 }}>{text || '—'}</Text>
+        <div className="flex flex-col">
+            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">PHẠM VI TRUY CẬP</Text>
+            <Text className="text-xs text-text/60 italic leading-tight">{text || 'Không có mô tả chi tiết cho quyền này'}</Text>
+        </div>
       ),
     },
     {
       title: 'Trạng thái',
       dataIndex: 'isDeleted',
       key: 'isDeleted',
+      width: 180,
       render: (isDeleted: boolean) => (
-        <Tag
-          icon={!isDeleted ? <CheckCircleOutlined /> : <StopOutlined />}
-          color={!isDeleted ? 'success' : 'error'}
-          style={{ borderRadius: 20, padding: '2px 12px', fontWeight: 600 }}
-        >
-          {!isDeleted ? 'Đang hoạt động' : 'Đã xóa'}
-        </Tag>
+        <div className={`px-4 py-1.5 rounded-full inline-flex items-center gap-2 border ${
+            !isDeleted ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-red-50 border-red-100 text-red-600'
+        }`}>
+             <div className="w-1.5 h-1.5 rounded-full bg-current" />
+             <Text strong className="text-[10px] uppercase tracking-widest text-current">{!isDeleted ? 'Hoạt động' : 'Vô hiệu hóa'}</Text>
+        </div>
       ),
     },
     {
-      title: 'Hành động',
+      title: 'Thao tác',
       key: 'action',
       width: 150,
       render: (_: any, record: Role) => (
         <Space size={8}>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="primary"
-              ghost
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{ borderRadius: 8 }}
+          <Tooltip title="Chỉnh sửa quyền">
+            <Button 
+                shape="circle" 
+                icon={<EditOutlined />} 
+                onClick={() => handleEdit(record)}
+                className="bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 transition-colors" 
             />
           </Tooltip>
           <Popconfirm
-            title="Xóa quyền này?"
-            description="Lưu ý: Bạn nên cẩn thận khi xóa các quyền hệ thống quan trọng."
+            title="Xác nhận xóa quyền?"
+            description="Lưu ý quan trọng: Việc xóa quyền hệ thống có thể gây lỗi truy cập cho người dùng đang gán quyền này."
             onConfirm={() => handleDelete(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
+            okText="Xóa" cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Xóa">
-              <Button danger ghost icon={<DeleteOutlined />} style={{ borderRadius: 8 }} />
+            <Tooltip title="Xóa quyền">
+              <Button 
+                shape="circle" 
+                danger 
+                icon={<DeleteOutlined />} 
+                className="bg-red-50 text-red-600 border-none hover:bg-red-100 transition-colors" 
+              />
             </Tooltip>
           </Popconfirm>
         </Space>
@@ -178,68 +188,67 @@ const Roles: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '4px' }}>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div className="space-y-8">
+      {/* Page Header & Stats Island */}
+      <div className="bg-white/40 backdrop-blur-md rounded-[3rem] p-8 border border-white/60 shadow-xl">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
           <div>
-            <Title level={2} style={{ margin: 0, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' }}>
-              <SolutionOutlined style={{ color: '#2563eb', marginRight: 12 }} />
-              Phân quyền ứng dụng
-            </Title>
-            <Text type="secondary" style={{ fontSize: 16 }}>
-              Quản trị và thiết lập các vai trò người dùng trong hệ thống
-            </Text>
+            <Title level={2} className="!m-0 !font-serif tracking-tight">Phân quyền Hệ thống</Title>
+            <Text className="text-text/30 font-bold uppercase tracking-[0.3em] text-[10px]">SECURITY ROLE & PERMISSION ENGINE</Text>
           </div>
+          
+          <div className="flex flex-wrap justify-center gap-4">
+              <div className="px-8 py-4 bg-blue-600/5 rounded-[2rem] border border-blue-600/10 flex items-center gap-4 min-w-[200px]">
+                  <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg">
+                      <KeyOutlined />
+                  </div>
+                  <div>
+                      <Title level={3} className="!m-0 !font-black !leading-none text-blue-800">{roles.length}</Title>
+                      <Text className="text-[10px] font-bold text-blue-600/50 uppercase tracking-widest block mt-1">TỔNG VAI TRÒ</Text>
+                  </div>
+              </div>
+          </div>
+
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
+            type="primary" 
             size="large"
+            icon={<PlusOutlined />}
             onClick={handleAdd}
-            style={{
-              height: 48,
-              borderRadius: 12,
-              paddingInline: 24,
-              fontWeight: 700,
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              border: 'none',
-              boxShadow: '0 4px 14px 0 rgba(37, 99, 235, 0.39)',
-            }}
+            className="h-16 px-10 rounded-[2rem] bg-blue-600 border-none font-bold tracking-widest text-xs uppercase shadow-xl shadow-blue-200 hover:scale-105 transition-all"
           >
-            THÊM QUYỀN MỚI
+            KHỞI TẠO QUYỀN MỚI
           </Button>
         </div>
-
-        <Row gutter={16} style={{ marginTop: 24 }}>
-          <Col span={8}>
-            <Card style={{ borderRadius: 20, border: 'none', background: '#eff6ff' }} bodyStyle={{ padding: 20 }}>
-              <div style={{ fontSize: 14, color: '#60a5fa', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                 <KeyOutlined /> TỔNG VAI TRÒ
-              </div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#1e40af', marginTop: 8 }}>{roles.length}</div>
-            </Card>
-          </Col>
-        </Row>
       </div>
 
-      <Card
-        style={{ borderRadius: 24, border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)' }}
-        bodyStyle={{ padding: 0 }}
-      >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between' }}>
-          <Input
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            placeholder="Tìm kiếm theo tên quyền hoặc mô tả..."
-            style={{ maxWidth: 350, height: 44, borderRadius: 12, border: '1px solid #e2e8f0' }}
-            onChange={e => setSearchText(e.target.value)}
-            allowClear
-          />
-          <Tooltip title="Làm mới dữ liệu">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={fetchRoles}
-              style={{ width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            />
-          </Tooltip>
+      {/* Main Table Card */}
+      <div className="bg-white/40 backdrop-blur-md rounded-[3.5rem] border border-white/80 shadow-2xl overflow-hidden glass-panel relative">
+        {/* Toolbar */}
+        <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+                <Input
+                    prefix={<SearchOutlined className="text-blue-600" />}
+                    placeholder="Tìm kiếm theo tên quyền..."
+                    value={searchText}
+                    onChange={e => setSearchText(e.target.value)}
+                    allowClear
+                    className="h-12 w-full md:w-96 rounded-2xl border-none bg-white/60 shadow-sm focus:bg-white transition-all pl-4"
+                />
+            </div>
+            
+            <div className="flex items-center gap-3">
+                <Tooltip title="Làm mới dữ liệu">
+                    <Button 
+                        shape="circle" 
+                        icon={<ReloadOutlined />} 
+                        onClick={fetchRoles} 
+                        loading={loading}
+                        className="bg-white/60 text-blue-600 border-none shadow-sm hover:scale-110"
+                    />
+                </Tooltip>
+                <div className="h-6 w-px bg-text/10" />
+                <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">SẮP XẾP ƯU TIÊN</Text>
+            </div>
         </div>
 
         <Table
@@ -247,74 +256,113 @@ const Roles: React.FC = () => {
           dataSource={filtered}
           rowKey="_id"
           loading={loading}
+          className="premium-admin-table-blue"
           pagination={{
             pageSize: 10,
-            style: { padding: '24px' }
+            showTotal: (total) => <Text className="font-bold text-text/30 text-xs">TỔNG CỘNG {total} QUYỀN HỆ THỐNG</Text>,
+            className: "px-8 py-6"
           }}
-          locale={{
-            emptyText: <Empty description="Chưa có vai trò nào" style={{ padding: '60px 0' }} />
-          }}
+          locale={{ emptyText: <Empty description="Chưa có vai trò nào trong hệ thống" className="p-20" /> }}
         />
-      </Card>
+      </div>
 
+      {/* Add/Edit Modal */}
       <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <SafetyCertificateOutlined style={{ color: '#2563eb', fontSize: 20 }} />
-            </div>
-            <span style={{ fontWeight: 800, fontSize: 18 }}>
-              {editingRole ? 'CHỈNH SỬA QUYỀN' : 'THÊM QUYỀN MỚI'}
-            </span>
-          </div>
-        }
+        title={<Title level={4} className="!m-0 !font-serif text-blue-900">{editingRole ? 'Chỉnh sửa định danh quyền' : 'Thiết lập quyền hạn mới'}</Title>}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={() => setIsModalOpen(false)}
-        okText="XÁC NHẬN"
-        cancelText="HỦY BỎ"
-        destroyOnClose
+        okText="XÁC NHẬN LƯU"
+        cancelText="BỎ QUA"
+        className="premium-admin-modal-blue"
+        centered
         width={500}
-        okButtonProps={{
-          style: { height: 44, borderRadius: 12, fontWeight: 700, paddingInline: 24 }
-        }}
-        cancelButtonProps={{
-          style: { height: 44, borderRadius: 12 }
-        }}
+        destroyOnClose
       >
         <Form
           form={form}
           layout="vertical"
-          style={{ marginTop: 12 }}
+          className="mt-8"
         >
           <Form.Item
             name="name"
-            label={<b style={{ color: '#64748b' }}>TÊN QUYỀN (VÍ DỤ: ADMIN, CUSTOMER)</b>}
+            label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Định danh (VÍ DỤ: MANAGER, EDITOR)</Text>}
             rules={[
-              { required: true, message: 'Vui lòng nhập tên quyền!' },
-              { pattern: /^[A-Z_]+$/, message: 'Tên quyền nên là chữ in hoa và dấu gạch dưới!' }
+              { required: true, message: 'Vui lòng nhập định danh!' },
+              { pattern: /^[A-Z_]+$/, message: 'Khuyến nghị: Viết HOA và dùng dấu gạch dưới' }
             ]}
           >
-            <Input 
-              placeholder="VÍ_DỤ: MODERATOR" 
-              style={{ height: 48, borderRadius: 12 }} 
-            />
+            <Input placeholder="VÍ DỤ: TECH_SUPPORT" className="h-12 rounded-2xl bg-white/60 border-none shadow-sm" />
           </Form.Item>
+
           <Form.Item
             name="description"
-            label={<b style={{ color: '#64748b' }}>MÔ TẢ CỦA QUYỀN</b>}
+            label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Mô tả phạm vi quyền hạn</Text>}
           >
-            <Input.TextArea 
-              rows={4} 
-              placeholder="Nhập chi tiết về quyền hạn này..." 
-              style={{ borderRadius: 12 }} 
-            />
+            <Input.TextArea rows={4} className="rounded-3xl bg-white/60 border-none p-4" placeholder="Ví dụ: Có quyền can thiệp vào kho hàng và sản phẩm..." />
           </Form.Item>
+          
+          <div className="flex items-center gap-4 text-text/30 text-[10px] font-bold uppercase tracking-widest justify-center mt-4">
+                <HistoryOutlined /> CHANGES WILL BE LOGGED IN SYSTEM AUDIT TRAIL
+          </div>
         </Form>
       </Modal>
+
+      <style>{`
+        .premium-admin-table-blue .ant-table {
+            background: transparent !important;
+        }
+        .premium-admin-table-blue .ant-table-thead > tr > th {
+            background: rgba(0, 0, 0, 0.02) !important;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.1em !important;
+            color: #94a3b8 !important;
+            padding: 24px !important;
+        }
+        .premium-admin-table-blue .ant-table-tbody > tr > td {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03) !important;
+            padding: 20px 24px !important;
+            transition: all 0.3s ease;
+        }
+        .premium-admin-table-blue .ant-table-tbody > tr:hover > td {
+            background: rgba(37, 99, 235, 0.03) !important;
+        }
+        .premium-admin-modal-blue .ant-modal-content {
+            border-radius: 3rem !important;
+            background: rgba(239, 246, 255, 0.8) !important;
+            backdrop-filter: blur(20px) !important;
+            border: 1px solid white !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            padding: 40px !important;
+        }
+        .premium-admin-modal-blue .ant-modal-header {
+            background: transparent !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+            padding-bottom: 24px !important;
+        }
+        .premium-admin-modal-blue .ant-modal-footer {
+            border-top: none !important;
+            margin-top: 32px !important;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+        .premium-admin-modal-blue .ant-modal-footer .ant-btn {
+            height: 56px !important;
+            padding: 0 40px !important;
+            border-radius: 2rem !important;
+            font-weight: 700 !important;
+            font-size: 12px !important;
+            letter-spacing: 0.1em !important;
+        }
+        .premium-admin-modal-blue .ant-btn-primary {
+            background: #2563eb !important;
+            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2) !important;
+        }
+      `}</style>
     </div>
   );
 };
