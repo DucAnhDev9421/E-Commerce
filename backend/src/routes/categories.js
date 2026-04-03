@@ -7,9 +7,13 @@ let { CheckLogin, CheckRole } = require('../utils/authHandler');
 router.get('/', async function (req, res, next) {
     try {
         let result = await categoryController.GetAllCategories();
-        res.send(result);
+        res.status(200).json({
+            success: true,
+            message: "Lấy danh sách category thành công",
+            data: result
+        });
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -17,10 +21,14 @@ router.get('/', async function (req, res, next) {
 router.get('/:id', async function (req, res, next) {
     try {
         let result = await categoryController.GetCategoryById(req.params.id);
-        if (!result) return res.status(404).send({ message: "Không tìm thấy category" });
-        res.send(result);
+        if (!result) return res.status(404).json({ success: false, message: "Không tìm thấy category", data: null });
+        res.status(200).json({
+            success: true,
+            message: "Lấy chi tiết category thành công",
+            data: result
+        });
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -28,9 +36,13 @@ router.get('/:id', async function (req, res, next) {
 router.post('/', CheckLogin, CheckRole('admin'), async function (req, res, next) {
     try {
         let result = await categoryController.CreateCategory(req.body);
-        res.send(result);
+        res.status(201).json({
+            success: true,
+            message: "Tạo category thành công",
+            data: result
+        });
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -38,10 +50,14 @@ router.post('/', CheckLogin, CheckRole('admin'), async function (req, res, next)
 router.put('/:id', CheckLogin, CheckRole('admin'), async function (req, res, next) {
     try {
         let result = await categoryController.UpdateCategory(req.params.id, req.body);
-        if (!result) return res.status(404).send({ message: "Không tìm thấy category để cập nhật" });
-        res.send(result);
+        if (!result) return res.status(404).json({ success: false, message: "Không tìm thấy category để cập nhật", data: null });
+        res.status(200).json({
+            success: true,
+            message: "Cập nhật category thành công",
+            data: result
+        });
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        next(error);
     }
 });
 
@@ -49,10 +65,14 @@ router.put('/:id', CheckLogin, CheckRole('admin'), async function (req, res, nex
 router.delete('/:id', CheckLogin, CheckRole('admin'), async function (req, res, next) {
     try {
         let result = await categoryController.DeleteCategory(req.params.id);
-        if (!result) return res.status(404).send({ message: "Không tìm thấy category để xóa" });
-        res.send({ message: "Xóa category thành công" });
+        if (!result) return res.status(404).json({ success: false, message: "Không tìm thấy category để xóa", data: null });
+        res.status(200).json({
+            success: true,
+            message: "Xóa category thành công",
+            data: null
+        });
     } catch (error) {
-        res.status(404).send({ message: error.message });
+        next(error);
     }
 });
 

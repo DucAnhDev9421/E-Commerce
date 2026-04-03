@@ -16,7 +16,8 @@ const BestSellers: React.FC = () => {
         const fetchProducts = async () => {
             try {
                 const res: any = await productApi.getAll();
-                setProducts(res);
+                // Backend returns { items, page, ... }
+                setProducts(res.items || []);
             } catch (error) {
                 console.error("Fetch best sellers error:", error);
             } finally {
@@ -27,7 +28,7 @@ const BestSellers: React.FC = () => {
     }, []);
 
     if (loading) {
-        return <div className="mt-32 text-center"><Spin size="large" tip="Đang tải sản phẩm..." /></div>;
+        return <div className="mt-32 text-center"><Spin size="large" description="Đang tải sản phẩm..." /></div>;
     }
 
     if (products.length === 0) {

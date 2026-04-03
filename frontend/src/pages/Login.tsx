@@ -17,12 +17,12 @@ const Login: React.FC = () => {
     dispatch(loginStart());
     try {
       const response: any = await authApi.login(values);
-      // axiosClient trả về response.data, nên kết quả là { success, data: { user, accessToken } }
-      const { user, accessToken } = response.data;
+      // axiosClient đã trả về response.data.data, nên kết quả chính là { user, accessToken }
+      const { user, accessToken } = response;
       
       dispatch(loginSuccess({ user, accessToken }));
       notification.success({
-        message: 'Đăng nhập thành công',
+        title: 'Đăng nhập thành công',
         description: `Chào mừng ${user?.fullName || 'khách'} đã quay trở lại!`,
         placement: 'topRight',
       });
@@ -39,7 +39,7 @@ const Login: React.FC = () => {
       const errorMessage = error?.message || 'Đăng nhập thất bại. Vui lòng thử lại!';
       dispatch(loginFailure(errorMessage));
       notification.error({
-        message: 'Lỗi đăng nhập',
+        title: 'Lỗi đăng nhập',
         description: errorMessage,
         placement: 'topRight',
       });

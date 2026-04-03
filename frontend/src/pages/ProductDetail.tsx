@@ -43,7 +43,10 @@ const ProductDetail: React.FC = () => {
           setMainImage(firstImage);
         }
       } catch (error: any) {
-        notification.error({ message: 'Lỗi tải sản phẩm', description: error?.message });
+        notification.error({
+          title: 'Lỗi tải chi tiết sản phẩm',
+          description: error?.message || 'Không thể lấy thông tin sản phẩm',
+        });
       } finally {
         setLoading(false);
       }
@@ -55,7 +58,7 @@ const ProductDetail: React.FC = () => {
     if (!product) return;
     dispatch(addItem({ ...product, qty: quantity }));
     notification.success({ 
-      message: 'Đã thêm vào giỏ hàng',
+      title: 'Đã thêm vào giỏ hàng',
       description: `${product.name} (x${quantity}) đã vào giỏ hàng.`,
       placement: 'bottomRight'
     });

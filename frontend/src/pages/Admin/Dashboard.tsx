@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
 
         const users = userRes.status === 'fulfilled' ? userRes.value : [];
         const cats = catRes.status === 'fulfilled' ? catRes.value : [];
-        const prods = prodRes.status === 'fulfilled' ? prodRes.value : [];
+        const prods = prodRes.status === 'fulfilled' ? (prodRes.value.items || []) : [];
         const roles = roleRes.status === 'fulfilled' ? roleRes.value : [];
 
         setCategories(cats);

@@ -15,7 +15,7 @@ const Register: React.FC = () => {
     try {
       await authApi.register(values);
       notification.success({
-        message: 'Đăng ký thành công',
+        title: 'Đăng ký thành công',
         description: 'Tài khoản của bạn đã được tạo. Vui lòng đăng nhập!',
         placement: 'topRight',
       });
@@ -23,7 +23,7 @@ const Register: React.FC = () => {
     } catch (error: any) {
       const errorMessage = error?.message || 'Đăng ký thất bại. Vui lòng thử lại!';
       notification.error({
-        message: 'Lỗi đăng ký',
+        title: 'Lỗi đăng ký',
         description: errorMessage,
         placement: 'topRight',
       });

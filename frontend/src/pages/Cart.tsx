@@ -24,7 +24,7 @@ const Cart: React.FC = () => {
   const handleRemoveItem = (id: string) => {
     dispatch(removeFromCart(id));
     notification.success({ 
-      message: 'Đã xóa sản phẩm',
+      title: 'Đã xóa sản phẩm',
       description: 'Sản phẩm đã được xóa khỏi giỏ hàng của bạn.',
       placement: 'bottomRight'
     });

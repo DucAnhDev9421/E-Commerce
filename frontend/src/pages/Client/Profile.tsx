@@ -79,7 +79,7 @@ useEffect(() => {
       personalForm.setFieldsValue(data);
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: error.message || 'Không thể lấy thông tin người dùng',
       });
     } finally {
@@ -101,17 +101,17 @@ useEffect(() => {
   const handleDeleteAddress = async (id: string) => {
     try {
       await addressApi.delete(id);
-      notification.success({ message: 'Đã xóa địa chỉ' });
+      notification.success({ title: 'Đã xóa địa chỉ' });
       fetchAddresses();
     } catch (error: any) {
-      notification.error({ message: 'Lỗi', description: error.message });
+      notification.error({ title: 'Lỗi', description: error.message });
     }
   };
 
   const handleSetDefaultAddress = async (id: string) => {
     try {
       await addressApi.setDefault(id);
-      notification.success({ message: 'Đã cập nhật địa chỉ mặc định' });
+      notification.success({ title: 'Đã cập nhật địa chỉ mặc định' });
       fetchAddresses();
     } catch (error: any) {
       notification.error({ message: 'Lỗi', description: error.message });
@@ -122,13 +122,13 @@ useEffect(() => {
     setLoading(true);
     try {
       await addressApi.create(values);
-      notification.success({ message: 'Thêm địa chỉ thành công' });
+      notification.success({ title: 'Thêm địa chỉ thành công' });
       setIsAddressModalOpen(false);
       addressForm.resetFields();
       fetchAddresses(); // Tải lại danh sách địa chỉ
     } catch (error: any) {
       notification.error({ 
-        message: 'Lỗi', 
+        title: 'Lỗi', 
         description: error.message || 'Không thể thêm địa chỉ' 
       });
     } finally {
@@ -148,12 +148,12 @@ useEffect(() => {
       dispatch(updateUser(updatedUser)); // Cập nhật Redux store (Header, v.v...)
       setIsEditing(false);
       notification.success({
-        message: 'Thành công',
+        title: 'Thành công',
         description: 'Cập nhật thông tin cá nhân thành công',
       });
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi',
+        title: 'Lỗi',
         description: error.message || 'Cập nhật thất bại',
       });
     } finally {
@@ -163,7 +163,7 @@ useEffect(() => {
 
   const handleUpdatePassword = async (values: any) => {
     if (!userData?._id) {
-      return notification.error({ message: 'Lỗi', description: 'Không tìm thấy thông tin người dùng' });
+      return notification.error({ title: 'Lỗi', description: 'Không tìm thấy thông tin người dùng' });
     }
 
     setLoading(true);
@@ -172,11 +172,11 @@ useEffect(() => {
         oldPassword: values.oldPassword,
         newPassword: values.newPassword
       });
-      notification.success({ message: 'Đổi mật khẩu thành công' });
+      notification.success({ title: 'Đổi mật khẩu thành công' });
       passwordForm.resetFields();
     } catch (error: any) {
       notification.error({ 
-        message: 'Lỗi', 
+        title: 'Lỗi', 
         description: error.message || 'Không thể đổi mật khẩu'
       });
     } finally {
@@ -200,14 +200,14 @@ useEffect(() => {
           setUserData(updatedUser);
           dispatch(updateUser(updatedUser));
           notification.success({ 
-            message: 'Thành công', 
+            title: 'Thành công', 
             description: 'Thay đổi ảnh đại diện mới thành công' 
           });
         }
       } catch (error: any) {
         console.error('LỖI UPLOAD AVATAR:', error);
         notification.error({
-          message: 'Lỗi upload',
+          title: 'Lỗi upload',
           description: error.message || 'Không thể tải ảnh. Vui lòng thử lại sau.'
         });
       } finally {
@@ -226,7 +226,7 @@ useEffect(() => {
       onFinishFailed={(errorInfo) => {
         console.log('Validation Failed:', errorInfo);
         notification.error({
-          message: 'Lỗi validation',
+          title: 'Lỗi validation',
           description: 'Vui lòng kiểm tra lại các trường thông tin.',
         });
       }}

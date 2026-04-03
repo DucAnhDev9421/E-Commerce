@@ -129,3 +129,74 @@ ecommerce-project/
     ├── .env              # Biến môi trường Frontend (VITE_API_BASE_URL)
     ├── tailwind.config.js
     └── package.json      # Dependencies riêng của Frontend
+132: 
+133: ---
+134: 
+135: ## 7. API Endpoints (Current Status)
+136: 
+137: Tất cả các API đều bắt đầu bằng prefix: `/api/v1` (ngoại trừ Health Check).
+138: 
+139: ### 7.1. Auth Module (`/auth`)
+140: - `POST /register`: Đăng ký người dùng mới.
+141: - `POST /login`: Đăng nhập, nhận Access Token (JSON) và Refresh Token (Cookie).
+142: - `POST /refresh-token`: Lấy Access Token mới bằng Refresh Token.
+143: - `POST /logout`: Đăng xuất, xóa Refresh Token.
+144: 
+145: ### 7.2. User Module (`/users`)
+146: - `GET /`: Lấy danh sách user (Quyền: `ADMIN`).
+147: - `GET /:id`: Lấy chi tiết user.
+148: - `POST /`: Tạo user mới (Quyền: `ADMIN`).
+149: - `PUT /:id`: Cập nhật thông tin user.
+150: - `PUT /:id/change-password`: Đổi mật khẩu.
+151: - `DELETE /:id`: Xóa user (Soft delete) (Quyền: `ADMIN`).
+152: 
+153: ### 7.3. Product Module (`/products`)
+154: - `GET /`: Lấy danh sách sản phẩm (Public, hỗ trợ query filter).
+155: - `GET /:id`: Chi tiết sản phẩm (Public).
+156: - `POST /`: Tạo sản phẩm (Quyền: `ADMIN`).
+157: - `PUT /:id`: Cập nhật sản phẩm (Quyền: `ADMIN`).
+158: - `DELETE /:id`: Xóa sản phẩm (Quyền: `ADMIN`).
+159: 
+160: ### 7.4. Category Module (`/categories`)
+161: - `GET /`: Lấy danh sách danh mục (Public).
+162: - `GET /:id`: Chi tiết danh mục (Public).
+163: - `POST /`: Tạo danh mục (Quyền: `ADMIN`).
+164: - `PUT /:id`: Cập nhật danh mục (Quyền: `ADMIN`).
+165: - `DELETE /:id`: Xóa danh mục (Quyền: `ADMIN`).
+166: 
+167: ### 7.5. Cart Module (`/carts`)
+168: - `GET /`: Lấy giỏ hàng của user hiện tại.
+169: - `POST /items`: Thêm sản phẩm vào giỏ.
+170: - `PATCH /items/:productId`: Cập nhật số lượng sản phẩm trong giỏ.
+171: - `DELETE /items/:productId`: Xóa sản phẩm khỏi giỏ.
+172: - `DELETE /clear`: Xóa sạch giỏ hàng.
+173: 
+174: ### 7.6. Address Module (`/addresses`)
+175: - `GET /`: Lấy danh sách địa chỉ của user.
+176: - `GET /:id`: Chi tiết địa chỉ.
+177: - `POST /`: Tạo địa chỉ mới.
+178: - `PUT /:id`: Cập nhật địa chỉ.
+179: - `DELETE /:id`: Xóa địa chỉ.
+180: 
+181: ### 7.7. Other Modules
+182: - **Upload (`/upload`):** `POST /` - Upload image (Single file, field name: `image`).
+183: - **Roles (`/roles`):** CRUD cho Role (Hiện tại đang mở công khai, cần check lại auth).
+184: - **Product Images (`/product-images`):** Quản lý ảnh phụ của sản phẩm.
+185: - **Health Check:** `GET /api/health` - Kiểm tra trạng thái server.
+186: 
+187: ### 7.8. Pending Modules (Chưa triển khai)
+188: - **Orders / OrderItems:** Luồng Checkout và Quản lý đơn hàng.
+189: - **Payments:** Tích hợp cổng thanh toán VNPay.
+190: - **Reviews:** Đánh giá sản phẩm.
+191: - **Notifications:** Thông báo hệ thống & Real-time.
+192: 
+193: ---
+194: 
+195: ## 8. Development Progress
+196: - [x] Base Architecture (Express, Mongo, Middlewares)
+197: - [x] Authentication (JWT, Refresh Token)
+198: - [x] User, Product, Category, Cart, Address CRUD
+199: - [ ] Order processing with Transactions
+200: - [ ] VNPay Integration
+201: - [ ] Real-time Notifications (Socket.io)
+202: - [ ] Review System

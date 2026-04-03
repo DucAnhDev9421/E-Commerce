@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Typography, Avatar, Dropdown, Badge } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge, theme } from 'antd';
 import {
   DashboardOutlined,
   UserOutlined,
@@ -22,7 +22,6 @@ import type { Role } from '../types/auth';
 import { getAvatarUrl } from '../utils/imageUtils';
 
 const { Header, Sider, Content } = Layout;
-const { Title, Text } = Typography;
 
 const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -30,6 +29,7 @@ const AdminLayout: React.FC = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   const handleLogout = () => {
     dispatch(logout());
