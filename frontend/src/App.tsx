@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntdApp } from 'antd';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
@@ -34,7 +34,8 @@ function App() {
         }
       }}
     >
-      <Router>
+      <AntdApp>
+        <Router>
         <Routes>
           {/* Public Routes with MainLayout */}
           <Route element={<MainLayout />}>
@@ -68,7 +69,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-    </ConfigProvider>
+    </AntdApp>
+  </ConfigProvider>
   );
 }
 

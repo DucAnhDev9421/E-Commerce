@@ -1,4 +1,5 @@
 let UserModel = require('../schemas/users');
+let RoleModel = require('../schemas/roles');
 let AddressModel = require('../schemas/addresses');
 let bcrypt = require('bcryptjs');
 
@@ -11,7 +12,7 @@ let bcrypt = require('bcryptjs');
  * - Tạo address mặc định
  */
 let RegisterUser = async function (data, session) {
-    // 1. Chuẩn hóa dữ liệu về chữ thường (toLowerCase)
+    // Chuẩn hóa dữ liệu về chữ thường (toLowerCase)
     const username = data.username.toLowerCase();
     const email = data.email.toLowerCase();
 
@@ -33,7 +34,7 @@ let RegisterUser = async function (data, session) {
             .filter(user => user.isDeleted)
             .map(user => user._id);
         
-        // 3. Nếu tìm thấy user đã bị xóa mềm, Xóa vĩnh viễn chúng để giải phóng Index
+        // Nếu tìm thấy user đã bị xóa mềm, Xóa vĩnh viễn chúng để giải phóng Index
         if (deletedIds.length > 0) {
             await UserModel.deleteMany(
                 { _id: { $in: deletedIds } }, 
@@ -42,7 +43,7 @@ let RegisterUser = async function (data, session) {
             console.log(`Đã dọn dẹp vĩnh viễn ${deletedIds.length} tài khoản cũ đã bị xóa.`);
         }
 
-        // 4. Kiểm tra xem còn bất kỳ tài khoản nào đang HOẠT ĐỘNG trùng thông tin không
+        // Kiểm tra xem còn bất kỳ tài khoản nào đang HOẠT ĐỘNG trùng thông tin không
         const activeUser = duplicates.find(user => !user.isDeleted);
         if (activeUser) {
             let error = new Error("Email hoặc tên đăng nhập đã được sử dụng bởi một tài khoản khác.");
@@ -51,11 +52,18 @@ let RegisterUser = async function (data, session) {
         }
     }
 
-    // 5. Hash password và cập nhật dữ liệu đã chuẩn hóa
+    // Hash password và cập nhật dữ liệu đã chuẩn hóa
     let salt = bcrypt.genSaltSync(10);
     data.password = bcrypt.hashSync(data.password, salt);
     data.username = username;
     data.email = email;
+
+    // Gán Role mặc định là CUSTOMER
+    let customerRole = await RoleModel.findOne({ name: 'CUSTOMER' });
+    if (!customerRole) {
+        throw new Error("Hệ thống chưa cấu hình Role 'CUSTOMER'. Vui lòng liên hệ Admin.");
+    }
+    data.role = customerRole._id;
 
     let user = new UserModel(data);
     let savedUser = await user.save({ session: session });

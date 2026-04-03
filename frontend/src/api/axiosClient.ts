@@ -94,7 +94,7 @@ axiosClient.interceptors.response.use(
       } catch (refreshError) {
         // Nếu refresh token cũng thất bại (hết hạn hoàn toàn)
         processQueue(refreshError, null);
-        store.dispatch(logout()); // Logout người dùng
+        // store.dispatch(logout()); // Logout người dùng
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

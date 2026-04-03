@@ -15,7 +15,8 @@ import {
   Divider,
   Tag,
   Modal,
-  Switch
+  Switch,
+  Select
 } from 'antd';
 import { 
   UserOutlined, 
@@ -53,6 +54,54 @@ const Profile: React.FC = () => {
 const [addresses, setAddresses] = useState<Address[]>([]);
 const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 const [avatarLoading, setAvatarLoading] = useState(false);
+const [provinces, setProvinces] = useState<any[]>([]);
+const [districts, setDistricts] = useState<any[]>([]);
+const [wards, setWards] = useState<any[]>([]);
+
+// Tải danh sách Tỉnh/Thành
+useEffect(() => {
+    const fetchProvinces = async () => {
+        try {
+            const resp = await fetch('https://provinces.open-api.vn/api/p/');
+            const data = await resp.json();
+            setProvinces(data);
+        } catch (error) {
+            console.error('Lỗi tải tỉnh thành:', error);
+        }
+    };
+    fetchProvinces();
+}, []);
+
+// Khi chọn Tỉnh -> Tải Quận
+const handleProvinceChange = async (provinceName: string, option: any) => {
+    addressForm.setFieldsValue({ district: undefined, ward: undefined });
+    setDistricts([]);
+    setWards([]);
+    
+    try {
+        const provinceCode = option.key;
+        const resp = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+        const data = await resp.json();
+        setDistricts(data.districts || []);
+    } catch (error) {
+        console.error('Lỗi tải quận huyện:', error);
+    }
+};
+
+// Khi chọn Quận -> Tải Phường
+const handleDistrictChange = async (districtName: string, option: any) => {
+    addressForm.setFieldsValue({ ward: undefined });
+    setWards([]);
+
+    try {
+        const districtCode = option.key;
+        const resp = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+        const data = await resp.json();
+        setWards(data.wards || []);
+    } catch (error) {
+        console.error('Lỗi tải phường xã:', error);
+    }
+};
 
 const fetchAddresses = async () => {
   try {
@@ -63,20 +112,24 @@ const fetchAddresses = async () => {
   }
 };
 
-// Gọi fetchAddresses khi component mount
-useEffect(() => {
-  fetchUserData();
-  fetchAddresses();
-}, [currentUser?._id]);
-
   // Fetch latest user data
   const fetchUserData = async () => {
-    if (!currentUser?._id) return;
+    // 1. Lấy ID linh hoạt (fallback từ _id sang id)
+    const currentUserId = currentUser?._id || (currentUser as any)?.id;
+    
+    if (!currentUserId) return;
     setLoading(true);
     try {
-      const data = await userApi.getById(currentUser._id);
-      setUserData(data);
-      personalForm.setFieldsValue(data);
+      const resp: any = await userApi.getById(currentUserId);
+      // Map id -> _id ngay tại đây để đồng bộ
+      if (resp && !resp._id && resp.id) {
+        resp._id = resp.id;
+      }
+      setUserData(resp);
+      personalForm.setFieldsValue(resp);
+      
+      // 2. Đồng bộ ngược lên Redux để Header và các component khác nhận được _id chuẩn
+      dispatch(updateUser(resp));
     } catch (error: any) {
       notification.error({
         message: 'Lỗi',
@@ -87,9 +140,15 @@ useEffect(() => {
     }
   };
 
+  // 3. Theo dõi cả _id và id để tránh effect bị kẹt khi loginSuccess mới hoàn tất
   useEffect(() => {
-    fetchUserData();
-  }, [currentUser?._id]);
+    const cid = currentUser?._id || (currentUser as any)?.id;
+    if (cid) {
+      fetchUserData();
+      fetchAddresses();
+    }
+  }, [currentUser?._id, (currentUser as any)?.id]);
+
 
   // Đồng bộ dữ liệu vào form khi userData thay đổi
   useEffect(() => {
@@ -162,27 +221,36 @@ useEffect(() => {
   };
 
   const handleUpdatePassword = async (values: any) => {
-    if (!userData?._id) {
-      return notification.error({ message: 'Lỗi', description: 'Không tìm thấy thông tin người dùng' });
+    // Lấy ID an toàn nhất từ mọi nguồn
+    const userId = currentUser?._id || (currentUser as any)?.id || userData?._id || (userData as any)?.id; 
+
+    if (!userId) {
+        return notification.error({ 
+            message: 'Lỗi', 
+            description: 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại' 
+        });
     }
 
     setLoading(true);
     try {
-      await userApi.changePassword(userData._id, {
-        oldPassword: values.oldPassword,
-        newPassword: values.newPassword
-      });
-      notification.success({ message: 'Đổi mật khẩu thành công' });
-      passwordForm.resetFields();
+        // 2. Gọi API đổi mật khẩu
+        await userApi.changePassword(userId, {
+            oldPassword: values.oldPassword,
+            newPassword: values.newPassword
+        });
+
+        notification.success({ message: 'Đổi mật khẩu thành công' });
+        passwordForm.resetFields();
     } catch (error: any) {
-      notification.error({ 
-        message: 'Lỗi', 
-        description: error.message || 'Không thể đổi mật khẩu'
-      });
+        // 3. Hiển thị lỗi từ Backend (ví dụ: Mật khẩu cũ không khớp)
+        notification.error({ 
+            message: 'Lỗi', 
+            description: error.message || 'Không thể đổi mật khẩu'
+        });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const handleAvatarChange: UploadProps['onChange'] = async (info) => {
     // Khi dùng beforeUpload={() => false}, Ant Design sẽ không tự động upload
@@ -615,18 +683,39 @@ useEffect(() => {
                     <Form.Item
                         label={<span className="font-medium text-gray-600">Tỉnh/Thành phố</span>}
                         name="city"
-                        rules={[{ required: true, message: 'Vui lòng nhập Tỉnh/Thành' }]}
+                        rules={[{ required: true, message: 'Vui lòng chọn Tỉnh/Thành' }]}
                     >
-                        <Input size="large" placeholder="Ví dụ: Hà Nội" className="rounded-lg" />
+                        <Select 
+                            showSearch
+                            size="large" 
+                            placeholder="Chọn Tỉnh/Thành" 
+                            className="rounded-lg w-full"
+                            onChange={handleProvinceChange}
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                            options={provinces.map(p => ({ label: p.name, value: p.name, key: p.code }))}
+                        />
                     </Form.Item>
                 </Col>
                 <Col span={12}>
                     <Form.Item
                         label={<span className="font-medium text-gray-600">Quận/Huyện</span>}
                         name="district"
-                        rules={[{ required: true, message: 'Vui lòng nhập Quận/Huyện' }]}
+                        rules={[{ required: true, message: 'Vui lòng chọn Quận/Huyện' }]}
                     >
-                        <Input size="large" placeholder="Ví dụ: Ba Đình" className="rounded-lg" />
+                        <Select 
+                            showSearch
+                            size="large" 
+                            placeholder="Chọn Quận/Huyện" 
+                            className="rounded-lg w-full"
+                            disabled={!districts.length}
+                            onChange={handleDistrictChange}
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                            options={districts.map(d => ({ label: d.name, value: d.name, key: d.code }))}
+                        />
                     </Form.Item>
                 </Col>
             </Row>
@@ -634,9 +723,19 @@ useEffect(() => {
             <Form.Item
                 label={<span className="font-medium text-gray-600">Phường/Xã</span>}
                 name="ward"
-                rules={[{ required: true, message: 'Vui lòng nhập Phường/Xã' }]}
+                rules={[{ required: true, message: 'Vui lòng chọn Phường/Xã' }]}
             >
-                <Input size="large" placeholder="Nhập Phường/Xã" className="rounded-lg" />
+                <Select 
+                    showSearch
+                    size="large" 
+                    placeholder="Chọn Phường/Xã" 
+                    className="rounded-lg w-full"
+                    disabled={!wards.length}
+                    filterOption={(input, option) =>
+                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                    options={wards.map(w => ({ label: w.name, value: w.name }))}
+                />
             </Form.Item>
 
             <Form.Item

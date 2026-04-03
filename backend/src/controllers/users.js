@@ -81,10 +81,43 @@ let DeleteAnUser = async function (id) {
 };
 
 
+/**
+ * Change password
+ */
+let ChangePassword = async function (id, oldPassword, newPassword) {
+    let user = await UserModel.findOne({ _id: id, isDeleted: false });
+    if (!user) {
+        throw new Error("Người dùng không tồn tại");
+    }
+
+    // Kiểm tra mật khẩu cũ
+    const isMatch = bcrypt.compareSync(oldPassword, user.password);
+    if (!isMatch) {
+        throw new Error("Mật khẩu cũ không chính xác");
+    }
+
+    // Validation mật khẩu mới
+    if (newPassword === oldPassword) {
+        throw new Error("Mật khẩu mới phải khác mật khẩu cũ");
+    }
+
+    if (newPassword.length < 6) {
+        throw new Error("Mật khẩu mới phải có ít nhất 6 ký tự");
+    }
+
+    // Hash và cập nhật
+    let salt = bcrypt.genSaltSync(10);
+    user.password = bcrypt.hashSync(newPassword, salt);
+    
+    return await user.save();
+};
+
+
 module.exports = {
     CreateAnUser,
     GetAllUsers,
     GetAnUserById,
     UpdateAnUser,
-    DeleteAnUser
+    DeleteAnUser,
+    ChangePassword
 };
