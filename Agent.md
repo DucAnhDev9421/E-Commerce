@@ -196,7 +196,7 @@ ecommerce-project/
 196: - [x] Base Architecture (Express, Mongo, Middlewares)
 197: - [x] Authentication (JWT, Refresh Token)
 198: - [x] User, Product, Category, Cart, Address CRUD
-199: - [ ] Order processing with Transactions
+199: - [x] Order processing with Transactions
 200: - [ ] VNPay Integration
 201: - [ ] Real-time Notifications (Socket.io)
-202: - [ ] Review System
+202: - [ ] Review System
