@@ -2,6 +2,7 @@ let UserModel = require('../schemas/users');
 let RoleModel = require('../schemas/roles');
 let AddressModel = require('../schemas/addresses');
 let bcrypt = require('bcryptjs');
+let jwt = require('jsonwebtoken');
 
 
 /**
@@ -115,9 +116,56 @@ let UpdateRefreshToken = async function (userId, token) {
 };
 
 
+/**
+ * Refresh access token logic
+ */
+let RefreshAccessToken = async function (refreshToken) {
+    if (!refreshToken) {
+        let error = new Error("Phiên đăng nhập hết hạn");
+        error.status = 401;
+        throw error;
+    }
+
+    try {
+        // Verify token
+        let decoded = jwt.verify(
+            refreshToken,
+            process.env.JWT_REFRESH_SECRET
+        );
+
+        // Tìm user và kiểm tra token trong DB
+        let userDB = await UserModel.findById(decoded.id);
+
+        if (!userDB || userDB.refreshToken !== refreshToken) {
+            let error = new Error("Phiên làm việc không hợp lệ hoặc đã hết hạn");
+            error.status = 403;
+            throw error;
+        }
+
+        // Tạo access token mới
+        let newAccessToken = jwt.sign(
+            { id: userDB._id },
+            process.env.JWT_ACCESS_SECRET,
+            { expiresIn: '15m' }
+        );
+
+        return newAccessToken;
+
+    } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+            let error = new Error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
+            error.status = 401;
+            throw error;
+        }
+        throw err;
+    }
+};
+
+
 module.exports = {
     RegisterUser,
     LoginUser,
     UpdateLoginStatus,
-    UpdateRefreshToken
+    UpdateRefreshToken,
+    RefreshAccessToken
 };

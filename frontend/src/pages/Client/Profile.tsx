@@ -121,16 +121,20 @@ const fetchAddresses = async () => {
     setLoading(true);
     try {
       const resp: any = await userApi.getById(currentUserId);
+      
       // Map id -> _id ngay tại đây để đồng bộ
       if (resp && !resp._id && resp.id) {
         resp._id = resp.id;
       }
-      setUserData(resp);
+      
+      // Đảm bảo state được cập nhật với object mới nhất để UI re-render (bao gồm avatarUrl)
+      setUserData({ ...resp });
       personalForm.setFieldsValue(resp);
       
-      // 2. Đồng bộ ngược lên Redux để Header và các component khác nhận được _id chuẩn
+      // 2. Đồng bộ ngược lên Redux để Header và các component khác nhận được avatar mới
       dispatch(updateUser(resp));
     } catch (error: any) {
+      console.error('Lỗi lấy thông tin cá nhân:', error);
       notification.error({
         message: 'Lỗi',
         description: error.message || 'Không thể lấy thông tin người dùng',
