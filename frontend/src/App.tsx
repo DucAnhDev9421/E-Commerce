@@ -5,14 +5,14 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import Profile from './pages/Client/Profile';
 import PrivateRoutes from './middleware/PrivateRoutes';
+
 import MainLayout from './components/MainLayout';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/Admin/Dashboard';
 import Roles from './pages/Admin/Roles';
-import Categories from './pages/Admin/Categories';
-import Products from './pages/Admin/Products';
-import Users from './pages/Admin/Users';
+import AdminUsers from './pages/Admin/Users';
 
 function App() {
   return (
@@ -51,7 +51,7 @@ function App() {
           {/* Protected Routes for Auth Users */}
           <Route element={<PrivateRoutes />}>
             <Route element={<MainLayout />}>
-              <Route path="/profile" element={<div className="p-20 text-center"><h1>Trang Cá Nhân</h1><p>Thông tin của bạn sẽ hiển thị ở đây.</p></div>} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
           </Route>
 
@@ -60,9 +60,7 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/roles" element={<Roles />} />
-              <Route path="/admin/categories" element={<Categories />} />
-              <Route path="/admin/products" element={<Products />} />
-              <Route path="/admin/users" element={<Users />} />
+              <Route path="/admin/users" element={<AdminUsers />} />
             </Route>
           </Route>
 

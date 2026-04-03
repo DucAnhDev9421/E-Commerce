@@ -1,414 +1,588 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  Table, Button, Space, Modal, Form, Input, notification,
-  Popconfirm, Typography, Tag, Tooltip, Avatar, Row, Col, Card,
-  Empty, Select, Badge, Drawer, Divider
+import React, { useEffect, useState } from 'react';
+import { 
+  Table, 
+  Tag, 
+  Space, 
+  Button, 
+  Input, 
+  Select, 
+  Modal, 
+  Form, 
+  Avatar, 
+  Typography, 
+  notification, 
+  Popconfirm,
+  Tooltip,
+  Upload
 } from 'antd';
-import {
-  EditOutlined, DeleteOutlined, UserOutlined,
-  SearchOutlined, ReloadOutlined, EyeOutlined, MailOutlined,
-  PhoneOutlined, UserAddOutlined, TeamOutlined, FilterOutlined
+import { 
+  UserOutlined,
+  PlusOutlined,
+  LoadingOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  LockOutlined,
+  UnlockOutlined
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
 import userApi from '../../api/userApi';
 import roleApi from '../../api/roleApi';
+import uploadApi from '../../api/uploadApi';
+import type { User, Role } from '../../types/auth';
+import { getAvatarUrl, BASE_URL } from '../../utils/imageUtils';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
+const { Option } = Select;
 
 const Users: React.FC = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any | null>(null);
-  const [viewUser, setViewUser] = useState<any | null>(null);
   const [searchText, setSearchText] = useState('');
-  const [filterRole, setFilterRole] = useState<string>('');
-  const [form] = Form.useForm();
+  const [filterRole, setFilterRole] = useState<string | null>(null);
+  
+  // Modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm] = Form.useForm();
+  const [addForm] = Form.useForm();
 
-  const fetchData = useCallback(async () => {
+  // Upload states
+  const [uploading, setUploading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+
+
+  const fetchUsers = async () => {
     setLoading(true);
     try {
-      const [userRes, roleRes]: any = await Promise.all([
-        userApi.getAll(),
-        roleApi.getAll()
-      ]);
-      setUsers(userRes);
-      setFiltered(userRes);
-      setRoles(roleRes);
+      const response = await userApi.getAll();
+      setUsers(response as any);
     } catch (error: any) {
       notification.error({
         message: 'Lỗi tải danh sách người dùng',
-        description: error?.message || 'Có lỗi xảy ra',
+        description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const response = await roleApi.getAll();
+      setRoles(response as any);
+    } catch (error) {
+      console.error('Lỗi tải danh sách quyền:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    fetchRoles();
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Search and filter
-  useEffect(() => {
-    let result = [...users];
-    if (searchText.trim()) {
-      const q = searchText.toLowerCase();
-      result = result.filter(u =>
-        u.fullName?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.username?.toLowerCase().includes(q)
-      );
-    }
-    if (filterRole) {
-      result = result.filter(u => 
-        (typeof u.role === 'object' ? u.role?._id : u.role) === filterRole
-      );
-    }
-    setFiltered(result);
-  }, [searchText, filterRole, users]);
-
-  const handleAdd = () => {
-    setEditingUser(null);
-    form.resetFields();
-    setIsModalOpen(true);
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchText(e.target.value);
   };
 
-  const handleEdit = (record: any) => {
-    setEditingUser(record);
-    form.setFieldsValue({
-        ...record,
-        role: typeof record.role === 'object' ? record.role?._id : record.role
+  const handleFilterRole = (value: string | null) => {
+    setFilterRole(value);
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchText.toLowerCase()) ||
+      user.username.toLowerCase().includes(searchText.toLowerCase());
+    
+    const roleId = (user.role && typeof user.role === 'object') ? user.role._id : user.role;
+    const matchesRole = filterRole ? roleId === filterRole : true;
+    
+    return matchesSearch && matchesRole;
+  });
+
+  const handleEdit = (user: User) => {
+    setEditingUser(user);
+    const roleId = (user.role && typeof user.role === 'object') ? user.role._id : user.role;
+    setImageUrl(user.avatarUrl ? `${BASE_URL}${user.avatarUrl}` : null);
+    editForm.setFieldsValue({
+      fullName: user.fullName,
+      phone: user.phone,
+      roleId: roleId,
+      avatarUrl: user.avatarUrl
     });
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleView = (record: any) => {
-    setViewUser(record);
-    setIsViewOpen(true);
+  const handleUpload = async (options: any, form: any) => {
+    const { file, onSuccess, onError } = options;
+    setUploading(true);
+    try {
+      const response: any = await uploadApi.uploadImage(file as File);
+      // Assuming response path is format: { data: "/uploads/abc.jpg" } or { path: "/uploads/abc.jpg" }
+      // Check message summary for expected format. Backend generally returns { success: true, data: "/path" }
+      const photoPath = response.avatarUrl;
+      
+      const fullUrl = `${BASE_URL}${photoPath}`;
+      setImageUrl(fullUrl);
+      form.setFieldsValue({ avatarUrl: photoPath });
+      
+      notification.success({ message: 'Tải ảnh lên thành công' });
+      if (onSuccess) onSuccess("ok");
+    } catch (error: any) {
+      notification.error({ message: 'Tải ảnh lên thất bại' });
+      if (onError) onError(error);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await userApi.delete(id);
-      notification.success({ message: '✅ Xóa người dùng thành công' });
-      fetchData();
+      notification.success({ message: 'Xóa người dùng thành công' });
+      fetchUsers();
     } catch (error: any) {
       notification.error({
-        message: 'Lỗi xóa người dùng',
-        description: error?.message,
+        message: 'Xóa người dùng thất bại',
+        description: error.response?.data?.message || 'Vui lòng thử lại sau',
       });
     }
   };
 
-  const handleModalOk = async () => {
+  const handleToggleLock = async (user: User) => {
+    const isLocked = user.lockTime && new Date(user.lockTime).getTime() > Date.now();
+    // Use clear lockTime or set it 100 years ahead
+    const newLockTime = isLocked ? null : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
+    
     try {
-      const values = await form.validateFields();
-      if (editingUser) {
-        await userApi.update(editingUser._id, values);
-        notification.success({ message: '✅ Cập nhật người dùng thành công' });
-      } else {
-        await userApi.create(values);
-        notification.success({ message: '✅ Thêm người dùng mới thành công' });
-      }
-      setIsModalOpen(false);
-      fetchData();
+      await userApi.update(user._id, { lockTime: newLockTime });
+      notification.success({ 
+        message: isLocked ? 'Mở khóa người dùng thành công' : 'Khóa người dùng thành công' 
+      });
+      fetchUsers();
     } catch (error: any) {
-      if (error?.name !== 'ValidationError') {
-        notification.error({
-          message: 'Lỗi lưu thông tin',
-          description: error?.message,
-        });
-      }
+      notification.error({
+        message: 'Thao tác thất bại',
+        description: error.response?.data?.message || 'Vui lòng thử lại sau',
+      });
     }
   };
 
-  const columns = [
+  const onFinishEdit = async (values: any) => {
+    if (!editingUser) return;
+    
+    try {
+      await userApi.update(editingUser._id, {
+        fullName: values.fullName,
+        phone: values.phone,
+        role: values.roleId,
+        avatarUrl: values.avatarUrl
+      });
+      notification.success({ message: 'Cập nhật người dùng thành công' });
+      setIsEditModalOpen(false);
+      fetchUsers();
+    } catch (error: any) {
+      notification.error({
+        message: 'Cập nhật thất bại',
+        description: error.response?.data?.message || 'Vui lòng thử lại sau',
+      });
+    }
+  };
+
+  const onFinishAdd = async (values: any) => {
+    try {
+      await userApi.create({
+        ...values,
+        role: values.roleId,
+        avatarUrl: values.avatarUrl
+      });
+      notification.success({ message: 'Thêm người dùng mới thành công' });
+      setIsAddModalOpen(false);
+      addForm.resetFields();
+      setImageUrl(null);
+      fetchUsers();
+    } catch (error: any) {
+      notification.error({
+        message: 'Thêm người dùng thất bại',
+        description: error.response?.data?.message || 'Vui lòng thử lại sau',
+      });
+    }
+  };
+
+  const columns: ColumnsType<User> = [
     {
-      title: 'Người dùng',
-      dataIndex: 'fullName',
-      key: 'name',
-      render: (text: string, record: any) => (
-        <Space size="middle">
-          <Avatar 
-            src={record.avatarUrl} 
-            icon={<UserOutlined />} 
-            size={48}
-            style={{ 
-                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                boxShadow: '0 4px 10px rgba(59,130,246,0.2)'
-            }} 
-          />
-          <div>
-            <Title level={5} style={{ margin: 0, fontSize: 15 }}>{text || 'Chưa cập nhật'}</Title>
-            <Text type="secondary" style={{ fontSize: 12 }}>@{record.username}</Text>
-          </div>
-        </Space>
+      title: 'Avatar',
+      dataIndex: 'avatarUrl',
+      key: 'avatar',
+      width: 80,
+      render: (url, record) => (
+        <Avatar 
+          src={getAvatarUrl(url) || undefined} 
+          icon={<UserOutlined />} 
+          className="bg-blue-500 shadow-sm"
+        >
+          {record.fullName.charAt(0)}
+        </Avatar>
       ),
     },
     {
-      title: 'Liên hệ',
-      key: 'contact',
-      render: (_: any, record: any) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <Space><MailOutlined style={{ fontSize: 12, color: '#94a3b8' }} /> <Text style={{ fontSize: 13 }}>{record.email}</Text></Space>
-          <Space><PhoneOutlined style={{ fontSize: 12, color: '#94a3b8' }} /> <Text style={{ fontSize: 13 }}>{record.phone || '—'}</Text></Space>
+      title: 'Họ tên',
+      dataIndex: 'fullName',
+      key: 'fullName',
+      sorter: (a, b) => a.fullName.localeCompare(b.fullName),
+    },
+    {
+      title: 'Username / Email',
+      key: 'username_email',
+      render: (_, record) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{record.username}</span>
+          <span className="text-xs text-gray-500">{record.email}</span>
         </div>
       ),
     },
     {
-      title: 'Vai trò',
+      title: 'Số điện thoại',
+      dataIndex: 'phone',
+      key: 'phone',
+    },
+    {
+      title: 'Quyền',
       dataIndex: 'role',
       key: 'role',
-      render: (role: any) => {
-        const roleName = typeof role === 'object' ? role?.name : role;
-        const color = roleName === 'ADMIN' ? 'volcano' : roleName === 'MANAGER' ? 'purple' : 'blue';
-        return (
-          <Tag color={color} style={{ borderRadius: 20, fontWeight: 700, padding: '2px 12px' }}>
-            {roleName || 'CUSTOMER'}
-          </Tag>
-        );
+      render: (role: Role | string) => {
+        if (typeof role === 'object' && role !== null) {
+          return <Tag color="blue">{role.name.toUpperCase()}</Tag>;
+        }
+        return <Tag color="default">{String(role).toUpperCase()}</Tag>;
       },
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'isDeleted',
       key: 'status',
-      render: (isDeleted: boolean) => (
-        <Badge status={!isDeleted ? 'success' : 'error'} text={!isDeleted ? 'Hoạt động' : 'Tạm khóa'} />
-      ),
+      render: (_, record) => {
+        const isLocked = record.lockTime && new Date(record.lockTime).getTime() > Date.now();
+        if (isLocked) {
+          return <Tag color="red">Bị khóa</Tag>;
+        }
+        if (record.isDeleted) {
+          return <Tag color="default">Đã xóa</Tag>;
+        }
+        return <Tag color="green">Đang hoạt động</Tag>;
+      },
     },
     {
       title: 'Hành động',
       key: 'action',
-      width: 150,
-      render: (_: any, record: any) => (
-        <Space size={8}>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-                type="text" icon={<EyeOutlined />} 
-                onClick={() => handleView(record)}
-                style={{ color: '#6366f1', borderRadius: 8 }}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button 
-                type="primary" ghost icon={<EditOutlined />} 
+      render: (_, record) => {
+        const isLocked = record.lockTime && new Date(record.lockTime).getTime() > Date.now();
+        return (
+          <Space size="middle">
+            <Tooltip title="Chỉnh sửa">
+              <Button 
+                type="text" 
+                icon={<EditOutlined className="text-blue-500 hover:text-blue-600" />} 
                 onClick={() => handleEdit(record)}
-                style={{ borderRadius: 8 }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa người dùng này?"
-            description="Hành động này sẽ thực hiện vô hiệu hóa tài khoản (Soft Delete)."
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button danger ghost icon={<DeleteOutlined />} style={{ borderRadius: 8 }} />
+              />
             </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
+            
+            <Tooltip title={isLocked ? "Mở khóa" : "Khóa"}>
+              <Button 
+                type="text" 
+                icon={isLocked ? <UnlockOutlined className="text-orange-500" /> : <LockOutlined className="text-yellow-500" />} 
+                onClick={() => handleToggleLock(record)}
+              />
+            </Tooltip>
+
+            <Popconfirm
+              title="Xác nhận xóa người dùng?"
+              description="Hành động này sẽ ẩn người dùng khỏi hệ thống."
+              onConfirm={() => handleDelete(record._id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Xóa">
+                <Button 
+                  type="text" 
+                  icon={<DeleteOutlined className="text-red-500 hover:text-red-600" />} 
+                />
+              </Tooltip>
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
   return (
-    <div style={{ padding: '4px' }}>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <Title level={2} style={{ margin: 0, fontWeight: 800, textTransform: 'uppercase' }}>
-              <TeamOutlined style={{ color: '#2563eb', marginRight: 12 }} />
-              Quản lý người dùng
-            </Title>
-            <Text type="secondary" style={{ fontSize: 16 }}>
-              Tra cứu, phân quyền và quản trị thông tin tài khoản hệ thống
-            </Text>
-          </div>
-          <Button
-            type="primary"
-            icon={<UserAddOutlined />}
-            size="large"
-            onClick={handleAdd}
-            style={{
-              height: 48, borderRadius: 12, paddingInline: 24, fontWeight: 700,
-              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-              border: 'none', boxShadow: '0 4px 14px 0 rgba(37, 99, 235, 0.39)',
-            }}
+    <div className="p-6 bg-white rounded-lg shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <Title level={3} className="!m-0">Quản lý Người dùng</Title>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <Input
+            placeholder="Tìm theo tên/email..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            className="w-full sm:w-64 border-gray-200 rounded-lg"
+            value={searchText}
+            onChange={handleSearch}
+            allowClear
+          />
+          <Select
+            placeholder="Lọc theo quyền"
+            className="w-full sm:w-48"
+            onChange={handleFilterRole}
+            allowClear
           >
-            THÊM NGƯỜI DÙNG
+            {roles.map(role => (
+              <Option key={role._id} value={role._id}>
+                {role.name}
+              </Option>
+            ))}
+          </Select>
+          <Button 
+            type="primary" 
+            onClick={fetchUsers}
+            className="md:w-auto w-full"
+          >
+            Làm mới
+          </Button>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setImageUrl(null);
+              addForm.resetFields();
+              setIsAddModalOpen(true);
+            }}
+            className="md:w-auto w-full bg-green-600 hover:bg-green-700 !border-none"
+          >
+            Thêm người dùng
           </Button>
         </div>
-
-        <Row gutter={16} style={{ marginTop: 24 }}>
-          <Col xs={24} md={8}>
-            <Card style={{ borderRadius: 20, border: 'none', background: '#eff6ff', marginBottom: 16 }} bodyStyle={{ padding: 20 }}>
-              <div style={{ fontSize: 14, color: '#60a5fa', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                 <UserOutlined /> TỔNG ACCOUNT
-              </div>
-              <div style={{ fontSize: 32, fontWeight: 800, color: '#1e40af', marginTop: 8 }}>{users.length}</div>
-            </Card>
-          </Col>
-        </Row>
       </div>
 
-      <Card
-        style={{ borderRadius: 24, border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)' }}
-        bodyStyle={{ padding: 0 }}
-      >
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <Space size={12} className="flex-1">
-            <Input
-                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-                placeholder="Tìm tên, email, username..."
-                style={{ width: 300, height: 44, borderRadius: 12 }}
-                onChange={e => setSearchText(e.target.value)}
-                allowClear
-            />
-            <Select
-                placeholder="Lọc theo quyền"
-                style={{ width: 180, height: 44 }}
-                onChange={v => setFilterRole(v)}
-                allowClear
-                suffixIcon={<FilterOutlined />}
-                dropdownStyle={{ borderRadius: 12 }}
-            >
-                {roles.map(r => (
-                    <Select.Option key={r._id} value={r._id}>{r.name}</Select.Option>
-                ))}
-            </Select>
-          </Space>
-          <Tooltip title="Làm mới">
-            <Button 
-                icon={<ReloadOutlined />} 
-                onClick={fetchData} 
-                className="h-11 w-11 flex items-center justify-center rounded-xl"
-            />
-          </Tooltip>
-        </div>
+      <Table 
+        columns={columns} 
+        dataSource={filteredUsers} 
+        rowKey="_id" 
+        loading={loading}
+        pagination={{ pageSize: 10, showSizeChanger: true }}
+        className="border border-gray-100 rounded-lg"
+      />
 
-        <Table
-          columns={columns}
-          dataSource={filtered}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            style: { padding: '24px' }
-          }}
-          locale={{ emptyText: <Empty description="Chức năng đang được cập nhật dữ liệu" /> }}
-        />
-      </Card>
-
-      {/* Add/Edit Modal */}
       <Modal
         title={
-          <div style={{ paddingBottom: 12 }}>
-            <span style={{ fontWeight: 800, fontSize: 18 }}>
-              {editingUser ? 'CẬP NHẬT NGƯỜI DÙNG' : 'TẠO TÀI KHOẢN MỚI'}
-            </span>
+          <div className="flex items-center gap-2 border-b pb-3">
+            <EditOutlined className="text-blue-600" />
+            <span>Chỉnh sửa Người dùng</span>
           </div>
         }
-        open={isModalOpen}
-        onOk={handleModalOk}
-        onCancel={() => setIsModalOpen(false)}
-        okText="XÁC NHẬN"
-        cancelText="HỦY BỎ"
+        open={isEditModalOpen}
+        onCancel={() => setIsEditModalOpen(false)}
+        footer={null}
         destroyOnClose
-        width={600}
-        okButtonProps={{ style: { height: 44, borderRadius: 12, fontWeight: 700 } }}
-        cancelButtonProps={{ style: { height: 44, borderRadius: 12 } }}
+        centered
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 12 }}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="fullName" label={<b>Họ và tên</b>} rules={[{ required: true }]}>
-                <Input placeholder="Nguyễn Văn A" style={{ height: 48, borderRadius: 12 }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="username" label={<b>Username</b>} rules={[{ required: true }]}>
-                <Input placeholder="username123" style={{ height: 48, borderRadius: 12 }} disabled={!!editingUser} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="email" label={<b>Email</b>} rules={[{ required: true, type: 'email' }]}>
-                <Input placeholder="user@gmail.com" style={{ height: 48, borderRadius: 12 }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label={<b>Số điện thoại</b>}>
-                <Input placeholder="09xxxxxxx" style={{ height: 48, borderRadius: 12 }} />
-              </Form.Item>
-            </Col>
-          </Row>
-          {!editingUser && (
-            <Form.Item name="password" label={<b>Mật khẩu đăng nhập</b>} rules={[{ required: true }]}>
-              <Input.Password placeholder="******" style={{ height: 48, borderRadius: 12 }} />
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={onFinishEdit}
+          className="mt-4"
+        >
+          <div className="flex flex-col items-center mb-6">
+            <Form.Item name="avatarUrl" hidden>
+              <Input />
             </Form.Item>
-          )}
-          <Form.Item name="role" label={<b>Gán vai trò hệ thống</b>} rules={[{ required: true }]}>
-            <Select placeholder="Chọn quyền truy cập" size="large" style={{ width: '100%', borderRadius: 12 }}>
-              {roles.map(r => (
-                <Select.Option key={r._id} value={r._id}>{r.name}</Select.Option>
+            <Upload
+              name="image"
+              listType="picture-card"
+              className="avatar-uploader"
+              showUploadList={false}
+              customRequest={(options) => handleUpload(options, editForm)}
+              accept="image/*"
+            >
+              {imageUrl ? (
+                <img src={imageUrl} alt="avatar" style={{ width: '100%', borderRadius: '8px' }} />
+              ) : (
+                <div className="flex flex-col items-center">
+                  {uploading ? <LoadingOutlined /> : <PlusOutlined />}
+                  <div style={{ marginTop: 8 }}>Avatar</div>
+                </div>
+              )}
+            </Upload>
+            <p className="text-xs text-gray-400 mt-2">Ảnh đại diện người dùng</p>
+          </div>
+
+          <Form.Item
+            name="fullName"
+            label="Họ tên"
+            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+          >
+            <Input placeholder="Nhập họ tên đầy đủ" />
+          </Form.Item>
+
+          <Form.Item
+            name="phone"
+            label="Số điện thoại"
+          >
+            <Input placeholder="Nhập số điện thoại" />
+          </Form.Item>
+
+          <Form.Item
+            name="roleId"
+            label="Vai trò (Quyền)"
+            rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+          >
+            <Select placeholder="Chọn quyền">
+              {roles.map(role => (
+                <Option key={role._id} value={role._id}>
+                  {role.name}
+                </Option>
               ))}
             </Select>
           </Form.Item>
+
+          <div className="flex justify-end gap-3 mt-8">
+            <Button onClick={() => setIsEditModalOpen(false)}>Hủy</Button>
+            <Button type="primary" htmlType="submit" className="bg-blue-600 px-6">
+              Lưu thay đổi
+            </Button>
+          </div>
         </Form>
       </Modal>
 
-      {/* View Details Drawer */}
-      <Drawer
-        title="Thông tin chi tiết người dùng"
-        width={450}
-        onClose={() => setIsViewOpen(false)}
-        open={isViewOpen}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 border-b pb-3 text-blue-600">
+            <PlusOutlined />
+            <span className="font-semibold text-gray-800">Thêm người dùng mới</span>
+          </div>
+        }
+        open={isAddModalOpen}
+        onCancel={() => setIsAddModalOpen(false)}
+        footer={null}
+        destroyOnClose
+        centered
+        width={600}
       >
-        {viewUser && (
-            <div style={{ textAlign: 'center' }}>
-                <Avatar 
-                    src={viewUser.avatarUrl} 
-                    icon={<UserOutlined />} 
-                    size={100} 
-                    style={{ background: '#2563eb', marginBottom: 16 }} 
-                />
-                <Title level={3} style={{ margin: 0 }}>{viewUser.fullName}</Title>
-                <Text type="secondary">@{viewUser.username} • {viewUser.role?.name || 'CUSTOMER'}</Text>
-                
-                <Divider />
-                
-                <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>ĐỊA CHỈ EMAIL</Text>
-                        <div style={{ fontWeight: 600 }}>{viewUser.email}</div>
-                    </div>
-                    <div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>SỐ ĐIỆN THOẠI</Text>
-                        <div style={{ fontWeight: 600 }}>{viewUser.phone || 'Chưa cập nhật'}</div>
-                    </div>
-                    <div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>NGÀY THAM GIA</Text>
-                        <div style={{ fontWeight: 600 }}>{new Date(viewUser.createdAt).toLocaleDateString()}</div>
-                    </div>
-                    <div>
-                        <Text type="secondary" style={{ fontSize: 12 }}>TRẠNG THÁI TÀI KHOẢN</Text>
-                        <div>
-                            <Tag color={!viewUser.isDeleted ? 'green' : 'red'}>
-                                {!viewUser.isDeleted ? 'HOẠT ĐỘNG' : 'ĐÃ KHÓA'}
-                            </Tag>
-                        </div>
-                    </div>
+        <Form
+          form={addForm}
+          layout="vertical"
+          onFinish={onFinishAdd}
+          className="mt-6"
+          requiredMark="optional"
+        >
+          <div className="flex flex-col items-center mb-8">
+            <Form.Item name="avatarUrl" hidden>
+              <Input />
+            </Form.Item>
+            <Upload
+              name="image"
+              listType="picture-card"
+              className="avatar-uploader"
+              showUploadList={false}
+              customRequest={(options) => handleUpload(options, addForm)}
+              accept="image/*"
+            >
+              {imageUrl ? (
+                <img src={imageUrl} alt="avatar" style={{ width: '100%', borderRadius: '8px' }} />
+              ) : (
+                <div className="flex flex-col items-center">
+                  {uploading ? <LoadingOutlined /> : <PlusOutlined />}
+                  <div style={{ marginTop: 8 }}>Tải ảnh</div>
                 </div>
-            </div>
-        )}
-      </Drawer>
+              )}
+            </Upload>
+            <p className="text-xs text-gray-400 mt-2 font-medium">Click để upload ảnh đại diện</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
+            <Form.Item
+              name="fullName"
+              label={<span className="font-medium">Họ và Tên</span>}
+              rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
+            >
+              <Input placeholder="Nguyễn Văn A" className="rounded-md" />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label={<span className="font-medium">Email</span>}
+              rules={[
+                { required: true, message: 'Vui lòng nhập email' },
+                { type: 'email', message: 'Email không đúng định dạng' }
+              ]}
+            >
+              <Input placeholder="example@gmail.com" className="rounded-md" />
+            </Form.Item>
+
+            <Form.Item
+              name="phone"
+              label={<span className="font-medium">Số điện thoại</span>}
+              rules={[
+                { pattern: /^[0-9]+$/, message: 'Số điện thoại chỉ được chứa số' }
+              ]}
+            >
+              <Input placeholder="0123456789" className="rounded-md" />
+            </Form.Item>
+
+            <Form.Item
+              name="username"
+              label={<span className="font-medium">Tên đăng nhập</span>}
+              rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập' }]}
+            >
+              <Input placeholder="username123" className="rounded-md" />
+            </Form.Item>
+
+            <Form.Item
+              name="password"
+              label={<span className="font-medium">Mật khẩu</span>}
+              rules={[
+                { required: true, message: 'Vui lòng nhập mật khẩu' },
+                { min: 6, message: 'Mật khẩu tối thiểu 6 ký tự' }
+              ]}
+            >
+              <Input.Password placeholder="••••••" className="rounded-md" />
+            </Form.Item>
+
+            <Form.Item
+              name="roleId"
+              label={<span className="font-medium">Vai trò</span>}
+              rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+            >
+              <Select placeholder="Chọn quyền" className="rounded-md">
+                {roles.map(role => (
+                  <Option key={role._id} value={role._id}>
+                    {role.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-10">
+            <Button 
+              onClick={() => setIsAddModalOpen(false)}
+              className="rounded-md px-6 hover:border-blue-500 hover:text-blue-500 transition-all"
+            >
+              Hủy
+            </Button>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              className="bg-blue-600 hover:bg-blue-700 px-8 rounded-md shadow-md border-none"
+            >
+              Tạo người dùng
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 };

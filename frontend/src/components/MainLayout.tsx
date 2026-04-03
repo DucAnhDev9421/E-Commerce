@@ -11,12 +11,10 @@ import {
   LogoutOutlined,
   DashboardOutlined
 } from '@ant-design/icons';
-import { useNavigate, Link, Outlet, useSearchParams } from 'react-router-dom';
-import categoryApi from '../api/categoryApi';
-
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
+import { useNavigate, Link, Outlet } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/authSlice';
+import { getAvatarUrl } from '../utils/imageUtils';
 
 const { Header, Content, Footer } = Layout;
 const { Search } = Input;
@@ -24,17 +22,8 @@ const { Title, Text } = Typography;
 
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [searchParams] = useSearchParams();
-  const currentSearch = searchParams.get('search') || '';
-  const [searchValue, setSearchValue] = React.useState(currentSearch);
-
-  React.useEffect(() => {
-    setSearchValue(currentSearch);
-  }, [currentSearch]);
-
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { totalQuantity } = useSelector((state: RootState) => state.cart);
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -136,7 +125,7 @@ const MainLayout: React.FC = () => {
             {isAuthenticated ? (
               <Dropdown menu={{ items: userItems }} placement="bottomRight" arrow>
                 <div className="flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-gray-100 pr-3 transition-colors">
-                  <Avatar src={user?.avatarUrl} icon={<UserOutlined />} className="bg-blue-600" />
+                  <Avatar src={getAvatarUrl(user?.avatarUrl) || undefined} icon={<UserOutlined />} className="bg-blue-600" />
                   <span className="hidden sm:inline font-medium text-gray-700">{user?.fullName}</span>
                 </div>
               </Dropdown>

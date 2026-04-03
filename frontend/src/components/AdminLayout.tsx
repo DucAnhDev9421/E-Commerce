@@ -19,6 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import { logout } from '../store/authSlice';
 import type { Role } from '../types/auth';
+import { getAvatarUrl } from '../utils/imageUtils';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -197,32 +198,16 @@ const AdminLayout: React.FC = () => {
         />
       </Sider>
 
-      <Layout style={{ marginLeft: collapsed ? 80 : 256, transition: 'margin-left 0.2s', background: '#f8fafc' }}>
-        {/* Header */}
-        <Header
-          style={{
-            padding: '0 24px',
-            background: 'white',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            boxShadow: '0 1px 12px rgba(0,0,0,0.06)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 99,
-            height: 64,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 18, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Layout className="flex flex-col">
+        <Header style={{ padding: 0, background: colorBgContainer }} className="flex justify-between items-center px-4 shadow-sm z-10">
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-16 h-16"
+          />
+          
+          <div className="flex items-center gap-4">
             <Link to="/">
               <Button icon={<HomeOutlined />} style={{ borderRadius: 8, fontWeight: 500 }}>
                 Xem Website
@@ -247,37 +232,30 @@ const AdminLayout: React.FC = () => {
               }}
               placement="bottomRight"
             >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  cursor: 'pointer',
-                  padding: '6px 12px',
-                  borderRadius: 10,
-                  transition: 'background 0.2s',
-                  border: '1px solid #f0f0f0',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <Avatar
-                  src={user?.avatarUrl}
-                  icon={<UserOutlined />}
-                  style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}
-                  size={32}
-                />
-                <div style={{ lineHeight: 1.3 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{user?.fullName || 'Admin'}</div>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{roleName}</div>
+              <div className="flex items-center cursor-pointer gap-2 p-2 rounded-lg hover:bg-gray-100 transition-all">
+                <Avatar src={getAvatarUrl(user?.avatarUrl) || undefined} icon={<UserOutlined />} />
+                <div className="hidden sm:block">
+                  <div className="font-semibold text-sm leading-none">{user?.fullName}</div>
+                  <div className="text-xs text-gray-400">
+                    {typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN'}
+                  </div>
                 </div>
               </div>
             </Dropdown>
           </div>
         </Header>
 
-        {/* Content */}
-        <Content style={{ padding: '24px', minHeight: 'calc(100vh - 64px)' }}>
+        <Content
+          style={{
+          margin: '24px 16px',
+          padding: 24,
+          // 100vh - 64px (header) - 48px (margin top/bottom)
+          minHeight: 'calc(100vh - 64px - 48px)', 
+          background: colorBgContainer,
+          borderRadius: borderRadiusLG,
+          }}
+          className="shadow-sm border border-gray-100"
+        >
           <Outlet />
         </Content>
       </Layout>
