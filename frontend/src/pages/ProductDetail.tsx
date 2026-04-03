@@ -13,8 +13,8 @@ import {
   TruckOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { addItem } from '../store/cartSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { addToCart } from '../store/cartSlice';
 import productApi from '../api/productApi';
 
 const { Title, Text, Paragraph } = Typography;
@@ -24,7 +24,7 @@ const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http:/
 const ProductDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState<string>('');
@@ -54,21 +54,54 @@ const ProductDetail: React.FC = () => {
     fetchProduct();
   }, [id]);
 
-  const handleAddToCart = () => {
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để có thể thêm sản phẩm vào giỏ hàng.',
+      });
+      navigate('/login');
+      return;
+    }
+
     if (!product) return;
-    dispatch(addItem({ ...product, qty: quantity }));
-    notification.success({ 
-      title: 'Đã thêm vào giỏ hàng',
-      description: `${product.name} (x${quantity}) đã vào giỏ hàng.`,
-      placement: 'bottomRight'
-    });
-    navigate('/cart');
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
+      notification.success({ 
+        title: 'Đã thêm vào giỏ hàng',
+        description: `${product.name} (x${quantity}) đã vào giỏ hàng.`,
+        placement: 'bottomRight'
+      });
+    } catch (error: any) {
+      notification.error({
+        message: 'Lỗi',
+        description: error || 'Không thể thêm sản phẩm vào giỏ hàng'
+      });
+    }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để bắt đầu đặt hàng.',
+      });
+      navigate('/login');
+      return;
+    }
+
     if (!product) return;
-    dispatch(addItem({ ...product, qty: quantity }));
-    navigate('/checkout');
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
+      navigate('/checkout');
+    } catch (error: any) {
+      notification.error({
+        message: 'Lỗi',
+        description: error || 'Không thể tiến hành đặt hàng'
+      });
+    }
   };
 
   if (loading) return (
