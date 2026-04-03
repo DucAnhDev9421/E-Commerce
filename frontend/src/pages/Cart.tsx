@@ -2,9 +2,8 @@ import React from 'react';
 import { Table, Space, Button, InputNumber, Card, Divider, Typography, Row, Col, Empty, Tooltip, notification, Badge } from 'antd';
 import { DeleteOutlined, ArrowLeftOutlined, SafetyCertificateOutlined, ShoppingOutlined, CreditCardOutlined, TruckOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import { removeItem as removeFromCart, updateQuantity } from '../store/cartSlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { removeFromCart, updateQuantityThunk } from '../store/cartSlice';
 
 const { Title, Text } = Typography;
 
@@ -12,22 +11,30 @@ const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http:/
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   
-  const { items: cartItems, totalAmount: subtotal } = useSelector((state: RootState) => state.cart);
+  const { items: cartItems, totalAmount: subtotal } = useAppSelector((state) => state.cart);
 
-  const handleUpdateQuantity = (id: string, val: number | null) => {
+  const handleUpdateQuantity = async (id: string, val: number | null) => {
     if (!val) return;
-    dispatch(updateQuantity({ id, quantity: val }));
+    try {
+      await dispatch(updateQuantityThunk({ productId: id, quantity: val })).unwrap();
+    } catch (error: any) {
+      notification.error({ message: 'Lỗi', description: error || 'Không thể cập nhật số lượng' });
+    }
   };
 
-  const handleRemoveItem = (id: string) => {
-    dispatch(removeFromCart(id));
-    notification.success({ 
-      title: 'Đã xóa sản phẩm',
-      description: 'Sản phẩm đã được xóa khỏi giỏ hàng của bạn.',
-      placement: 'bottomRight'
-    });
+  const handleRemoveItem = async (id: string) => {
+    try {
+      await dispatch(removeFromCart(id)).unwrap();
+      notification.success({ 
+        title: 'Đã xóa sản phẩm',
+        description: 'Sản phẩm đã được xóa khỏi giỏ hàng của bạn.',
+        placement: 'bottomRight'
+      });
+    } catch (error: any) {
+      notification.error({ message: 'Lỗi', description: error || 'Không thể xóa sản phẩm' });
+    }
   };
 
   // Tính toán

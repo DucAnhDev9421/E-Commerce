@@ -14,6 +14,7 @@ import {
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logout } from '../store/authSlice';
+import { fetchCart, clearCart } from '../store/cartSlice';
 import { getAvatarUrl } from '../utils/imageUtils';
 import categoryApi from '../api/categoryApi';
 
@@ -32,6 +33,7 @@ const MainLayout: React.FC = () => {
 
   const handleLogout = () => {
     dispatch(logout());
+    dispatch(clearCart());
     navigate('/login');
   };
 
@@ -55,6 +57,13 @@ const MainLayout: React.FC = () => {
     };
     fetchCategories();
   }, [navigate]);
+
+  // Fetch Cart when authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchCart());
+    }
+  }, [isAuthenticated, dispatch]);
 
   const userItems = [
     { key: 'profile', label: 'Trang cá nhân', icon: <UserOutlined />, onClick: () => navigate('/profile') },

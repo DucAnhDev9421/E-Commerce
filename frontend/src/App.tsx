@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import Checkout from './pages/Client/Checkout';
+import PaymentResult from './pages/Client/PaymentResult';
 import Profile from './pages/Client/Profile';
 import PrivateRoutes from './middleware/PrivateRoutes';
 
@@ -44,8 +46,7 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<div className="p-20 text-center"><h1>Trang Thanh Toán</h1><p>Đang phát triển...</p></div>} />
+            <Route path="/payment-result" element={<PaymentResult />} />
           </Route>
 
           {/* Auth Routes */}
@@ -55,21 +56,17 @@ function App() {
           {/* Protected Routes for Auth Users */}
           <Route element={<PrivateRoutes />}>
             <Route element={<MainLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<div className="p-20 text-center"><h1>Trang Thanh Toán</h1><p>Đang phát triển...</p></div>} />
+              <Route path="/checkout" element={<Checkout />} />
             </Route>
-  
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-  
-            {/* Protected Routes for Auth Users */}
-            <Route element={<PrivateRoutes />}>
-              <Route element={<MainLayout />}>
-                <Route path="/profile" element={<Profile />} />
-              </Route>
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="roles" element={<Roles />} />
             </Route>
           </Route>
 

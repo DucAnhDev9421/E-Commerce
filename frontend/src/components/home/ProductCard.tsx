@@ -2,8 +2,8 @@ import React from 'react';
 import { Card, Tag, Rate, Button, Typography, notification } from 'antd';
 import { ShoppingCartOutlined, EyeOutlined, HeartOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { addItem } from '../../store/cartSlice';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { addToCart } from '../../store/cartSlice';
 
 const { Text, Title } = Typography;
 
@@ -34,26 +34,51 @@ const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http:/
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(addItem(product));
-    notification.success({
-      title: 'Đã thêm vào giỏ hàng',
-      description: `${product.name} đã được thêm thành công.`,
-      placement: 'bottomRight',
-      duration: 2,
-    });
-    // Chuyển hướng tới giỏ hàng theo yêu cầu
-    navigate('/cart');
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.',
+      });
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
+      notification.success({ 
+        title: 'Đã thêm vào giỏ hàng',
+        description: `${product.name} đã được thêm thành công.`,
+        placement: 'bottomRight',
+        duration: 2,
+      });
+      navigate('/cart');
+    } catch (error: any) {
+      notification.error({ message: 'Lỗi', description: error || 'Không thể thêm sản phẩm' });
+    }
   };
 
-  const handleBuyNow = (e: React.MouseEvent) => {
+  const handleBuyNow = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(addItem(product));
-    // Chuyển hướng thẳng tới thanh toán
-    navigate('/checkout');
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để đặt sắm.',
+      });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
+      navigate('/checkout');
+    } catch (error: any) {
+      notification.error({ message: 'Lỗi', description: error || 'Không thể đặt hàng' });
+    }
   };
 
   const mainImage = product.images && product.images.length > 0 
