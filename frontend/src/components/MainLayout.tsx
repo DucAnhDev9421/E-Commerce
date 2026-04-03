@@ -9,7 +9,8 @@ import {
   InstagramOutlined, 
   YoutubeOutlined,
   LogoutOutlined,
-  DashboardOutlined
+  DashboardOutlined,
+  BellOutlined
 } from '@ant-design/icons';
 import { useNavigate, Link, Outlet } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -134,6 +135,14 @@ const MainLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-8">
+            <Badge count={3} size="small" color="#F59E0B">
+              <div 
+                className="text-text hover:text-primary cursor-pointer transition-all hover:scale-110 flex items-center justify-center p-2 rounded-full hover:bg-primary/5"
+              >
+                <BellOutlined style={{ fontSize: '24px' }} />
+              </div>
+            </Badge>
+
             <Badge count={totalQuantity} overflowCount={99} color="#059669">
               <div 
                 className="text-text hover:text-primary cursor-pointer transition-all hover:scale-110 flex items-center justify-center p-2 rounded-full hover:bg-primary/5"
