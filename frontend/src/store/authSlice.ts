@@ -2,17 +2,10 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { AuthState, User } from '../types/auth';
 
-const getSavedUser = () => {
-  try {
-    const raw = localStorage.getItem('user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
+const storedUser = localStorage.getItem('user');
 
 const initialState: AuthState = {
-  user: getSavedUser(),
+  user: storedUser ? JSON.parse(storedUser) : null,
   accessToken: localStorage.getItem('accessToken'),
   isAuthenticated: !!localStorage.getItem('accessToken'),
   loading: false,
@@ -29,11 +22,16 @@ const authSlice = createSlice({
     },
     loginSuccess: (state, action: PayloadAction<{ user: User; accessToken: string }>) => {
       state.loading = false;
-      state.user = action.payload.user;
+      const userData = action.payload.user;
+      // Đồng bộ _id nếu backend trả về id thuần
+      if (userData && !userData._id && (userData as any).id) {
+        userData._id = (userData as any).id;
+      }
+      state.user = userData;
       state.accessToken = action.payload.accessToken;
       state.isAuthenticated = true;
       localStorage.setItem('accessToken', action.payload.accessToken);
-      localStorage.setItem('user', JSON.stringify(action.payload.user));
+      localStorage.setItem('user', JSON.stringify(userData));
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
@@ -48,8 +46,13 @@ const authSlice = createSlice({
       localStorage.removeItem('user');
     },
     updateUser: (state, action: PayloadAction<User>) => {
-      state.user = action.payload;
-      localStorage.setItem('user', JSON.stringify(action.payload));
+      const userData = action.payload;
+      // Đồng bộ _id nếu backend trả về id thuần
+      if (userData && !userData._id && (userData as any).id) {
+        userData._id = (userData as any).id;
+      }
+      state.user = userData;
+      localStorage.setItem('user', JSON.stringify(userData));
     },
     setAccessToken: (state, action: PayloadAction<string>) => {
       state.accessToken = action.payload;

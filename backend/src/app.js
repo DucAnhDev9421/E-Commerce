@@ -21,9 +21,15 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
-// Cấu hình thư mục tĩnh
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+// Cấu hình thư mục tĩnh (public và uploads)
+const uploadDir = path.resolve(__dirname, '..', 'uploads');
+const fs = require('fs');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+app.use(express.static(path.resolve(__dirname, 'public')));
+app.use('/uploads', express.static(uploadDir));
 
 // Routes API
 app.use('/api/v1/roles', require('./routes/roles'));

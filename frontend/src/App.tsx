@@ -36,8 +36,21 @@ function App() {
     >
       <AntdApp>
         <Router>
-          <Routes>
-            {/* Public Routes with MainLayout */}
+        <Routes>
+          {/* Public Routes with MainLayout */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<div className="p-20 text-center"><h1>Trang Thanh Toán</h1><p>Đang phát triển...</p></div>} />
+          </Route>
+
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Protected Routes for Auth Users */}
+          <Route element={<PrivateRoutes />}>
             <Route element={<MainLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/product/:id" element={<ProductDetail />} />
@@ -55,22 +68,14 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
               </Route>
             </Route>
-  
-            {/* Protected Routes for ADMIN only */}
-            <Route element={<PrivateRoutes allowedRoles={['ADMIN']} />}>
-              <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/roles" element={<Roles />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-              </Route>
-            </Route>
-  
-            {/* Catch-all route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-      </AntdApp>
-    </ConfigProvider>
+          </Route>
+
+          {/* Catch-all route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AntdApp>
+  </ConfigProvider>
   );
 }
 

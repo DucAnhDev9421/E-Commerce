@@ -78,8 +78,10 @@ axiosClient.interceptors.response.use(
 
       try {
         // Gọi API refresh token
+        // Fix: Đảm bảo format URL sạch sẽ (tránh double slash)
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(/\/+$/, '');
         const response: any = await axios.post(
-          `${import.meta.env.VITE_API_URL}/auth/refresh-token`,
+          `${baseUrl}/auth/refresh-token`,
           {},
           { withCredentials: true }
         );
@@ -99,7 +101,11 @@ axiosClient.interceptors.response.use(
       } catch (refreshError) {
         // Nếu refresh token cũng thất bại (hết hạn hoàn toàn)
         processQueue(refreshError, null);
-        store.dispatch(logout()); // Logout người dùng
+        
+        // WORKAROUND: Nếu refresh thất bại, đẩy về Login
+        store.dispatch(logout());
+        window.location.href = '/login'; 
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

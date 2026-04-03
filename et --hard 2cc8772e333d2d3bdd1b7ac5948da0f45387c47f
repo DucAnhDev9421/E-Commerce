@@ -1,0 +1,91 @@
+[33mcommit 94f559708c4c638bb7735f4a3042a4cc6c85ba91[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mNhut[m[33m, [m[1;31morigin/Nhut[m[33m)[m
+Author: BinTran04 <tranquocnhut2004@gmail.com>
+Date:   Fri Apr 3 15:12:11 2026 +0700
+
+    update
+
+[33mcommit 4fac0e4bee719a8877a548cb1e71bb44357d2c10[m
+Merge: 2cc8772 1224f85
+Author: BinTran04 <tranquocnhut2004@gmail.com>
+Date:   Fri Apr 3 15:11:06 2026 +0700
+
+    Merge branch 'Nhut' of https://github.com/DucAnhDev9421/E-Commerce into Nhut
+
+[33mcommit 2cc8772e333d2d3bdd1b7ac5948da0f45387c47f[m
+Author: BinTran04 <tranquocnhut2004@gmail.com>
+Date:   Fri Apr 3 15:08:12 2026 +0700
+
+    update
+
+[33mcommit 1224f855d7ff533ff0bd49fbef55d3e7d97f316a[m
+Merge: fd8b83b 3b45789
+Author: DucAnh <ntducanh9421@gmail.com>
+Date:   Fri Apr 3 13:16:18 2026 +0700
+
+    Merge branch 'feature/develop' into Nhut
+
+[33mcommit fd8b83b7f1e1c17907de8ec1d98dbe6ca3f98b24[m
+Author: BinTran04 <tranquocnhut2004@gmail.com>
+Date:   Fri Apr 3 12:23:43 2026 +0700
+
+    update
+
+[33mcommit 3b45789dd87eda4e26eb679730d7b2186f7953ef[m
+Merge: 1e122b4 a479b14
+Author: DucAnh <ntducanh9421@gmail.com>
+Date:   Thu Apr 2 21:12:56 2026 +0700
+
+    Merge pull request #3 from DucAnhDev9421/ThanhTuan
+    
+    Thanh tuan
+
+[33mcommit a479b149392415dd7c9347d710b5917b6f475617[m[33m ([m[1;31morigin/ThanhTuan[m[33m)[m
+Author: DucAnhDev9421 <ntducanh9421@gmail.com>
+Date:   Thu Apr 2 21:10:39 2026 +0700
+
+    feat: implement CRUD operations and schema for product images
+
+[33mcommit 5d84a954c33b4623be551fadce31cca2a0454b4b[m
+Author: Mai Thanh Tuan <thanhtuannnn@gmail.com>
+Date:   Thu Apr 2 20:45:41 2026 +0700
+
+    đã hoàn thành Category , Product , ProducttimageUpload ảnh + search và thêm tính năng Upload Category
+
+[33mcommit 280a150b7e723908be6c5114209ac9b8a9e2f05e[m
+Author: BinTran04 <tranquocnhut2004@gmail.com>
+Date:   Thu Apr 2 13:19:50 2026 +0700
+
+    update FE
+
+[33mcommit 1e122b4806e5d4f8b679afdad023b326bd8d630a[m
+Merge: f154c16 fc62cf0
+Author: DucAnh <ntducanh9421@gmail.com>
+Date:   Thu Apr 2 11:21:53 2026 +0700
+
+    Merge pull request #1 from DucAnhDev9421/Nhut
+    
+    User, Role, AddressAuth + JWM + Upload avatar, UI
+
+[33mcommit fc62cf0c586958c1bcfa38bc7ce1caca83059c06[m
+Author: BinTran04 <tranquocnhut2004@gmail.com>
+Date:   Thu Apr 2 00:46:19 2026 +0700
+
+    User, Role, AddressAuth + JWM + Upload avatar, UI
+
+[33mcommit f154c1635d3742e43d29fcb1d3c9927d2c0d1ca0[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m
+Author: DucAnhDev9421 <ntducanh9421@gmail.com>
+Date:   Wed Apr 1 20:17:47 2026 +0700
+
+    feat:add projects rules
+
+[33mcommit 6d5e27db4872d115f807a41f8c915f68804a5a3c[m
+Author: DucAnhDev9421 <ntducanh9421@gmail.com>
+Date:   Wed Apr 1 20:14:01 2026 +0700
+
+    E-Commerce setup
+
+[33mcommit e7709c0bac854fa6896a13e644d4b8a2c1317d50[m
+Author: DucAnh <ntducanh9421@gmail.com>
+Date:   Wed Apr 1 19:41:52 2026 +0700
+
+    Initial commit

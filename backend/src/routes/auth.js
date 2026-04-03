@@ -145,27 +145,7 @@ router.post('/refresh-token', async function (req, res, next) {
 
         let refreshToken = req.cookies.refreshToken;
 
-        if (!refreshToken) {
-            return res.status(401).send({ message: "Phiên đăng nhập hết hạn" });
-        }
-
-        let decoded = jwt.verify(
-            refreshToken,
-            process.env.JWT_REFRESH_SECRET
-        );
-
-        let UserModel = require('../schemas/users');
-        let userDB = await UserModel.findById(decoded.id);
-
-        if (!userDB || userDB.refreshToken !== refreshToken) {
-            return res.status(403).send({ message: "Phiên làm việc không hợp lệ" });
-        }
-
-        let newAccessToken = jwt.sign(
-            { id: userDB._id },
-            process.env.JWT_ACCESS_SECRET,
-            { expiresIn: '15m' }
-        );
+        let newAccessToken = await authController.RefreshAccessToken(refreshToken);
 
         res.send({
             success: true,
@@ -173,7 +153,7 @@ router.post('/refresh-token', async function (req, res, next) {
         });
 
     } catch (error) {
-        res.status(401).send({ message: "Phiên đăng nhập hết hạn" });
+        res.status(error.status || 401).send({ message: error.message || "Phiên đăng nhập hết hạn" });
     }
 });
 
