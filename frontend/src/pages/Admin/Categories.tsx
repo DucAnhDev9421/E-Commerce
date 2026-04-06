@@ -1,488 +1,558 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react"
 import {
-  Table, Button, Space, Modal, Form, Input, notification,
-  Popconfirm, Typography, Tag, Select, Tooltip, Badge, Drawer,
-  Statistic, Row, Col, Empty, Spin, Switch, Upload, Image
-} from 'antd';
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  RefreshCw,
+  Tags,
+  CheckCircle,
+  XCircle,
+  X,
+  Upload,
+} from "lucide-react"
+import categoryApi from "@/api/categoryApi"
+import productApi from "@/api/productApi"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
-  EditOutlined, DeleteOutlined, PlusOutlined, UnorderedListOutlined,
-  SearchOutlined, ReloadOutlined, EyeOutlined, TagsOutlined,
-  CheckCircleOutlined, StopOutlined, InfoCircleOutlined, PictureOutlined
-} from '@ant-design/icons';
-import categoryApi from '../../api/categoryApi';
-import productApi from '../../api/productApi';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL?.replace("/api/v1", "") || "http://localhost:5000"
 
 const getImageUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
-};
+  if (!url) return ""
+  if (url.startsWith("http")) return url
+  return `${BASE_URL}${url}`
+}
 
-const { Title, Text } = Typography;
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  active: { label: "Active", variant: "default" },
+  inactive: { label: "Inactive", variant: "secondary" },
+}
 
 const Categories: React.FC = () => {
-  const [categories, setCategories] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
-  const [viewCategory, setViewCategory] = useState<any | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const [fileList, setFileList] = useState<any[]>([]);
-  const [form] = Form.useForm();
+  const [categories, setCategories] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<any | null>(null)
+  const [viewCategory, setViewCategory] = useState<any | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [searchText, setSearchText] = useState("")
+  const [fileList, setFileList] = useState<any[]>([])
+
+  const [formData, setFormData] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    status: "active",
+    image: "",
+  })
 
   const fetchCategories = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response: any = await categoryApi.getAll();
-      setCategories(response);
-      setFiltered(response);
+      const response: any = await categoryApi.getAll()
+      setCategories(response)
+      setFiltered(response)
     } catch (error: any) {
-      notification.error({ title: 'Lỗi', description: error?.message || 'Không thể tải danh mục' });
+      console.error("Error loading categories:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { fetchCategories() }, [fetchCategories])
 
-  // Search filter
   useEffect(() => {
     if (!searchText.trim()) {
-      setFiltered(categories);
+      setFiltered(categories)
     } else {
-      const q = searchText.toLowerCase();
+      const q = searchText.toLowerCase()
       setFiltered(categories.filter(c =>
         c.name?.toLowerCase().includes(q) ||
         c.slug?.toLowerCase().includes(q) ||
         c.description?.toLowerCase().includes(q)
-      ));
+      ))
     }
-  }, [searchText, categories]);
+  }, [searchText, categories])
 
   const handleAdd = () => {
-    setEditingCategory(null);
-    setFileList([]);
-    form.resetFields();
-    form.setFieldsValue({ status: 'active' });
-    setIsModalOpen(true);
-  };
+    setEditingCategory(null)
+    setFileList([])
+    setFormData({
+      name: "",
+      slug: "",
+      description: "",
+      status: "active",
+      image: "",
+    })
+    setIsModalOpen(true)
+  }
 
   const handleEdit = (record: any) => {
-    setEditingCategory(record);
-    form.setFieldsValue(record);
+    setEditingCategory(record)
+    setFormData({
+      name: record.name || "",
+      slug: record.slug || "",
+      description: record.description || "",
+      status: record.status || "active",
+      image: record.image || "",
+    })
     if (record.image) {
       setFileList([{
-        uid: '1',
-        name: 'image.png',
-        status: 'done',
+        uid: "1",
+        name: "image.png",
+        status: "done",
         url: getImageUrl(record.image),
         response: { avatarUrl: record.image }
-      }]);
+      }])
     } else {
-      setFileList([]);
+      setFileList([])
     }
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(true)
+  }
 
-  const handleUpload = async (options: any) => {
-    const { onSuccess, onError, file } = options;
-    const formData = new FormData();
-    formData.append('avatar', file);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    const formDataUpload = new FormData()
+    formDataUpload.append("avatar", file)
     try {
-      const res: any = await productApi.uploadImage(formData);
-      onSuccess(res);
-    } catch (err: any) {
-      onError(err);
-      notification.error({ message: 'Lỗi tải ảnh', description: 'Không thể upload ảnh lên server' });
+      const res: any = await productApi.uploadImage(formDataUpload)
+      const newFile = {
+        uid: "1",
+        name: file.name,
+        status: "done",
+        url: getImageUrl(res.avatarUrl),
+        response: { avatarUrl: res.avatarUrl },
+      }
+      setFileList([newFile])
+    } catch (err) {
+      console.error("Upload error:", err)
     }
-  };
+  }
+
+  const removeImage = () => {
+    setFileList([])
+  }
 
   const handleView = (record: any) => {
-    setViewCategory(record);
-    setIsViewOpen(true);
-  };
+    setViewCategory(record)
+    setIsViewOpen(true)
+  }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id)
+    setIsDeleteOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await categoryApi.delete(id);
-      notification.success({ title: '✅ Xóa danh mục thành công' });
-      fetchCategories();
+      await categoryApi.delete(deleteId)
+      setIsDeleteOpen(false)
+      setDeleteId(null)
+      fetchCategories()
     } catch (error: any) {
-      notification.error({
-        title: 'Lỗi khi xóa',
-        description: error?.message,
-      });
+      console.error("Error deleting:", error)
     }
-  };
+  }
 
   const handleModalOk = async () => {
     try {
-      const formValues = await form.validateFields();
-      const imageUrls = fileList
-        .filter(f => f.status === 'done')
-        .map(f => f.response?.avatarUrl || f.url);
-      const values = { ...formValues, image: imageUrls.length > 0 ? imageUrls[0] : '' };
+      setSaving(true)
+      const imageUrl = fileList.length > 0 && fileList[0].status === "done"
+        ? fileList[0].response?.avatarUrl || fileList[0].url
+        : ""
+      const data = { ...formData, image: imageUrl }
 
       if (editingCategory) {
-        await categoryApi.update(editingCategory._id, values);
-        notification.success({ title: '✅ Cập nhật danh mục thành công' });
+        await categoryApi.update(editingCategory._id, data)
       } else {
-        await categoryApi.create(values);
-        notification.success({ title: '✅ Thêm danh mục mới thành công' });
+        await categoryApi.create(data)
       }
-      setIsModalOpen(false);
-      fetchCategories();
+      setIsModalOpen(false)
+      fetchCategories()
     } catch (error: any) {
-      if (error?.name !== 'ValidationError' && error?.name !== 'Error') {
-        notification.error({
-          title: 'Lỗi tải danh mục',
-          description: error?.message,
-        });
-      }
+      console.error("Error saving:", error)
+    } finally {
+      setSaving(false)
     }
-  };
+  }
 
-  // Stats
-  const activeCount = categories.filter(c => c.status === 'active').length;
-  const inactiveCount = categories.filter(c => c.status !== 'active').length;
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w ]+/g, "").replace(/ +/g, "-")
+  }
 
-  const columns = [
-    {
-      title: '#',
-      key: 'index',
-      width: 60,
-      render: (_: any, __: any, index: number) => (
-        <Text type="secondary" style={{ fontSize: 13 }}>{index + 1}</Text>
-      ),
-    },
-    {
-      title: 'Danh Mục',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string, record: any) => (
-        <Space>
-          <div style={{ position: 'relative', flexShrink: 0 }}>
-            {record.image ? (
-              <img
-                src={getImageUrl(record.image)}
-                alt={text}
-                style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, border: '2px solid #f1f5f9' }}
-                onError={(e: any) => { e.target.style.display = 'none'; }}
-              />
-            ) : (
-              <div style={{
-                width: 44, height: 44, borderRadius: 8,
-                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-              }}>
-                <TagsOutlined style={{ color: 'white', fontSize: 20 }} />
-              </div>
-            )}
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{text}</div>
-            <Text type="secondary" style={{ fontSize: 12 }}>/{record.slug}</Text>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-      render: (text: string) => (
-        <Text type="secondary" style={{ fontSize: 13 }}>{text || '—'}</Text>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 130,
-      render: (status: string) => (
-        <Tag
-          icon={status === 'active' ? <CheckCircleOutlined /> : <StopOutlined />}
-          color={status === 'active' ? 'success' : 'error'}
-          style={{ borderRadius: 20, padding: '2px 10px', fontWeight: 500 }}
-        >
-          {status === 'active' ? 'Hoạt động' : 'Tạm dừng'}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 140,
-      render: (date: string) => (
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {date ? new Date(date).toLocaleDateString('vi-VN') : '—'}
-        </Text>
-      ),
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      width: 160,
-      render: (_: any, record: any) => (
-        <Space size={6}>
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="text" icon={<EyeOutlined />}
-              onClick={() => handleView(record)}
-              style={{ color: '#6366f1', borderRadius: 8 }}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="primary" ghost icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
-              style={{ borderRadius: 8 }}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa danh mục này?"
-            description="Hành động này không thể hoàn tác."
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa" cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button danger ghost icon={<DeleteOutlined />} style={{ borderRadius: 8 }} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const activeCount = categories.filter(c => c.status === "active").length
+  const inactiveCount = categories.filter(c => c.status !== "active").length
 
   return (
-    <div style={{ padding: '0 4px' }}>
-      {/* Page Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <Title level={3} style={{ margin: 0, fontWeight: 700 }}>
-              <TagsOutlined style={{ color: '#3b82f6', marginRight: 10 }} />
-              Quản lý Danh Mục
-            </Title>
-            <Text type="secondary">Quản lý các nhóm sản phẩm trong hệ thống</Text>
-          </div>
-          <Button
-            type="primary" icon={<PlusOutlined />} size="large"
-            onClick={handleAdd}
-            style={{
-              borderRadius: 10, height: 44, paddingInline: 24, fontWeight: 600,
-              background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-              border: 'none', boxShadow: '0 4px 15px rgba(59,130,246,0.4)'
-            }}
-          >
-            Thêm Danh Mục
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+          <p className="text-muted-foreground">Manage product categories and groupings</p>
         </div>
-
-        {/* Stats Row */}
-        <Row gutter={[16, 16]} style={{ marginTop: 20 }}>
-          {[
-            { label: 'Tổng danh mục', value: categories.length, color: '#3b82f6', bg: '#eff6ff' },
-            { label: 'Đang hoạt động', value: activeCount, color: '#10b981', bg: '#f0fdf4' },
-            { label: 'Tạm dừng', value: inactiveCount, color: '#ef4444', bg: '#fef2f2' },
-          ].map((stat, i) => (
-            <Col key={i} xs={8} sm={8} md={8}>
-              <div style={{
-                background: stat.bg, borderRadius: 12, padding: '16px 20px',
-                border: `1px solid ${stat.color}22`
-              }}>
-                <div style={{ fontSize: 24, fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{stat.label}</div>
-              </div>
-            </Col>
-          ))}
-        </Row>
+        <Button onClick={handleAdd}>
+          <Plus className="size-4 mr-2" />
+          Add Category
+        </Button>
       </div>
 
-      {/* Table Card */}
-      <div style={{
-        background: 'white', borderRadius: 16, boxShadow: '0 1px 12px rgba(0,0,0,0.06)',
-        overflow: 'hidden'
-      }}>
-        {/* Toolbar */}
-        <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #f1f5f9',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap'
-        }}>
-          <Input
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            placeholder="Tìm kiếm danh mục..."
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            allowClear
-            style={{ maxWidth: 300, borderRadius: 8 }}
-          />
-          <Tooltip title="Làm mới">
-            <Button icon={<ReloadOutlined />} onClick={fetchCategories} loading={loading} style={{ borderRadius: 8 }} />
-          </Tooltip>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={filtered}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} danh mục`,
-            style: { padding: '16px 20px' }
-          }}
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-          locale={{ emptyText: <Empty description="Chưa có danh mục nào" style={{ padding: '40px 0' }} /> }}
-        />
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Categories</CardTitle>
+            <Tags className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{categories.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CheckCircle className="size-5 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{activeCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Inactive</CardTitle>
+            <XCircle className="size-5 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{inactiveCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal
-        title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              {editingCategory ? <EditOutlined style={{ color: 'white' }} /> : <PlusOutlined style={{ color: 'white' }} />}
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <span style={{ fontWeight: 700 }}>{editingCategory ? 'Chỉnh sửa Danh Mục' : 'Thêm Danh Mục Mới'}</span>
+            <Button variant="outline" size="icon" onClick={fetchCategories} disabled={loading}>
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
           </div>
-        }
-        open={isModalOpen}
-        onOk={handleModalOk}
-        onCancel={() => setIsModalOpen(false)}
-        okText="Lưu lại" cancelText="Hủy bỏ"
-        okButtonProps={{ style: { borderRadius: 8, background: '#3b82f6', border: 'none', fontWeight: 600 } }}
-        cancelButtonProps={{ style: { borderRadius: 8 } }}
-        destroyOnClose
-        width={520}
-      >
-        <Form
-          form={form} layout="vertical"
-          style={{ marginTop: 20 }}
-          onValuesChange={(changed) => {
-            if (changed.name) {
-              const slug = changed.name
-                .toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^\w ]+/g, '').replace(/ +/g, '-');
-              form.setFieldsValue({ slug });
-            }
-          }}
-        >
-          <Form.Item name="name" label={<b>Tên Danh Mục</b>}
-            rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
-          >
-            <Input placeholder="Ví dụ: Điện thoại, Laptop..." size="large" style={{ borderRadius: 8 }} />
-          </Form.Item>
+        </CardContent>
+      </Card>
 
-          <Form.Item name="slug" label={<b>Slug (tự động)</b>}
-            rules={[{ required: true, message: 'Slug không được để trống!' }]}
-          >
-            <Input placeholder="dien-thoai" size="large" style={{ borderRadius: 8 }} addonBefore="/" />
-          </Form.Item>
-
-          <Form.Item name="description" label={<b>Mô tả</b>}>
-            <Input.TextArea rows={3} placeholder="Nhập mô tả ngắn về danh mục..." style={{ borderRadius: 8 }} />
-          </Form.Item>
-
-          <Form.Item name="status" label={<b>Trạng thái</b>} initialValue="active">
-            <Select size="large" style={{ borderRadius: 8 }}>
-              <Select.Option value="active">✅ Hoạt động</Select.Option>
-              <Select.Option value="inactive">⏸️ Tạm dừng</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item label={<b>Ảnh minh họa</b>}>
-            <Upload
-              customRequest={handleUpload}
-              listType="picture-card"
-              fileList={fileList}
-              onChange={({ fileList: newList }) => setFileList(newList)}
-              accept="image/*"
-              maxCount={1}
-            >
-              {fileList.length >= 1 ? null : (
-                <div>
-                  <PlusOutlined />
-                  <div style={{ marginTop: 8, fontSize: 12 }}>Tải ảnh</div>
-                </div>
-              )}
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* View Detail Drawer */}
-      <Drawer
-        title="Chi tiết Danh Mục"
-        placement="right"
-        width={400}
-        onClose={() => setIsViewOpen(false)}
-        open={isViewOpen}
-      >
-        {viewCategory && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)',
-              borderRadius: 12, padding: 20, textAlign: 'center'
-            }}>
-              {viewCategory.image ? (
-                <div style={{ margin: '0 auto 12px', display: 'flex', justifyContent: 'center' }}>
-                  <Image
-                    src={getImageUrl(viewCategory.image)}
-                    style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 16, border: '4px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  />
-                </div>
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-12 rounded-lg" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12">
+                    <Tags className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">No categories found</p>
+                  </TableCell>
+                </TableRow>
               ) : (
-                <div style={{
-                  width: 64, height: 64, borderRadius: 16, margin: '0 auto 12px',
-                  background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  <TagsOutlined style={{ color: 'white', fontSize: 28 }} />
-                </div>
+                filtered.map((item: any, idx: number) => (
+                  <TableRow key={item._id}>
+                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="size-12 rounded-lg border bg-muted overflow-hidden shrink-0">
+                          {item.image ? (
+                            <img src={getImageUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Tags className="size-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-medium">{item.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-sm">
+                      /{item.slug}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                      {item.description || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusConfig[item.status]?.variant || "outline"}>
+                        {statusConfig[item.status]?.label || item.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleView(item)}>
+                          <Eye className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item._id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-              <Title level={4} style={{ margin: 0 }}>{viewCategory.name}</Title>
-              <Text type="secondary">/{viewCategory.slug}</Text>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* View Sheet */}
+      <Sheet open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Category Details</SheetTitle>
+            <SheetDescription>View category information</SheetDescription>
+          </SheetHeader>
+          {viewCategory && (
+            <ScrollArea className="h-[calc(100%-120px)] mt-6 pr-4">
+              <div className="space-y-6">
+                <div className="aspect-video rounded-lg border bg-muted overflow-hidden">
+                  {viewCategory.image ? (
+                    <img src={getImageUrl(viewCategory.image)} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Tags className="size-12 text-muted-foreground/30" />
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <h3 className="text-xl font-semibold">{viewCategory.name}</h3>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Slug</p>
+                  <p className="font-mono text-sm">/{viewCategory.slug}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge variant={statusConfig[viewCategory.status]?.variant || "outline"}>
+                    {statusConfig[viewCategory.status]?.label || viewCategory.status}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Description</p>
+                  <p className="text-sm">{viewCategory.description || "No description"}</p>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Created</p>
+                    <p className="text-sm font-medium">
+                      {viewCategory.createdAt ? new Date(viewCategory.createdAt).toLocaleString("vi-VN") : "-"}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Updated</p>
+                    <p className="text-sm font-medium">
+                      {viewCategory.updatedAt ? new Date(viewCategory.updatedAt).toLocaleString("vi-VN") : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
+            <DialogDescription>Fill in the category details below</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Category Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, name: e.target.value, slug: generateSlug(e.target.value) }))
+                }}
+                placeholder="Enter category name"
+              />
             </div>
 
-            {[
-              { label: 'Mô tả', value: viewCategory.description || '(Không có)' },
-              { label: 'Trạng thái', value: viewCategory.status === 'active' ? '✅ Hoạt động' : '⏸️ Tạm dừng' },
-              { label: 'Ngày tạo', value: new Date(viewCategory.createdAt).toLocaleString('vi-VN') },
-              { label: 'Cập nhật', value: new Date(viewCategory.updatedAt).toLocaleString('vi-VN') },
-            ].map((item, i) => (
-              <div key={i} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
-                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>{item.label}</Text>
-                <Text strong>{item.value}</Text>
-              </div>
-            ))}
+            <div className="grid gap-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                placeholder="category-slug"
+              />
+            </div>
 
-            <Space style={{ width: '100%' }}>
-              <Button type="primary" icon={<EditOutlined />} block
-                onClick={() => { setIsViewOpen(false); handleEdit(viewCategory); }}
-                style={{ borderRadius: 8, flex: 1 }}
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Category description..."
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Chỉnh sửa
-              </Button>
-            </Space>
-          </div>
-        )}
-      </Drawer>
-    </div>
-  );
-};
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
 
-export default Categories;
+            <Separator />
+
+            <div className="grid gap-3">
+              <Label>Category Image</Label>
+              <div className="flex items-center gap-4">
+                {fileList.length > 0 ? (
+                  <div className="relative size-24 rounded-lg border bg-muted overflow-hidden">
+                    <img src={fileList[0].url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-1 right-1 size-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="size-24 rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/5 transition-colors">
+                    <Upload className="size-6 text-muted-foreground/50 mb-1" />
+                    <span className="text-xs text-muted-foreground/50">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleModalOk} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+export default Categories

@@ -1,590 +1,572 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  Table, 
-  Tag, 
-  Space, 
-  Button, 
-  Input, 
-  Select, 
-  Modal, 
-  Form, 
-  Avatar, 
-  Typography, 
-  notification, 
-  Popconfirm,
-  Tooltip,
-  Upload
-} from 'antd';
-import { 
-  UserOutlined,
-  PlusOutlined,
-  LoadingOutlined,
-  SearchOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  LockOutlined,
-  UnlockOutlined
-} from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import userApi from '../../api/userApi';
-import roleApi from '../../api/roleApi';
-import uploadApi from '../../api/uploadApi';
-import type { User, Role } from '../../types/auth';
-import { getAvatarUrl, BASE_URL } from '../../utils/imageUtils';
-
-const { Title } = Typography;
-const { Option } = Select;
+import React, { useEffect, useState } from "react"
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Shield,
+  Lock,
+  Unlock,
+  Mail,
+  Phone,
+  Upload,
+  UserCheck,
+} from "lucide-react"
+import userApi from "@/api/userApi"
+import roleApi from "@/api/roleApi"
+import uploadApi from "@/api/uploadApi"
+import type { User as UserType, Role } from "@/types/auth"
+import { getAvatarUrl, BASE_URL } from "@/utils/imageUtils"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const Users: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [filterRole, setFilterRole] = useState<string | null>(null);
-  
+  const [users, setUsers] = useState<UserType[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searchText, setSearchText] = useState("")
+  const [filterRole, setFilterRole] = useState<string>("")
+
   // Modal states
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editForm] = Form.useForm();
-  const [addForm] = Form.useForm();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<UserType | null>(null)
 
   // Upload states
-  const [uploading, setUploading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
 
+  // Form data
+  const [editFormData, setEditFormData] = useState({
+    fullName: "",
+    phone: "",
+    roleId: "",
+    avatarUrl: "",
+  })
 
+  const [addFormData, setAddFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    username: "",
+    password: "",
+    roleId: "",
+    avatarUrl: "",
+  })
 
   const fetchUsers = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response = await userApi.getAll();
-      setUsers(response as any);
-    } catch (error: any) {
-      notification.error({
-        title: 'Lỗi tải danh sách người dùng',
-        description: error.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+      const response = await userApi.getAll()
+      setUsers(response as any)
+    } catch (error) {
+      console.error("Error loading users:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchRoles = async () => {
     try {
-      const response = await roleApi.getAll();
-      setRoles(response as any);
+      const response = await roleApi.getAll()
+      setRoles(response as any)
     } catch (error) {
-      console.error('Lỗi tải danh sách quyền:', error);
+      console.error("Error loading roles:", error)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchUsers();
-    fetchRoles();
-  }, []);
-
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchText(e.target.value);
-  };
-
-  const handleFilterRole = (value: string | null) => {
-    setFilterRole(value);
-  };
+    fetchUsers()
+    fetchRoles()
+  }, [])
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
+    const matchesSearch =
       user.fullName.toLowerCase().includes(searchText.toLowerCase()) ||
       user.email.toLowerCase().includes(searchText.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchText.toLowerCase());
-    
-    const roleId = (user.role && typeof user.role === 'object') ? user.role._id : user.role;
-    const matchesRole = filterRole ? roleId === filterRole : true;
-    
-    return matchesSearch && matchesRole;
-  });
+      user.username.toLowerCase().includes(searchText.toLowerCase())
 
-  const handleEdit = (user: User) => {
-    setEditingUser(user);
-    const roleId = (user.role && typeof user.role === 'object') ? user.role._id : user.role;
-    setImageUrl(user.avatarUrl ? `${BASE_URL}${user.avatarUrl}` : null);
-    editForm.setFieldsValue({
+    const roleId = (user.role && typeof user.role === "object") ? user.role._id : user.role
+    const matchesRole = filterRole ? roleId === filterRole : true
+
+    return matchesSearch && matchesRole
+  })
+
+  const handleEdit = (user: UserType) => {
+    setEditingUser(user)
+    const roleId = (user.role && typeof user.role === "object") ? user.role._id : user.role
+    setImageUrl(user.avatarUrl ? `${BASE_URL}${user.avatarUrl}` : null)
+    setEditFormData({
       fullName: user.fullName,
-      phone: user.phone,
-      roleId: roleId,
-      avatarUrl: user.avatarUrl
-    });
-    setIsEditModalOpen(true);
-  };
+      phone: user.phone || "",
+      roleId: roleId || "",
+      avatarUrl: user.avatarUrl || "",
+    })
+    setIsEditModalOpen(true)
+  }
 
-  const handleUpload = async (options: any, form: any) => {
-    const { file, onSuccess, onError } = options;
-    setUploading(true);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, isAdd: boolean) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
     try {
-      const response: any = await uploadApi.uploadImage(file as File);
-      // Assuming response path is format: { data: "/uploads/abc.jpg" } or { path: "/uploads/abc.jpg" }
-      // Check message summary for expected format. Backend generally returns { success: true, data: "/path" }
-      const photoPath = response.avatarUrl;
-      
-      const fullUrl = `${BASE_URL}${photoPath}`;
-      setImageUrl(fullUrl);
-      form.setFieldsValue({ avatarUrl: photoPath });
-      
-      notification.success({ title: 'Tải ảnh lên thành công' });
-      if (onSuccess) onSuccess("ok");
-    } catch (error: any) {
-      notification.error({ title: 'Tải ảnh lên thất bại' });
-      if (onError) onError(error);
-    } finally {
-      setUploading(false);
+      const response: any = await uploadApi.uploadImage(files[0] as File)
+      const photoPath = response.avatarUrl
+      const fullUrl = `${BASE_URL}${photoPath}`
+      setImageUrl(fullUrl)
+
+      if (isAdd) {
+        setAddFormData(prev => ({ ...prev, avatarUrl: photoPath }))
+      } else {
+        setEditFormData(prev => ({ ...prev, avatarUrl: photoPath }))
+      }
+    } catch (error) {
+      console.error("Upload error:", error)
     }
-  };
+  }
 
   const handleDelete = async (id: string) => {
     try {
-      await userApi.delete(id);
-      notification.success({ title: 'Xóa người dùng thành công' });
-      fetchUsers();
-    } catch (error: any) {
-      notification.error({
-        title: 'Xóa người dùng thất bại',
-        description: error.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+      await userApi.delete(id)
+      fetchUsers()
+    } catch (error) {
+      console.error("Error deleting:", error)
     }
-  };
+  }
 
-  const handleToggleLock = async (user: User) => {
-    const isLocked = user.lockTime && new Date(user.lockTime).getTime() > Date.now();
-    // Use clear lockTime or set it 100 years ahead
-    const newLockTime = isLocked ? null : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
-    
+  const handleToggleLock = async (user: UserType) => {
+    const isLocked = user.lockTime && new Date(user.lockTime).getTime() > Date.now()
+    const newLockTime = isLocked ? null : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000)
+
     try {
-      await userApi.update(user._id, { lockTime: newLockTime });
-      notification.success({ 
-        title: isLocked ? 'Mở khóa người dùng thành công' : 'Khóa người dùng thành công' 
-      });
-      fetchUsers();
-    } catch (error: any) {
-      notification.error({
-        title: 'Thao tác thất bại',
-        description: error.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+      await userApi.update(user._id, { lockTime: newLockTime })
+      fetchUsers()
+    } catch (error) {
+      console.error("Error toggling lock:", error)
     }
-  };
+  }
 
-  const onFinishEdit = async (values: any) => {
-    if (!editingUser) return;
-    
+  const onFinishEdit = async () => {
+    if (!editingUser) return
     try {
       await userApi.update(editingUser._id, {
-        fullName: values.fullName,
-        phone: values.phone,
-        role: values.roleId,
-        avatarUrl: values.avatarUrl
-      });
-      notification.success({ title: 'Cập nhật người dùng thành công' });
-      setIsEditModalOpen(false);
-      fetchUsers();
-    } catch (error: any) {
-      notification.error({
-        title: 'Cập nhật thất bại',
-        description: error.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+        fullName: editFormData.fullName,
+        phone: editFormData.phone,
+        role: editFormData.roleId,
+        avatarUrl: editFormData.avatarUrl,
+      })
+      setIsEditModalOpen(false)
+      fetchUsers()
+    } catch (error) {
+      console.error("Error updating:", error)
     }
-  };
+  }
 
-  const onFinishAdd = async (values: any) => {
+  const onFinishAdd = async () => {
     try {
       await userApi.create({
-        ...values,
-        role: values.roleId,
-        avatarUrl: values.avatarUrl
-      });
-      notification.success({ title: 'Thêm người dùng mới thành công' });
-      setIsAddModalOpen(false);
-      addForm.resetFields();
-      setImageUrl(null);
-      fetchUsers();
-    } catch (error: any) {
-      notification.error({
-        title: 'Thêm người dùng thất bại',
-        description: error.response?.data?.message || 'Vui lòng thử lại sau',
-      });
+        ...addFormData,
+        role: addFormData.roleId,
+      })
+      setIsAddModalOpen(false)
+      setAddFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        username: "",
+        password: "",
+        roleId: "",
+        avatarUrl: "",
+      })
+      setImageUrl(null)
+      fetchUsers()
+    } catch (error) {
+      console.error("Error creating:", error)
     }
-  };
+  }
 
-  const columns: ColumnsType<User> = [
-    {
-      title: 'Avatar',
-      dataIndex: 'avatarUrl',
-      key: 'avatar',
-      width: 80,
-      render: (url, record) => (
-        <Avatar 
-          src={getAvatarUrl(url) || undefined} 
-          icon={<UserOutlined />} 
-          className="bg-blue-500 shadow-sm"
-        >
-          {record.fullName.charAt(0)}
-        </Avatar>
-      ),
-    },
-    {
-      title: 'Họ tên',
-      dataIndex: 'fullName',
-      key: 'fullName',
-      sorter: (a, b) => a.fullName.localeCompare(b.fullName),
-    },
-    {
-      title: 'Username / Email',
-      key: 'username_email',
-      render: (_, record) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{record.username}</span>
-          <span className="text-xs text-gray-500">{record.email}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Số điện thoại',
-      dataIndex: 'phone',
-      key: 'phone',
-    },
-    {
-      title: 'Quyền',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role: Role | string) => {
-        if (typeof role === 'object' && role !== null) {
-          return <Tag color="blue">{role.name.toUpperCase()}</Tag>;
-        }
-        return <Tag color="default">{String(role).toUpperCase()}</Tag>;
-      },
-    },
-    {
-      title: 'Trạng thái',
-      key: 'status',
-      render: (_, record) => {
-        const isLocked = record.lockTime && new Date(record.lockTime).getTime() > Date.now();
-        if (isLocked) {
-          return <Tag color="red">Bị khóa</Tag>;
-        }
-        if (record.isDeleted) {
-          return <Tag color="default">Đã xóa</Tag>;
-        }
-        return <Tag color="green">Đang hoạt động</Tag>;
-      },
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_, record) => {
-        const isLocked = record.lockTime && new Date(record.lockTime).getTime() > Date.now();
-        return (
-          <Space size="middle">
-            <Tooltip title="Chỉnh sửa">
-              <Button 
-                type="text" 
-                icon={<EditOutlined className="text-blue-500 hover:text-blue-600" />} 
-                onClick={() => handleEdit(record)}
-              />
-            </Tooltip>
-            
-            <Tooltip title={isLocked ? "Mở khóa" : "Khóa"}>
-              <Button 
-                type="text" 
-                icon={isLocked ? <UnlockOutlined className="text-orange-500" /> : <LockOutlined className="text-yellow-500" />} 
-                onClick={() => handleToggleLock(record)}
-              />
-            </Tooltip>
-
-            <Popconfirm
-              title="Xác nhận xóa người dùng?"
-              description="Hành động này sẽ ẩn người dùng khỏi hệ thống."
-              onConfirm={() => handleDelete(record._id)}
-              okText="Xóa"
-              cancelText="Hủy"
-              okButtonProps={{ danger: true }}
-            >
-              <Tooltip title="Xóa">
-                <Button 
-                  type="text" 
-                  icon={<DeleteOutlined className="text-red-500 hover:text-red-600" />} 
-                />
-              </Tooltip>
-            </Popconfirm>
-          </Space>
-        );
-      },
-    },
-  ];
+  const lockedCount = users.filter(user => user.lockTime && new Date(user.lockTime).getTime() > Date.now()).length
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-sm">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <Title level={3} className="!m-0">Quản lý Người dùng</Title>
-        
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <Input
-            placeholder="Tìm theo tên/email..."
-            prefix={<SearchOutlined className="text-gray-400" />}
-            className="w-full sm:w-64 border-gray-200 rounded-lg"
-            value={searchText}
-            onChange={handleSearch}
-            allowClear
-          />
-          <Select
-            placeholder="Lọc theo quyền"
-            className="w-full sm:w-48"
-            onChange={handleFilterRole}
-            allowClear
-          >
-            {roles.map(role => (
-              <Option key={role._id} value={role._id}>
-                {role.name}
-              </Option>
-            ))}
-          </Select>
-          <Button 
-            type="primary" 
-            onClick={fetchUsers}
-            className="md:w-auto w-full"
-          >
-            Làm mới
-          </Button>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setImageUrl(null);
-              addForm.resetFields();
-              setIsAddModalOpen(true);
-            }}
-            className="md:w-auto w-full bg-green-600 hover:bg-green-700 !border-none"
-          >
-            Thêm người dùng
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+          <p className="text-muted-foreground">Manage user accounts and permissions</p>
         </div>
+        <Button onClick={() => {
+          setImageUrl(null)
+          setAddFormData({
+            fullName: "",
+            email: "",
+            phone: "",
+            username: "",
+            password: "",
+            roleId: "",
+            avatarUrl: "",
+          })
+          setIsAddModalOpen(true)
+        }}>
+          <Plus className="size-4 mr-2" />
+          Add User
+        </Button>
       </div>
 
-      <Table 
-        columns={columns} 
-        dataSource={filteredUsers} 
-        rowKey="_id" 
-        loading={loading}
-        pagination={{ pageSize: 10, showSizeChanger: true }}
-        className="border border-gray-100 rounded-lg"
-      />
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+            <UserCheck className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{users.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Roles</CardTitle>
+            <Shield className="size-5 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{roles.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Locked</CardTitle>
+            <Lock className="size-5 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{lockedCount}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      <Modal
-        title={
-          <div className="flex items-center gap-2 border-b pb-3">
-            <EditOutlined className="text-blue-600" />
-            <span>Chỉnh sửa Người dùng</span>
-          </div>
-        }
-        open={isEditModalOpen}
-        onCancel={() => setIsEditModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        centered
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-          onFinish={onFinishEdit}
-          className="mt-4"
-        >
-          <div className="flex flex-col items-center mb-6">
-            <Form.Item name="avatarUrl" hidden>
-              <Input />
-            </Form.Item>
-            <Upload
-              name="image"
-              listType="picture-card"
-              className="avatar-uploader"
-              showUploadList={false}
-              customRequest={(options) => handleUpload(options, editForm)}
-              accept="image/*"
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, username..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="flex h-10 w-full md:w-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              {imageUrl ? (
-                <img src={imageUrl} alt="avatar" style={{ width: '100%', borderRadius: '8px' }} />
-              ) : (
-                <div className="flex flex-col items-center">
-                  {uploading ? <LoadingOutlined /> : <PlusOutlined />}
-                  <div style={{ marginTop: 8 }}>Avatar</div>
-                </div>
-              )}
-            </Upload>
-            <p className="text-xs text-gray-400 mt-2">Ảnh đại diện người dùng</p>
-          </div>
-
-          <Form.Item
-            name="fullName"
-            label="Họ tên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
-          >
-            <Input placeholder="Nhập họ tên đầy đủ" />
-          </Form.Item>
-
-          <Form.Item
-            name="phone"
-            label="Số điện thoại"
-          >
-            <Input placeholder="Nhập số điện thoại" />
-          </Form.Item>
-
-          <Form.Item
-            name="roleId"
-            label="Vai trò (Quyền)"
-            rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
-          >
-            <Select placeholder="Chọn quyền">
+              <option value="">All Roles</option>
               {roles.map(role => (
-                <Option key={role._id} value={role._id}>
-                  {role.name}
-                </Option>
+                <option key={role._id} value={role._id}>{role.name}</option>
               ))}
-            </Select>
-          </Form.Item>
-
-          <div className="flex justify-end gap-3 mt-8">
-            <Button onClick={() => setIsEditModalOpen(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit" className="bg-blue-600 px-6">
-              Lưu thay đổi
+            </select>
+            <Button variant="outline" size="icon" onClick={fetchUsers} disabled={loading}>
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
-        </Form>
-      </Modal>
+        </CardContent>
+      </Card>
 
-      <Modal
-        title={
-          <div className="flex items-center gap-2 border-b pb-3 text-blue-600">
-            <PlusOutlined />
-            <span className="font-semibold text-gray-800">Thêm người dùng mới</span>
-          </div>
-        }
-        open={isAddModalOpen}
-        onCancel={() => setIsAddModalOpen(false)}
-        footer={null}
-        destroyOnClose
-        centered
-        width={600}
-      >
-        <Form
-          form={addForm}
-          layout="vertical"
-          onFinish={onFinishAdd}
-          className="mt-6"
-          requiredMark="optional"
-        >
-          <div className="flex flex-col items-center mb-8">
-            <Form.Item name="avatarUrl" hidden>
-              <Input />
-            </Form.Item>
-            <Upload
-              name="image"
-              listType="picture-card"
-              className="avatar-uploader"
-              showUploadList={false}
-              customRequest={(options) => handleUpload(options, addForm)}
-              accept="image/*"
-            >
-              {imageUrl ? (
-                <img src={imageUrl} alt="avatar" style={{ width: '100%', borderRadius: '8px' }} />
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-12 rounded-full" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <Shield className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">No users found</p>
+                  </TableCell>
+                </TableRow>
               ) : (
-                <div className="flex flex-col items-center">
-                  {uploading ? <LoadingOutlined /> : <PlusOutlined />}
-                  <div style={{ marginTop: 8 }}>Tải ảnh</div>
-                </div>
+                filteredUsers.map((user: any, idx: number) => {
+                  const isLocked = user.lockTime && new Date(user.lockTime).getTime() > Date.now()
+                  const roleName = (typeof user.role === "object" && user.role !== null) ? user.role.name : String(user.role)
+
+                  return (
+                    <TableRow key={user._id}>
+                      <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="size-12">
+                            <AvatarImage src={getAvatarUrl(user.avatarUrl) || undefined} />
+                            <AvatarFallback>{user.fullName?.charAt(0) || "U"}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.fullName}</p>
+                            <p className="text-sm text-muted-foreground">ID: {user._id?.slice(-6)}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1 text-sm">
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Mail className="size-3.5" />
+                            <span>{user.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Phone className="size-3.5" />
+                            <span>{user.phone || "-"}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={roleName.toUpperCase() === "ADMIN" ? "default" : "secondary"}>
+                          {roleName}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={isLocked ? "destructive" : "default"}>
+                          {isLocked ? "Locked" : "Active"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleToggleLock(user)}
+                            className={isLocked ? "text-amber-600 hover:text-amber-700" : "text-red-600 hover:text-red-700"}
+                          >
+                            {isLocked ? <Unlock className="size-4" /> : <Lock className="size-4" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(user._id)} className="text-destructive hover:text-destructive">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
-            </Upload>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Click để upload ảnh đại diện</p>
-          </div>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
-            <Form.Item
-              name="fullName"
-              label={<span className="font-medium">Họ và Tên</span>}
-              rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
-            >
-              <Input placeholder="Nguyễn Văn A" className="rounded-md" />
-            </Form.Item>
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>Update user information</DialogDescription>
+          </DialogHeader>
 
-            <Form.Item
-              name="email"
-              label={<span className="font-medium">Email</span>}
-              rules={[
-                { required: true, message: 'Vui lòng nhập email' },
-                { type: 'email', message: 'Email không đúng định dạng' }
-              ]}
-            >
-              <Input placeholder="example@gmail.com" className="rounded-md" />
-            </Form.Item>
+          <div className="grid gap-4 py-4">
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center mb-4">
+              <div className="relative">
+                <Avatar className="size-24">
+                  <AvatarImage src={imageUrl || undefined} />
+                  <AvatarFallback>{editFormData.fullName?.charAt(0) || "U"}</AvatarFallback>
+                </Avatar>
+                <label className="absolute -bottom-1 -right-1 size-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90">
+                  <Upload className="size-4" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, false)} />
+                </label>
+              </div>
+            </div>
 
-            <Form.Item
-              name="phone"
-              label={<span className="font-medium">Số điện thoại</span>}
-              rules={[
-                { pattern: /^[0-9]+$/, message: 'Số điện thoại chỉ được chứa số' }
-              ]}
-            >
-              <Input placeholder="0123456789" className="rounded-md" />
-            </Form.Item>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-fullName">Full Name</Label>
+              <Input
+                id="edit-fullName"
+                value={editFormData.fullName}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              />
+            </div>
 
-            <Form.Item
-              name="username"
-              label={<span className="font-medium">Tên đăng nhập</span>}
-              rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập' }]}
-            >
-              <Input placeholder="username123" className="rounded-md" />
-            </Form.Item>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-phone">Phone</Label>
+              <Input
+                id="edit-phone"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
 
-            <Form.Item
-              name="password"
-              label={<span className="font-medium">Mật khẩu</span>}
-              rules={[
-                { required: true, message: 'Vui lòng nhập mật khẩu' },
-                { min: 6, message: 'Mật khẩu tối thiểu 6 ký tự' }
-              ]}
-            >
-              <Input.Password placeholder="••••••" className="rounded-md" />
-            </Form.Item>
-
-            <Form.Item
-              name="roleId"
-              label={<span className="font-medium">Vai trò</span>}
-              rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
-            >
-              <Select placeholder="Chọn quyền" className="rounded-md">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-role">Role</Label>
+              <select
+                id="edit-role"
+                value={editFormData.roleId}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, roleId: e.target.value }))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select role</option>
                 {roles.map(role => (
-                  <Option key={role._id} value={role._id}>
-                    {role.name}
-                  </Option>
+                  <option key={role._id} value={role._id}>{role.name}</option>
                 ))}
-              </Select>
-            </Form.Item>
+              </select>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-10">
-            <Button 
-              onClick={() => setIsAddModalOpen(false)}
-              className="rounded-md px-6 hover:border-blue-500 hover:text-blue-500 transition-all"
-            >
-              Hủy
-            </Button>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              className="bg-blue-600 hover:bg-blue-700 px-8 rounded-md shadow-md border-none"
-            >
-              Tạo người dùng
-            </Button>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+            <Button onClick={onFinishEdit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>Create a new user account</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {/* Avatar Upload */}
+            <div className="flex flex-col items-center mb-4">
+              <div className="relative">
+                <Avatar className="size-24">
+                  <AvatarImage src={imageUrl || undefined} />
+                  <AvatarFallback>?</AvatarFallback>
+                </Avatar>
+                <label className="absolute -bottom-1 -right-1 size-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90">
+                  <Upload className="size-4" />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUpload(e, true)} />
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="add-fullName">Full Name</Label>
+                <Input
+                  id="add-fullName"
+                  value={addFormData.fullName}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Nguyen Van A"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="add-email">Email</Label>
+                <Input
+                  id="add-email"
+                  type="email"
+                  value={addFormData.email}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="example@gmail.com"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="add-phone">Phone</Label>
+                <Input
+                  id="add-phone"
+                  value={addFormData.phone}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="0123456789"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="add-username">Username</Label>
+                <Input
+                  id="add-username"
+                  value={addFormData.username}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, username: e.target.value }))}
+                  placeholder="username123"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="add-password">Password</Label>
+                <Input
+                  id="add-password"
+                  type="password"
+                  value={addFormData.password}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="********"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="add-role">Role</Label>
+                <select
+                  id="add-role"
+                  value={addFormData.roleId}
+                  onChange={(e) => setAddFormData(prev => ({ ...prev, roleId: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select role</option>
+                  {roles.map(role => (
+                    <option key={role._id} value={role._id}>{role.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-        </Form>
-      </Modal>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+            <Button onClick={onFinishAdd}>Create User</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Users;
+export default Users

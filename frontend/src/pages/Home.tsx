@@ -113,9 +113,14 @@ const Home: React.FC = () => {
   }
 
   return (
-    <div className="bg-[#fcfdfe] min-h-screen">
+    <div className="bg-background min-h-screen relative overflow-hidden">
+      {/* Background Orbs for Liquid Glass */}
+      <div className="fixed top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[100px] animate-blob pointer-events-none z-0"></div>
+      <div className="fixed top-[40%] left-[-10%] w-[500px] h-[500px] bg-secondary/15 rounded-full blur-[120px] animate-blob animation-delay-2000 pointer-events-none z-0"></div>
+      <div className="fixed bottom-[-10%] right-[10%] w-[450px] h-[450px] bg-cta/10 rounded-full blur-[90px] animate-blob animation-delay-4000 pointer-events-none z-0"></div>
+
       {/* Container shared for all sections */}
-      <div className="container mx-auto px-4 md:px-6 lg:px-8">
+      <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10 pt-6">
         
         {/* 1. Hero Banner */}
         <section className="animate-slideUp">
@@ -147,49 +152,49 @@ const Home: React.FC = () => {
           <CustomerReviews />
         </section>
 
-        {/* 7. Newsletter - Re-designed */}
-        <section className="mt-40 mb-20 relative overflow-hidden rounded-[4rem] group shadow-2xl animate-slideUp delay-[600ms]">
-           <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 px-12 py-24 md:py-32 flex flex-col items-center justify-center text-center relative z-10 transition-all duration-700 group-hover:scale-105">
+        {/* 7. Newsletter - Re-designed to Liquid Glass */}
+        <section className="mt-40 mb-20 relative overflow-hidden rounded-[3rem] group animate-slideUp delay-[600ms]">
+           <div className="bg-gradient-to-br from-primary/80 via-primary/60 to-secondary/80 backdrop-blur-3xl px-12 py-24 md:py-32 flex flex-col items-center justify-center text-center relative z-10 transition-all duration-700 group-hover:scale-[1.02] border border-white/20 glass-card">
               <div className="max-w-4xl relative z-20">
-                <div className="w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto mb-12 shadow-2xl scale-125 border border-white/20">
+                <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto mb-12 shadow-2xl scale-125 border border-white/30">
                     <MailOutlined className="text-white text-5xl animate-pulse" />
                 </div>
                 
-                <Title level={1} className="!text-white !font-black !text-4xl md:!text-6xl !mb-8 tracking-tighter uppercase leading-tight drop-shadow-lg">
-                  NHẬN NGAY ƯU ĐÃI <span className="text-yellow-300">80%</span> <br/> CHO ĐIƠN HÀNG ĐẦU TIÊN
+                <Title level={1} className="!text-white !font-serif !text-4xl md:!text-6xl !mb-8 tracking-wide uppercase leading-tight drop-shadow-lg">
+                  NHẬN NGAY ƯU ĐÃI <span className="text-cta">80%</span> <br/> CHO ĐƠN HÀNG ĐẦU TIÊN
                 </Title>
                 
-                <Text className="text-blue-100 block text-lg md:text-2xl mb-16 font-medium max-w-3xl mx-auto opacity-80 border-l-2 border-white/30 pl-8 text-left italic">
-                  Đăng ký email của bạn ngay bây giờ để nhận bản tin khuyến mãi giới hạn, bí quyết công nghệ và những bộ sưu tập xu hướng nhất từ Modern Shop.
+                <Text className="text-white block text-lg md:text-2xl mb-16 font-light max-w-3xl mx-auto opacity-90 border-l-2 border-white/30 pl-8 text-left italic">
+                  Đăng ký email của bạn ngay bây giờ để nhận bản tin khuyến mãi giới hạn, bí quyết mua sắm và những bộ sưu tập sang trọng nhất từ Modern Shop.
                 </Text>
                 
                 <div className="flex flex-col md:flex-row gap-6 max-w-2xl mx-auto items-stretch md:items-center">
                   <div className="flex-1 relative group-focus-within:scale-105 transition-transform duration-300">
                      <Input 
                         placeholder="Nhập địa chỉ email của bạn..." 
-                        prefix={<MailOutlined className="text-blue-400 mr-2" />}
-                        className="h-16 rounded-3xl border-none text-xl px-8 shadow-2xl w-full !bg-white/95 backdrop-blur-md focus:!bg-white"
+                        prefix={<MailOutlined className="text-primary mr-2" />}
+                        className="h-16 rounded-full border-none text-xl px-8 shadow-2xl w-full !bg-white/80 backdrop-blur-md focus:!bg-white outline-none"
                       />
                   </div>
                   <Button 
                     type="primary" 
                     size="large" 
-                    icon={<SendOutlined className="scale-125 -rotate-45" />}
-                    className="h-16 px-12 rounded-3xl bg-blue-900 border-none text-white font-black text-xl hover:bg-black hover:scale-110 active:scale-95 transition-all shadow-2xl flex items-center gap-3 uppercase tracking-wider"
+                    icon={<SendOutlined className="scale-125 md:-rotate-45" />}
+                    className="h-16 px-12 rounded-full !bg-cta hover:!bg-cta/90 border-none text-white font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center gap-3 uppercase tracking-wider"
                   >
                     ĐĂNG KÝ NGAY
                   </Button>
                 </div>
-                <Text className="text-white/40 block text-sm mt-8 font-bold uppercase tracking-widest">
+                <Text className="text-white/60 block text-sm mt-8 font-medium uppercase tracking-widest">
                   Cam kết bảo mật thông tin 100% • Hủy đăng ký bất cứ lúc nào
                 </Text>
               </div>
            </div>
            
-           {/* Dynamic Background Effects */}
-           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-400/30 rounded-full blur-[120px] animate-blob pointer-events-none"></div>
-           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-yellow-400/20 rounded-full blur-[100px] animate-blob animation-delay-2000 pointer-events-none"></div>
-           <div className="absolute -inset-1 border border-white/10 rounded-[4rem] pointer-events-none"></div>
+           {/* Dynamic Background Effects for Newsletter */}
+           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cta/30 rounded-full blur-[120px] animate-blob pointer-events-none"></div>
+           <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-secondary/30 rounded-full blur-[100px] animate-blob animation-delay-2000 pointer-events-none"></div>
+           <div className="absolute -inset-1 border border-white/20 rounded-[3rem] pointer-events-none"></div>
         </section>
 
       </div>

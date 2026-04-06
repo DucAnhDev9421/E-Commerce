@@ -8,7 +8,6 @@ let categorySchema = new mongoose.Schema({
     },
     slug: {
         type: String,
-        required: true,
         unique: true
     },
     description: {
@@ -30,6 +29,33 @@ let categorySchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
+});
+
+// Middleware tự động tạo slug trước khi validate
+categorySchema.pre('validate', function (next) {
+    if (this.name && (!this.slug || this.isModified('name'))) {
+        const slugify = require('slugify');
+        this.slug = slugify(this.name, {
+            lower: true,
+            strict: true,
+            locale: 'vi'
+        });
+    }
+    next();
+});
+
+// Middleware cho findOneAndUpdate
+categorySchema.pre('findOneAndUpdate', function (next) {
+    const update = this.getUpdate();
+    if (update.name) {
+        const slugify = require('slugify');
+        update.slug = slugify(update.name, {
+            lower: true,
+            strict: true,
+            locale: 'vi'
+        });
+    }
+    next();
 });
 
 module.exports = mongoose.model('categories', categorySchema);

@@ -101,13 +101,13 @@ const BestSellers: React.FC = () => {
     ];
 
     return (
-        <div className="mt-32">
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 border-b border-gray-100 pb-8">
+        <div className="mt-32 relative z-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 border-b border-primary/20 pb-8 relative z-10">
                  <div className="max-w-2xl">
-                    <Title level={2} className="!m-0 !font-extrabold !text-3xl md:!text-4xl">
+                    <Title level={2} className="!m-0 !font-serif !text-4xl md:!text-5xl text-text">
                         SẢN PHẨM KHÔNG THỂ BỎ LỠ
                     </Title>
-                    <Text type="secondary" className="block mt-4 text-base md:text-lg">
+                    <Text className="block mt-4 text-base md:text-lg text-text/70 font-light">
                         Tuyển tập những siêu phẩm bán chạy nhất, được cộng đồng săn đón và hàng mới cập bến mỗi tuần.
                     </Text>
                  </div>
@@ -115,7 +115,7 @@ const BestSellers: React.FC = () => {
                     type="primary" 
                     size="large" 
                     onClick={() => navigate('/?view=all')}
-                    className="h-12 px-8 rounded-full font-bold bg-black text-white hover:bg-gray-800 hidden md:flex items-center justify-center border-none mt-6 md:mt-0"
+                    className="h-12 px-8 rounded-full font-bold bg-text text-white hover:bg-primary hidden md:flex items-center justify-center border-none mt-6 md:mt-0 transition-colors"
                 >
                     XEM TOÀN BỘ CỬA HÀNG
                 </Button>

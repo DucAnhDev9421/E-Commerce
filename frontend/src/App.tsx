@@ -5,6 +5,8 @@ import Register from './pages/Register';
 import Home from './pages/Home';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
+import Checkout from './pages/Client/Checkout';
+import PaymentResult from './pages/Client/PaymentResult';
 import Profile from './pages/Client/Profile';
 import PrivateRoutes from './middleware/PrivateRoutes';
 
@@ -13,23 +15,28 @@ import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/Admin/Dashboard';
 import Roles from './pages/Admin/Roles';
 import AdminUsers from './pages/Admin/Users';
+import Categories from './pages/Admin/Categories';
+import Products from './pages/Admin/Products';
 
 function App() {
   return (
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#2563eb', // Blue-600
-          borderRadius: 12,
+          colorPrimary: '#059669', // Emerald-600
+          colorInfo: '#10B981',    // Emerald-500
+          borderRadius: 16,        // Rounded for glass effect
           fontFamily: 'Inter, system-ui, sans-serif',
         },
         components: {
           Button: {
-            controlHeight: 40,
+            controlHeight: 44,       // Slightly larger, modern
             fontWeight: 600,
+            borderRadius: 9999,      // Pill shape buttons
           },
           Card: {
-            boxShadowSecondary: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+            colorBgContainer: 'rgba(255, 255, 255, 0.6)',
+            boxShadowSecondary: 'none',
           }
         }
       }}
@@ -41,8 +48,7 @@ function App() {
           <Route element={<MainLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<div className="p-20 text-center"><h1>Trang Thanh Toán</h1><p>Đang phát triển...</p></div>} />
+            <Route path="/payment-result" element={<PaymentResult />} />
           </Route>
 
           {/* Auth Routes */}
@@ -52,21 +58,19 @@ function App() {
           {/* Protected Routes for Auth Users */}
           <Route element={<PrivateRoutes />}>
             <Route element={<MainLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<div className="p-20 text-center"><h1>Trang Thanh Toán</h1><p>Đang phát triển...</p></div>} />
+              <Route path="/checkout" element={<Checkout />} />
             </Route>
-  
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-  
-            {/* Protected Routes for Auth Users */}
-            <Route element={<PrivateRoutes />}>
-              <Route element={<MainLayout />}>
-                <Route path="/profile" element={<Profile />} />
-              </Route>
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="products" element={<Products />} />
+              <Route path="roles" element={<Roles />} />
             </Route>
           </Route>
 

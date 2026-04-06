@@ -1,266 +1,254 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, theme } from 'antd';
+import React, { useState } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  DashboardOutlined,
-  UserOutlined,
-  SafetyCertificateOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  LogoutOutlined,
-  HomeOutlined,
-  AppstoreOutlined,
-  ShoppingOutlined,
-  BellOutlined,
-  SettingOutlined,
-  TagsOutlined,
-} from '@ant-design/icons';
-import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import { logout } from '../store/authSlice';
-import type { Role } from '../types/auth';
-import { getAvatarUrl } from '../utils/imageUtils';
+  LayoutDashboard,
+  Users,
+  Tags,
+  ShoppingBag,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  LogOut,
+  Bell,
+  Settings,
+  User,
+  Menu,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { useDispatch, useSelector } from 'react-redux'
+import type { RootState } from '@/store'
+import { logout } from '@/store/authSlice'
+import { getAvatarUrl } from '@/utils/imageUtils'
+import type { Role } from '@/types/auth'
+import { cn } from '@/lib/utils'
 
-const { Header, Sider, Content } = Layout;
+const navItems = [
+  { key: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { key: '/admin/categories', label: 'Categories', icon: Tags },
+  { key: '/admin/products', label: 'Products', icon: ShoppingBag },
+  { key: '/admin/users', label: 'Users', icon: Users },
+  { key: '/admin/roles', label: 'Roles', icon: Shield },
+]
+
+const pageTitles: Record<string, string> = {
+  '/admin': 'Dashboard',
+  '/admin/products': 'Products',
+  '/admin/categories': 'Categories',
+  '/admin/users': 'Users',
+  '/admin/roles': 'Roles',
+}
 
 const AdminLayout: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const dispatch = useDispatch()
+  const { user } = useSelector((state: RootState) => state.auth)
+
+  const roleName = typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN'
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
+    dispatch(logout())
+    navigate('/login')
+  }
 
-  const menuItems = [
-    {
-      key: '/admin',
-      icon: <DashboardOutlined />,
-      label: 'Dashboard',
-    },
-    {
-      key: 'catalog',
-      icon: <AppstoreOutlined />,
-      label: 'Quản lý Catalog',
-      children: [
-        {
-          key: '/admin/categories',
-          icon: <TagsOutlined />,
-          label: 'Danh mục',
-        },
-        {
-          key: '/admin/products',
-          icon: <ShoppingOutlined />,
-          label: 'Sản phẩm',
-        },
-      ],
-    },
-    {
-      key: 'system',
-      icon: <SettingOutlined />,
-      label: 'Hệ thống',
-      children: [
-        {
-          key: '/admin/users',
-          icon: <UserOutlined />,
-          label: 'Người dùng',
-        },
-        {
-          key: '/admin/roles',
-          icon: <SafetyCertificateOutlined />,
-          label: 'Phân quyền',
-        },
-      ],
-    },
-  ];
-
-  // Find the default open keys based on current path
-  const getOpenKeys = () => {
-    if (location.pathname.startsWith('/admin/categories') || location.pathname.startsWith('/admin/products')) {
-      return ['catalog'];
-    }
-    if (location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/roles')) {
-      return ['system'];
-    }
-    return [];
-  };
-
-  const roleName = typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN';
-
-  return (
-    <Layout className="min-h-screen" style={{ background: '#f0f2f5' }}>
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        theme="dark"
-        width={256}
-        style={{
-          background: 'linear-gradient(180deg, #0f172a 0%, #1e293b 100%)',
-          boxShadow: '4px 0 24px rgba(0,0,0,0.3)',
-          position: 'fixed',
-          height: '100vh',
-          left: 0,
-          top: 0,
-          zIndex: 100,
-          overflow: 'auto',
-        }}
-      >
-        {/* Logo */}
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 20px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            background: 'rgba(255,255,255,0.03)',
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
-              borderRadius: 10,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(59,130,246,0.5)',
-            }}
-          >
-            <ShoppingOutlined style={{ color: 'white', fontSize: 18 }} />
-          </div>
-          {!collapsed && (
-            <div style={{ marginLeft: 12 }}>
-              <div style={{ color: 'white', fontWeight: 700, fontSize: 15, lineHeight: 1.2 }}>MODERN SHOP</div>
-              <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Admin Panel</div>
-            </div>
-          )}
+  const NavContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className={cn("flex items-center h-16 px-4 border-b", collapsed ? "justify-center" : "gap-3")}>
+        <div className="flex items-center justify-center size-10 rounded-lg bg-primary">
+          <ShoppingBag className="size-5 text-primary-foreground" />
         </div>
-
-        {/* User info in sidebar */}
         {!collapsed && (
-          <div
-            style={{
-              padding: '16px 20px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <Avatar
-              src={user?.avatarUrl}
-              icon={<UserOutlined />}
-              style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', flexShrink: 0 }}
-              size={38}
-            />
-            <div style={{ overflow: 'hidden' }}>
-              <div style={{ color: 'white', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user?.fullName || 'Admin'}
-              </div>
-              <div
-                style={{
-                  color: '#60a5fa',
-                  fontSize: 11,
-                  display: 'inline-block',
-                  background: 'rgba(59,130,246,0.15)',
-                  padding: '1px 8px',
-                  borderRadius: 20,
-                  border: '1px solid rgba(59,130,246,0.3)',
-                }}
-              >
-                {roleName}
-              </div>
-            </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">Admin Panel</span>
+            <span className="text-[10px] text-muted-foreground">E-Commerce</span>
           </div>
         )}
+      </div>
 
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          defaultOpenKeys={getOpenKeys()}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '12px 8px',
-          }}
-        />
-      </Sider>
-
-      <Layout className="flex flex-col">
-        <Header style={{ padding: 0, background: colorBgContainer }} className="flex justify-between items-center px-4 shadow-sm z-10">
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-16 h-16"
-          />
-          
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button icon={<HomeOutlined />} style={{ borderRadius: 8, fontWeight: 500 }}>
-                Xem Website
-              </Button>
-            </Link>
-
-            <Badge count={3} size="small">
-              <Button
-                type="text"
-                icon={<BellOutlined style={{ fontSize: 18 }} />}
-                style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              />
-            </Badge>
-
-            <Dropdown
-              menu={{
-                items: [
-                  { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined /> },
-                  { type: 'divider' },
-                  { key: 'logout', label: 'Đăng xuất', danger: true, icon: <LogoutOutlined />, onClick: handleLogout },
-                ],
-              }}
-              placement="bottomRight"
-            >
-              <div className="flex items-center cursor-pointer gap-2 p-2 rounded-lg hover:bg-gray-100 transition-all">
-                <Avatar src={getAvatarUrl(user?.avatarUrl) || undefined} icon={<UserOutlined />} />
-                <div className="hidden sm:block">
-                  <div className="font-semibold text-sm leading-none">{user?.fullName}</div>
-                  <div className="text-xs text-gray-400">
-                    {typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN'}
-                  </div>
-                </div>
-              </div>
-            </Dropdown>
+      {/* User Info */}
+      {!collapsed && (
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+            <Avatar className="size-9">
+              <AvatarImage src={getAvatarUrl(user?.avatarUrl) || undefined} />
+              <AvatarFallback>{user?.fullName?.charAt(0) || 'A'}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user?.fullName}</p>
+              <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0">{roleName}</Badge>
+            </div>
           </div>
-        </Header>
+        </div>
+      )}
 
-        <Content
-          style={{
-          margin: '24px 16px',
-          padding: 24,
-          // 100vh - 64px (header) - 48px (margin top/bottom)
-          minHeight: 'calc(100vh - 64px - 48px)', 
-          background: colorBgContainer,
-          borderRadius: borderRadiusLG,
-          }}
-          className="shadow-sm border border-gray-100"
+      {/* Navigation */}
+      <ScrollArea className="flex-1 py-4">
+        <nav className="px-3 space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.key
+            const Icon = item.icon
+            return (
+              <button
+                key={item.key}
+                onClick={() => {
+                  navigate(item.key)
+                  setMobileOpen(false)
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  collapsed && "justify-center px-0",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                title={collapsed ? item.label : undefined}
+              >
+                <Icon className="size-5 shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </button>
+            )
+          })}
+        </nav>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="p-4 border-t space-y-2">
+        {!collapsed && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground"
+            onClick={() => navigate('/')}
+          >
+            <Home className="size-4 mr-3" />
+            View Website
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          className={cn("text-destructive hover:text-destructive hover:bg-destructive/10", collapsed ? "w-full justify-center px-0" : "w-full justify-start")}
+          onClick={handleLogout}
         >
-          <Outlet />
-        </Content>
-      </Layout>
-    </Layout>
-  );
-};
+          <LogOut className="size-4 mr-3" />
+          {!collapsed && "Sign Out"}
+        </Button>
+      </div>
+    </div>
+  )
 
-export default AdminLayout;
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "hidden md:flex fixed left-0 top-0 bottom-0 z-40 flex-col bg-card border-r",
+          collapsed ? "w-16" : "w-64"
+        )}
+      >
+        <NavContent />
+      </aside>
+
+      {/* Mobile Sidebar */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="w-64 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+          </SheetHeader>
+          <NavContent />
+        </SheetContent>
+      </Sheet>
+
+      {/* Main Content */}
+      <main className={cn("flex-1 flex flex-col min-h-screen", collapsed ? "md:ml-16" : "md:ml-64")}>
+        {/* Header */}
+        <header className="sticky top-0 z-30 h-16 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b px-4 md:px-6">
+          <div className="flex items-center justify-between h-full">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu className="size-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden md:flex"
+                onClick={() => setCollapsed(!collapsed)}
+              >
+                {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold">{pageTitles[location.pathname] || 'Admin'}</h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="size-5" />
+                <span className="absolute top-1 right-1 size-2 bg-primary rounded-full" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative size-9 rounded-full">
+                    <Avatar className="size-9">
+                      <AvatarImage src={getAvatarUrl(user?.avatarUrl) || undefined} />
+                      <AvatarFallback>{user?.fullName?.charAt(0) || 'A'}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span>{user?.fullName}</span>
+                      <span className="text-xs font-normal text-muted-foreground">{user?.email}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin/profile')}>
+                    <User className="mr-2 size-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                    <Settings className="mr-2 size-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 size-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="flex-1 p-4 md:p-6 lg:p-8">
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  )
+}
+
+export default AdminLayout

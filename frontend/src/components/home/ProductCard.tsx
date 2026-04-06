@@ -2,8 +2,8 @@ import React from 'react';
 import { Card, Tag, Rate, Button, Typography, notification } from 'antd';
 import { ShoppingCartOutlined, EyeOutlined, HeartOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { addItem } from '../../store/cartSlice';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { addToCart } from '../../store/cartSlice';
 
 const { Text, Title } = Typography;
 
@@ -34,26 +34,51 @@ const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http:/
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(addItem(product));
-    notification.success({
-      title: 'Đã thêm vào giỏ hàng',
-      description: `${product.name} đã được thêm thành công.`,
-      placement: 'bottomRight',
-      duration: 2,
-    });
-    // Chuyển hướng tới giỏ hàng theo yêu cầu
-    navigate('/cart');
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.',
+      });
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
+      notification.success({ 
+        title: 'Đã thêm vào giỏ hàng',
+        description: `${product.name} đã được thêm thành công.`,
+        placement: 'bottomRight',
+        duration: 2,
+      });
+      navigate('/cart');
+    } catch (error: any) {
+      notification.error({ message: 'Lỗi', description: error || 'Không thể thêm sản phẩm' });
+    }
   };
 
-  const handleBuyNow = (e: React.MouseEvent) => {
+  const handleBuyNow = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(addItem(product));
-    // Chuyển hướng thẳng tới thanh toán
-    navigate('/checkout');
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để đặt sắm.',
+      });
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
+      navigate('/checkout');
+    } catch (error: any) {
+      notification.error({ message: 'Lỗi', description: error || 'Không thể đặt hàng' });
+    }
   };
 
   const mainImage = product.images && product.images.length > 0 
@@ -69,8 +94,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   return (
     <Card
       hoverable
-      className="group h-full border-0 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 rounded-2xl overflow-hidden bg-white"
-      styles={{ body: { padding: '16px' } }}
+      className="group h-full border-0 shadow-sm transition-all duration-300 rounded-[2rem] overflow-hidden glass-card"
+      styles={{ body: { padding: '20px' } }}
       cover={
         <div 
           className="relative overflow-hidden pt-[100%] cursor-pointer bg-gray-50"
@@ -87,29 +112,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           />
           
           {/* Overlay Actions */}
-          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+          <div className="absolute inset-0 bg-background/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
             <Button 
               shape="circle" 
               icon={<EyeOutlined />} 
-              className="translate-y-10 group-hover:translate-y-0 transition-transform duration-300 bg-white/90 border-none hover:bg-blue-600 hover:text-white flex items-center justify-center"
+              className="translate-y-10 group-hover:translate-y-0 transition-transform duration-300 bg-white/90 border-none hover:bg-primary hover:text-white flex items-center justify-center backdrop-blur-md"
             />
             <Button 
               shape="circle" 
               icon={<HeartOutlined />} 
-              className="translate-y-10 group-hover:translate-y-0 transition-transform duration-310 delay-[50ms] bg-white/90 border-none hover:bg-red-500 hover:text-white flex items-center justify-center"
+              className="translate-y-10 group-hover:translate-y-0 transition-transform duration-310 delay-[50ms] bg-white/90 border-none hover:bg-cta hover:text-white flex items-center justify-center backdrop-blur-md"
             />
           </div>
 
           {/* Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-2">
+          <div className="absolute top-4 left-4 flex flex-col gap-2">
             {discount > 0 && (
-              <Tag className="m-0 bg-red-600 text-white font-bold border-none rounded-lg px-2.5 py-0.5 shadow-sm">
+              <Tag className="m-0 bg-cta text-white font-bold border-none rounded-full px-3 py-1 shadow-md">
                 -{discount}%
               </Tag>
             )}
             {(product.isNew || new Date(product as any).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) && (
-              <Tag className="m-0 bg-blue-600 text-white font-bold border-none rounded-lg px-2.5 py-0.5 shadow-sm">
-                NEW
+              <Tag className="m-0 bg-secondary text-white font-bold border-none rounded-full px-3 py-1 shadow-md">
+                MỚI
               </Tag>
             )}
           </div>
@@ -125,7 +150,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         
         <Title 
           level={5} 
-          className="!m-0 !text-sm lg:!text-[15px] !font-semibold line-clamp-2 min-h-[42px] group-hover:text-blue-600 transition-colors leading-snug"
+          className="!m-0 !text-sm lg:!text-[15px] !font-semibold line-clamp-2 min-h-[42px] group-hover:text-primary transition-colors leading-snug"
         >
           {product.name}
         </Title>
@@ -139,7 +164,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         <div className="flex items-baseline gap-2 pt-1">
-          <Text className="text-blue-600 text-lg font-black">
+          <Text className="text-primary text-xl font-black">
             {product.price.toLocaleString('vi-VN')}₫
           </Text>
           {oldPrice > product.price && (
@@ -169,16 +194,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             type="primary" 
             icon={<ShoppingCartOutlined />}
             size="large"
-            className="w-full bg-blue-600 hover:bg-blue-700 h-10 font-bold border-none shadow-sm rounded-xl flex items-center justify-center transition-all hover:scale-102 active:scale-95"
+            className="w-full !bg-primary hover:!bg-primary/90 h-12 font-bold border-none shadow-md rounded-full flex items-center justify-center transition-all"
             onClick={handleAddToCart}
           >
-            THÊM GIỎ HÀNG
+            THÊM GIỚ HÀNG
           </Button>
           <Button 
             type="default" 
-            icon={<ShoppingOutlined style={{ color: '#2563eb' }} />}
+            icon={<ShoppingOutlined className="text-cta" />}
             size="large"
-            className="w-full border-2 border-blue-600 text-blue-600 h-10 font-bold rounded-xl flex items-center justify-center hover:bg-blue-50 transition-all"
+            className="w-full border-2 border-cta text-cta h-12 font-bold rounded-full flex items-center justify-center hover:bg-cta/10 transition-all bg-white/50 backdrop-blur-sm"
             onClick={handleBuyNow}
           >
             MUA NGAY

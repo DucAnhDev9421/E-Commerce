@@ -1,822 +1,638 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Tabs, 
-  Card, 
-  Row, 
-  Col, 
-  Avatar, 
-  Typography, 
-  Button, 
-  Form, 
-  Input, 
-  Upload, 
-  notification, 
-  Spin,
-  Divider,
-  Tag,
-  Modal,
-  Switch,
-  Select
-} from 'antd';
-import { 
-  UserOutlined, 
-  EditOutlined, 
-  CameraOutlined, 
-  LockOutlined, 
-  EnvironmentOutlined,
-  SaveOutlined,
-  CloseOutlined,
-  DeleteOutlined 
-} from '@ant-design/icons';
-import type { RcFile, UploadProps } from 'antd/es/upload/interface';
-import { updateUser } from '../../store/authSlice';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import userApi from '../../api/userApi';
-import addressApi from '../../api/addressApi';
-import uploadApi from '../../api/uploadApi';
-import type { User, Address } from '../../types/auth';
-import { getAvatarUrl } from '../../utils/imageUtils';
-
-const { Title, Text } = Typography;
-
-
+import React, { useState, useEffect } from "react"
+import {
+  User,
+  Lock,
+  MapPin,
+  Camera,
+  Pencil,
+  Check,
+  Trash2,
+  Star,
+} from "lucide-react"
+import { updateUser } from "@/store/authSlice"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import userApi from "@/api/userApi"
+import addressApi from "@/api/addressApi"
+import uploadApi from "@/api/uploadApi"
+import type { User as UserType, Address } from "@/types/auth"
+import { getAvatarUrl } from "@/utils/imageUtils"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const Profile: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const { user: currentUser } = useAppSelector((state) => state.auth);
-  const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState<User | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [personalForm] = Form.useForm();
-  const [passwordForm] = Form.useForm();
-  const [activeTab, setActiveTab ] = useState('1');
-  const [addressForm] = Form.useForm();
-const [addresses, setAddresses] = useState<Address[]>([]);
-const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
-const [avatarLoading, setAvatarLoading] = useState(false);
-const [provinces, setProvinces] = useState<any[]>([]);
-const [districts, setDistricts] = useState<any[]>([]);
-const [wards, setWards] = useState<any[]>([]);
+  const dispatch = useAppDispatch()
+  const { user: currentUser } = useAppSelector((state) => state.auth)
+  const [loading, setLoading] = useState(false)
+  const [userData, setUserData] = useState<UserType | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [activeTab, setActiveTab] = useState("info")
 
-// Tải danh sách Tỉnh/Thành
-useEffect(() => {
+  // Form state
+  const [personalForm, setPersonalForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    username: "",
+  })
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
+
+  // Address state
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false)
+  const [addressForm, setAddressForm] = useState({
+    receiverName: "",
+    phoneNumber: "",
+    city: "",
+    district: "",
+    ward: "",
+    street: "",
+    isDefault: false,
+  })
+  const [provinces, setProvinces] = useState<any[]>([])
+  const [districts, setDistricts] = useState<any[]>([])
+  const [wards, setWards] = useState<any[]>([])
+
+  // Load provinces
+  useEffect(() => {
     const fetchProvinces = async () => {
-        try {
-            const resp = await fetch('https://provinces.open-api.vn/api/p/');
-            const data = await resp.json();
-            setProvinces(data);
-        } catch (error) {
-            console.error('Lỗi tải tỉnh thành:', error);
-        }
-    };
-    fetchProvinces();
-}, []);
-
-// Khi chọn Tỉnh -> Tải Quận
-const handleProvinceChange = async (provinceName: string, option: any) => {
-    addressForm.setFieldsValue({ district: undefined, ward: undefined });
-    setDistricts([]);
-    setWards([]);
-    
-    try {
-        const provinceCode = option.key;
-        const resp = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-        const data = await resp.json();
-        setDistricts(data.districts || []);
-    } catch (error) {
-        console.error('Lỗi tải quận huyện:', error);
-    }
-};
-
-// Khi chọn Quận -> Tải Phường
-const handleDistrictChange = async (districtName: string, option: any) => {
-    addressForm.setFieldsValue({ ward: undefined });
-    setWards([]);
-
-    try {
-        const districtCode = option.key;
-        const resp = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-        const data = await resp.json();
-        setWards(data.wards || []);
-    } catch (error) {
-        console.error('Lỗi tải phường xã:', error);
-    }
-};
-
-const fetchAddresses = async () => {
-  try {
-    const data = await addressApi.getAll();
-    setAddresses(data);
-  } catch (error: any) {
-    console.error('Lỗi lấy địa chỉ:', error);
-  }
-};
-
-  // Fetch latest user data
-  const fetchUserData = async () => {
-    // 1. Lấy ID linh hoạt (fallback từ _id sang id)
-    const currentUserId = currentUser?._id || (currentUser as any)?.id;
-    
-    if (!currentUserId) return;
-    setLoading(true);
-    try {
-      const resp: any = await userApi.getById(currentUserId);
-      
-      // Map id -> _id ngay tại đây để đồng bộ
-      if (resp && !resp._id && resp.id) {
-        resp._id = resp.id;
+      try {
+        const resp = await fetch("https://provinces.open-api.vn/api/p/")
+        const data = await resp.json()
+        setProvinces(data)
+      } catch (error) {
+        console.error("Lỗi tải tỉnh thành:", error)
       }
-      
-      // Đảm bảo state được cập nhật với object mới nhất để UI re-render (bao gồm avatarUrl)
-      setUserData({ ...resp });
-      personalForm.setFieldsValue(resp);
-      
-      // 2. Đồng bộ ngược lên Redux để Header và các component khác nhận được avatar mới
-      dispatch(updateUser(resp));
-    } catch (error: any) {
-      console.error('Lỗi lấy thông tin cá nhân:', error);
-      notification.error({
-        title: 'Lỗi',
-        description: error.message || 'Không thể lấy thông tin người dùng',
-      });
+    }
+    fetchProvinces()
+  }, [])
+
+  // Fetch user data
+  const fetchUserData = async () => {
+    const currentUserId = currentUser?._id || (currentUser as any)?.id
+    if (!currentUserId) return
+    setLoading(true)
+    try {
+      const resp: any = await userApi.getById(currentUserId)
+      if (resp && !resp._id && resp.id) {
+        resp._id = resp.id
+      }
+      setUserData({ ...resp })
+      setPersonalForm({
+        fullName: resp.fullName || "",
+        email: resp.email || "",
+        phone: resp.phone || "",
+        username: resp.username || "",
+      })
+      dispatch(updateUser(resp))
+    } catch (error) {
+      console.error("Lỗi lấy thông tin cá nhân:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  // 3. Theo dõi cả _id và id để tránh effect bị kẹt khi loginSuccess mới hoàn tất
   useEffect(() => {
-    const cid = currentUser?._id || (currentUser as any)?.id;
+    const cid = currentUser?._id || (currentUser as any)?.id
     if (cid) {
-      fetchUserData();
-      fetchAddresses();
+      fetchUserData()
+      fetchAddresses()
     }
-  }, [currentUser?._id, (currentUser as any)?.id]);
+  }, [currentUser?._id, (currentUser as any)?.id])
 
-
-  // Đồng bộ dữ liệu vào form khi userData thay đổi
-  useEffect(() => {
-    if (userData) {
-      personalForm.setFieldsValue(userData);
+  const fetchAddresses = async () => {
+    try {
+      const data = await addressApi.getAll()
+      setAddresses(data)
+    } catch (error) {
+      console.error("Lỗi lấy địa chỉ:", error)
     }
-  }, [userData, personalForm]);
+  }
+
+  const handleProvinceChange = async (cityValue: string) => {
+    const province = provinces.find(p => p.name === cityValue)
+    if (!province) return
+    setAddressForm(prev => ({ ...prev, city: cityValue, district: "", ward: "" }))
+    setDistricts([])
+    setWards([])
+    try {
+      const resp = await fetch(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`)
+      const data = await resp.json()
+      setDistricts(data.districts || [])
+    } catch (error) {
+      console.error("Lỗi tải quận huyện:", error)
+    }
+  }
+
+  const handleDistrictChange = async (districtValue: string) => {
+    const district = districts.find(d => d.name === districtValue)
+    if (!district) return
+    setAddressForm(prev => ({ ...prev, district: districtValue, ward: "" }))
+    setWards([])
+    try {
+      const resp = await fetch(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`)
+      const data = await resp.json()
+      setWards(data.wards || [])
+    } catch (error) {
+      console.error("Lỗi tải phường xã:", error)
+    }
+  }
 
   const handleDeleteAddress = async (id: string) => {
     try {
-      await addressApi.delete(id);
-      notification.success({ title: 'Đã xóa địa chỉ' });
-      fetchAddresses();
-    } catch (error: any) {
-      notification.error({ title: 'Lỗi', description: error.message });
+      await addressApi.delete(id)
+      fetchAddresses()
+    } catch (error) {
+      console.error("Lỗi xóa địa chỉ:", error)
     }
-  };
+  }
 
   const handleSetDefaultAddress = async (id: string) => {
     try {
-      await addressApi.setDefault(id);
-      notification.success({ title: 'Đã cập nhật địa chỉ mặc định' });
-      fetchAddresses();
-    } catch (error: any) {
-      notification.error({ message: 'Lỗi', description: error.message });
+      await addressApi.setDefault(id)
+      fetchAddresses()
+    } catch (error) {
+      console.error("Lỗi cập nhật địa chỉ mặc định:", error)
     }
-  };
-  
-  const handleAddAddress = async (values: any) => {
-    setLoading(true);
+  }
+
+  const handleAddAddress = async () => {
+    setLoading(true)
     try {
-      await addressApi.create(values);
-      notification.success({ title: 'Thêm địa chỉ thành công' });
-      setIsAddressModalOpen(false);
-      addressForm.resetFields();
-      fetchAddresses(); // Tải lại danh sách địa chỉ
-    } catch (error: any) {
-      notification.error({ 
-        title: 'Lỗi', 
-        description: error.message || 'Không thể thêm địa chỉ' 
-      });
+      await addressApi.create(addressForm)
+      setIsAddressModalOpen(false)
+      setAddressForm({
+        receiverName: "",
+        phoneNumber: "",
+        city: "",
+        district: "",
+        ward: "",
+        street: "",
+        isDefault: false,
+      })
+      fetchAddresses()
+    } catch (error) {
+      console.error("Lỗi thêm địa chỉ:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  // Handle personal info update
-  const handleUpdateInfo = async (values: any) => {
-    if (!userData?._id) return;
-    setLoading(true);
+  const handleUpdateInfo = async () => {
+    if (!userData?._id) return
+    setLoading(true)
     try {
-      // Loại bỏ username trước khi gửi lên API
-      const { username, ...updateData } = values;
-      const updatedUser = await userApi.update(userData._id, updateData);
-      setUserData(updatedUser);
-      dispatch(updateUser(updatedUser)); // Cập nhật Redux store (Header, v.v...)
-      setIsEditing(false);
-      notification.success({
-        title: 'Thành công',
-        description: 'Cập nhật thông tin cá nhân thành công',
-      });
-    } catch (error: any) {
-      notification.error({
-        title: 'Lỗi',
-        description: error.message || 'Cập nhật thất bại',
-      });
+      const updatedUser = await userApi.update(userData._id, {
+        fullName: personalForm.fullName,
+        email: personalForm.email,
+        phone: personalForm.phone,
+      })
+      setUserData(updatedUser)
+      dispatch(updateUser(updatedUser))
+      setIsEditing(false)
+    } catch (error) {
+      console.error("Lỗi cập nhật:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleUpdatePassword = async (values: any) => {
-    // Lấy ID an toàn nhất từ mọi nguồn
-    const userId = currentUser?._id || (currentUser as any)?.id || userData?._id || (userData as any)?.id; 
-
-    if (!userId) {
-        return notification.error({ 
-            message: 'Lỗi', 
-            description: 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại' 
-        });
+  const handleUpdatePassword = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      return
     }
-
-    setLoading(true);
+    const userId = currentUser?._id || (currentUser as any)?.id || userData?._id || (userData as any)?.id
+    if (!userId) return
+    setLoading(true)
     try {
-        // 2. Gọi API đổi mật khẩu
-        await userApi.changePassword(userId, {
-            oldPassword: values.oldPassword,
-            newPassword: values.newPassword
-        });
-
-        notification.success({ message: 'Đổi mật khẩu thành công' });
-        passwordForm.resetFields();
-    } catch (error: any) {
-        // 3. Hiển thị lỗi từ Backend (ví dụ: Mật khẩu cũ không khớp)
-        notification.error({ 
-            message: 'Lỗi', 
-            description: error.message || 'Không thể đổi mật khẩu'
-        });
+      await userApi.changePassword(userId, {
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword,
+      })
+      setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" })
+      setActiveTab("info")
+    } catch (error) {
+      console.error("Lỗi đổi mật khẩu:", error)
     } finally {
-        setLoading(false);
+      setLoading(false)
     }
-};
+  }
 
-  const handleAvatarChange: UploadProps['onChange'] = async (info) => {
-    // Khi dùng beforeUpload={() => false}, Ant Design sẽ không tự động upload
-    // mà sẽ gọi onChange ngay lập tức sau khi chọn file.
-    // Chúng ta không check info.file.status vì nó sẽ luôn là 'ready' hoặc rỗng.
-    const file = info.file.originFileObj || info.file;
-    
-    if (file) {
-      try {
-        setAvatarLoading(true);
-        const response: any = await uploadApi.uploadImage(file as RcFile);
-        
-        if (response.avatarUrl && userData?._id) {
-          const updatedUser = await userApi.update(userData._id, { avatarUrl: response.avatarUrl });
-          setUserData(updatedUser);
-          dispatch(updateUser(updatedUser));
-          notification.success({ 
-            title: 'Thành công', 
-            description: 'Thay đổi ảnh đại diện mới thành công' 
-          });
-        }
-      } catch (error: any) {
-        console.error('LỖI UPLOAD AVATAR:', error);
-        notification.error({
-          title: 'Lỗi upload',
-          description: error.message || 'Không thể tải ảnh. Vui lòng thử lại sau.'
-        });
-      } finally {
-        setAvatarLoading(false);
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const file = files[0]
+    setLoading(true)
+    try {
+      const response: any = await uploadApi.uploadImage(file as File)
+      if (response.avatarUrl && userData?._id) {
+        const updatedUser = await userApi.update(userData._id, { avatarUrl: response.avatarUrl })
+        setUserData(updatedUser)
+        dispatch(updateUser(updatedUser))
       }
+    } catch (error) {
+      console.error("Lỗi upload avatar:", error)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-
-
-  const renderPersonalInfo = () => (
-    <Form
-      form={personalForm}
-      layout="vertical"
-      onFinish={handleUpdateInfo}
-      onFinishFailed={(errorInfo) => {
-        console.log('Validation Failed:', errorInfo);
-        notification.error({
-          title: 'Lỗi validation',
-          description: 'Vui lòng kiểm tra lại các trường thông tin.',
-        });
-      }}
-      requiredMark={false}
-      className="profile-form"
-    >
-      <div className="p-6 bg-white rounded-xl">
-        <div className="flex justify-between items-center mb-6">
-          <Title level={4} className="!m-0">Thông tin cá nhân</Title>
-          {!isEditing ? (
-            <Button 
-              type="primary" 
-              ghost 
-              icon={<EditOutlined />} 
-              onClick={() => setIsEditing(true)}
-              className="rounded-full border-gray-300 hover:!border-blue-500"
-            >
-              Chỉnh sửa
-            </Button>
-          ) : (
-            <div className="space-x-2">
-              <Button 
-                  icon={<CloseOutlined />} 
-                  onClick={() => {
-                      setIsEditing(false);
-                      personalForm.setFieldsValue(userData);
-                  }}
-                  className="rounded-full"
-              >
-                Hủy
-              </Button>
-              <Button 
-                  type="primary" 
-                  icon={<SaveOutlined />} 
-                  htmlType="submit"
-                  className="rounded-full"
-                  loading={loading}
-              >
-                Lưu
-              </Button>
-            </div>
-          )}
-        </div>
-
-        <Row gutter={24}>
-          <Col xs={24} md={12}>
-            <Form.Item
-              label={<span className="font-medium text-gray-600">Họ và tên</span>}
-              name="fullName"
-              rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
-            >
-              <Input size="large" placeholder="Nhập họ và tên" disabled={!isEditing} className="rounded-lg hover:border-blue-400 focus:border-blue-500" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              label={<span className="font-medium text-gray-600">Email</span>}
-              name="email"
-              rules={[
-                { required: true, message: 'Vui lòng nhập email' },
-                { type: 'email', message: 'Email không đúng định dạng' }
-              ]}
-            >
-              <Input size="large" placeholder="Nhập email" disabled={!isEditing} className="rounded-lg" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              label={<span className="font-medium text-gray-600">Số điện thoại</span>}
-              name="phone"
-              rules={[
-                { pattern: /^[0-9]+$/, message: 'Số điện thoại chỉ được chứa số' }
-              ]}
-            >
-              <Input size="large" placeholder="Nhập số điện thoại" disabled={!isEditing} className="rounded-lg" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} md={12}>
-            <Form.Item
-              label={<span className="font-medium text-gray-600">Tên đăng nhập</span>}
-              name="username"
-            >
-              <Input size="large" disabled className="bg-gray-50 rounded-lg" />
-            </Form.Item>
-          </Col>
-        </Row>
-      </div>
-    </Form>
-  );
-
-  const renderChangePassword = () => (
-    <div className="p-6 bg-white rounded-xl">
-      <Title level={4} className="mb-6">Đổi mật khẩu</Title>
-      <Form 
-        form={passwordForm}
-        layout="vertical" 
-        className="max-w-md" 
-        onFinish={handleUpdatePassword}
-      >
-        <Form.Item 
-          label="Mật khẩu hiện tại" 
-          name="oldPassword" 
-          rules={[{ required: true, message: 'Vui lòng nhập mật khẩu hiện tại' }]}
-        >
-          <Input.Password size="large" className="rounded-lg" />
-        </Form.Item>
-        
-        <Form.Item 
-          label="Mật khẩu mới" 
-          name="newPassword" 
-          rules={[
-            { required: true, message: 'Vui lòng nhập mật khẩu mới' },
-            { min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên' }
-          ]}
-        >
-          <Input.Password size="large" className="rounded-lg" />
-        </Form.Item>
-        
-        <Form.Item 
-          label="Xác nhận mật khẩu mới" 
-          name="confirmPassword" 
-          dependencies={['newPassword']}
-          rules={[
-            { required: true, message: 'Vui lòng xác nhận mật khẩu mới' },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue('newPassword') === value) {
-                  return Promise.resolve();
-                }
-                return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
-              },
-            }),
-          ]}
-        >
-          <Input.Password size="large" className="rounded-lg" />
-        </Form.Item>
-        
-        <Button 
-          type="primary" 
-          size="large" 
-          className="rounded-full w-full mt-4" 
-          htmlType="submit"
-          loading={loading}
-        >
-          Cập nhật mật khẩu
-        </Button>
-      </Form>
-    </div>
-  );
-
-  const renderAddresses = () => (
-    <div className="p-6 bg-white rounded-xl">
-      <div className="flex justify-between items-center mb-6">
-        <Title level={4} className="!m-0">Địa chỉ giao hàng</Title>
-        <Button 
-          type="primary" 
-          ghost 
-          className="rounded-full"
-          onClick={() => setIsAddressModalOpen(true)}
-        >
-          Thêm địa chỉ
-        </Button>
-      </div>
-      
-      {addresses.length > 0 ? (
-        <div className="space-y-4">
-          {addresses.map((addr, index) => (
-            <Card key={addr._id} className="rounded-xl border-gray-100 shadow-sm hover:shadow-md transition-shadow text-left">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Text strong className="text-lg">{addr.receiverName}</Text>
-                    <Tag color="blue">Địa chỉ {index + 1}</Tag>
-                    {addr.isDefault && <Tag color="green">Mặc định</Tag>}
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <EnvironmentOutlined />
-                    <Text>{`${addr.street}, ${addr.ward}, ${addr.district}, ${addr.city}`}</Text>
-                  </div>
-                  <div className="text-gray-500">
-                    <Text type="secondary">Số điện thoại: </Text>
-                    <Text strong>{addr.phoneNumber}</Text>
-                  </div>
-                  {!addr.isDefault && (
-                    <Button 
-                      type="link" 
-                      className="p-0 h-auto text-blue-600 hover:text-blue-700"
-                      onClick={() => handleSetDefaultAddress(addr._id!)}
-                    >
-                      Thiết lập mặc định
-                    </Button>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    type="text" 
-                    danger 
-                    icon={<DeleteOutlined />} 
-                    onClick={() => handleDeleteAddress(addr._id!)}
-                    className="hover:bg-red-50 rounded-full"
-                  />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="py-12 text-center text-gray-400">
-           <EnvironmentOutlined style={{ fontSize: 48 }} />
-           <p className="mt-2 text-lg">Chưa có địa chỉ giao hàng nào</p>
-           <Button 
-            type="primary" 
-            className="mt-4 rounded-full"
-            onClick={() => setIsAddressModalOpen(true)}
-           >
-            Tạo địa chỉ đầu tiên
-           </Button>
-        </div>
-      )}
-    </div>
-  );
+  const roleName = (typeof userData?.role === "object" && userData?.role !== null)
+    ? userData.role.name
+    : String(userData?.role || "USER")
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-10 px-4">
+    <div className="min-h-screen py-12 px-4">
       <div className="max-w-6xl mx-auto">
-        <Row gutter={[32, 32]}>
-          {/* Cột trái: Profile Summary */}
-          <Col xs={24} lg={8}>
-            <Card className="rounded-2xl border-none shadow-sm overflow-hidden sticky top-8">
-              <div className="h-32 bg-gradient-to-r from-blue-500 to-indigo-600 -mx-6 -mt-6 mb-16 relative">
-                 <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-                    <div className="relative group">
-                        <Spin spinning={avatarLoading}>
-                            <Avatar 
-                                size={120} 
-                                src={getAvatarUrl(userData?.avatarUrl) || undefined} 
-                                icon={<UserOutlined />}
-                                className="border-4 border-white shadow-lg bg-white"
-                            />
-                        </Spin>
-                        <Upload
-                            showUploadList={false}
-                            beforeUpload={() => false}
-                            onChange={handleAvatarChange}
-                            className="absolute bottom-1 right-1"
-                        >
-                            <Button 
-                                shape="circle" 
-                                icon={<CameraOutlined />} 
-                                className="shadow-md bg-white border-none group-hover:scale-110 transition-transform"
-                                size="middle"
-                            />
-                        </Upload>
-                    </div>
-                 </div>
-              </div>
-              
-              <div className="text-center pt-2">
-                <Title level={3} className="!mb-1">{userData?.fullName}</Title>
-                <Tag color="gold" className="px-3 rounded-full font-medium">
-                  {(userData?.role as any)?.name || 'Thành viên'}
-                </Tag>
-                
-                <Divider className="my-6" />
-                
-                <div className="space-y-4 px-4 text-left">
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <UserOutlined className="text-blue-500" />
-                    <span>{userData?.username}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-600">
-                    <EnvironmentOutlined className="text-blue-500" />
-                    <span>{userData?.addresses?.[0]?.city || 'Chưa cập nhật địa chỉ'}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 grid grid-cols-2 gap-4">
-                  <Card className="bg-gray-50 border-none rounded-xl py-2 px-1 text-center">
-                    <Text strong className="text-blue-600 text-lg">0</Text>
-                    <br />
-                    <Text type="secondary" className="text-xs">Đơn hàng</Text>
-                  </Card>
-                  <Card className="bg-gray-50 border-none rounded-xl py-2 px-1 text-center">
-                    <Text strong className="text-blue-600 text-lg">0</Text>
-                    <br />
-                    <Text type="secondary" className="text-xs">Voucher</Text>
-                  </Card>
+        <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+          {/* Sidebar Profile Card */}
+          <Card className="sticky top-6 h-fit">
+            <div className="h-32 bg-gradient-to-br from-primary to-primary/60 -mt-6 -mx-6 mb-16 rounded-t-lg relative">
+              <div className="absolute -bottom-14 left-1/2 -translate-x-1/2">
+                <div className="relative">
+                  <Avatar className="size-28 border-4 border-background shadow-xl">
+                    <AvatarImage src={getAvatarUrl(userData?.avatarUrl) || undefined} />
+                    <AvatarFallback>{userData?.fullName?.charAt(0) || "U"}</AvatarFallback>
+                  </Avatar>
+                  <label className="absolute bottom-0 right-0 size-9 bg-primary text-primary-foreground rounded-full flex items-center justify-center cursor-pointer hover:bg-primary/90">
+                    <Camera className="size-4" />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  </label>
                 </div>
               </div>
-            </Card>
-          </Col>
-
-          {/* Cột phải: Profile Details */}
-          <Col xs={24} lg={16}>
-            <div className="bg-white rounded-2xl shadow-sm p-4 h-full min-h-[600px]">
-              <Tabs 
-                activeKey={activeTab} 
-                onChange={setActiveTab}
-                className="custom-tabs"
-                size="large"
-                items={[
-                  {
-                    key: '1',
-                    label: (
-                        <span className="flex items-center gap-2 px-2">
-                            <UserOutlined />
-                            Thông tin cá nhân
-                        </span>
-                    ),
-                    children: renderPersonalInfo()
-                  },
-                  {
-                    key: '2',
-                    label: (
-                        <span className="flex items-center gap-2 px-2">
-                            <LockOutlined />
-                            Đổi mật khẩu
-                        </span>
-                    ),
-                    children: renderChangePassword()
-                  },
-                  {
-                    key: '3',
-                    label: (
-                        <span className="flex items-center gap-2 px-2">
-                            <EnvironmentOutlined />
-                            Địa chỉ giao hàng
-                        </span>
-                    ),
-                    children: renderAddresses()
-                  }
-                ]}
-              />
             </div>
-          </Col>
-        </Row>
+
+            <CardContent className="pt-14 text-center">
+              {loading ? (
+                <>
+                  <Skeleton className="h-6 w-40 mx-auto mb-2" />
+                  <Skeleton className="h-4 w-20 mx-auto" />
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-semibold">{userData?.fullName}</h2>
+                  <Badge variant="secondary" className="mt-2 text-xs">
+                    {roleName}
+                  </Badge>
+                </>
+              )}
+
+              <Separator className="my-6" />
+
+              <div className="flex flex-col gap-3 text-sm text-muted-foreground text-left px-2">
+                <div className="flex items-center gap-3">
+                  <User className="size-4 text-primary" />
+                  <span>@{userData?.username || "-"}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin className="size-4 text-primary" />
+                  <span>{addresses[0]?.city || "Chưa cập nhật"}</span>
+                </div>
+              </div>
+
+              <Separator className="my-6" />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/50 rounded-xl py-4 text-center">
+                  <div className="text-xl font-bold text-primary">0</div>
+                  <div className="text-xs text-muted-foreground">Đơn hàng</div>
+                </div>
+                <div className="bg-muted/50 rounded-xl py-4 text-center">
+                  <div className="text-xl font-bold text-primary">0</div>
+                  <div className="text-xs text-muted-foreground">Voucher</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Main Content */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold tracking-tight">My Account</h1>
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="info">
+                  <User className="size-4 mr-2" />
+                  Information
+                </TabsTrigger>
+                <TabsTrigger value="security">
+                  <Lock className="size-4 mr-2" />
+                  Security
+                </TabsTrigger>
+                <TabsTrigger value="address">
+                  <MapPin className="size-4 mr-2" />
+                  Address
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Info Tab */}
+              <TabsContent value="info" className="mt-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Personal Information</CardTitle>
+                    {!isEditing ? (
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                        <Pencil className="size-4 mr-2" />
+                        Edit
+                      </Button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setIsEditing(false)
+                          if (userData) {
+                            setPersonalForm({
+                              fullName: userData.fullName || "",
+                              email: userData.email || "",
+                              phone: userData.phone || "",
+                              username: userData.username || "",
+                            })
+                          }
+                        }}>
+                          Cancel
+                        </Button>
+                        <Button size="sm" onClick={handleUpdateInfo} disabled={loading}>
+                          <Check className="size-4 mr-2" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input
+                          id="fullName"
+                          value={personalForm.fullName}
+                          onChange={(e) => setPersonalForm(prev => ({ ...prev, fullName: e.target.value }))}
+                          disabled={!isEditing}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={personalForm.email}
+                          onChange={(e) => setPersonalForm(prev => ({ ...prev, email: e.target.value }))}
+                          disabled={!isEditing}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          value={personalForm.phone}
+                          onChange={(e) => setPersonalForm(prev => ({ ...prev, phone: e.target.value }))}
+                          disabled={!isEditing}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input
+                          id="username"
+                          value={personalForm.username}
+                          disabled
+                          className="opacity-50"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Security Tab */}
+              <TabsContent value="security" className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Change Password</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 max-w-md">
+                    <div className="space-y-2">
+                      <Label htmlFor="oldPassword">Current Password</Label>
+                      <Input
+                        id="oldPassword"
+                        type="password"
+                        value={passwordForm.oldPassword}
+                        onChange={(e) => setPasswordForm(prev => ({ ...prev, oldPassword: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      />
+                    </div>
+                    <Button onClick={handleUpdatePassword} disabled={loading} className="mt-2">
+                      Update Password
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Address Tab */}
+              <TabsContent value="address" className="mt-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Shipping Addresses</CardTitle>
+                    <Button size="sm" onClick={() => setIsAddressModalOpen(true)}>
+                      <MapPin className="size-4 mr-2" />
+                      Add Address
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {loading ? (
+                      <div className="space-y-4">
+                        {Array.from({ length: 2 }).map((_, i) => (
+                          <Skeleton key={i} className="h-32 w-full" />
+                        ))}
+                      </div>
+                    ) : addresses.length === 0 ? (
+                      <div className="text-center py-12">
+                        <MapPin className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground mb-4">No addresses yet</p>
+                        <Button onClick={() => setIsAddressModalOpen(true)}>
+                          Add your first address
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {addresses.map((addr, idx) => (
+                          <div
+                            key={addr._id}
+                            className="relative p-4 rounded-lg border bg-card text-card-foreground"
+                          >
+                            {addr.isDefault && (
+                              <Badge className="absolute -top-2 -right-2" variant="default">
+                                Default
+                              </Badge>
+                            )}
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <p className="font-medium">{addr.receiverName}</p>
+                                <p className="text-sm text-muted-foreground">Address {idx + 1}</p>
+                              </div>
+                              <div className="flex gap-1">
+                                {!addr.isDefault && (
+                                  <Button variant="ghost" size="icon" onClick={() => handleSetDefaultAddress(addr._id!)} className="size-8">
+                                    <Star className="size-4" />
+                                  </Button>
+                                )}
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteAddress(addr._id!)} className="size-8 text-destructive hover:text-destructive">
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {addr.street}, {addr.ward}, {addr.district}, {addr.city}
+                            </p>
+                            <p className="text-sm mt-2">{addr.phoneNumber}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
 
-      <Modal
-        title={
-          <div className="flex items-center gap-2 border-b pb-3">
-             <EnvironmentOutlined className="text-blue-600" />
-             <span className="text-lg font-semibold">Thêm địa chỉ giao hàng</span>
-          </div>
-        }
-        open={isAddressModalOpen}
-        onCancel={() => {
-            setIsAddressModalOpen(false);
-            addressForm.resetFields();
-        }}
-        footer={null}
-        destroyOnClose
-        centered
-        width={500}
-        className="premium-modal"
-      >
-        <Form
-            form={addressForm}
-            layout="vertical"
-            onFinish={handleAddAddress}
-            initialValues={{ isDefault: false }}
-            className="mt-6"
-            requiredMark={false}
-        >
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Họ và tên người nhận</span>}
-                name="receiverName"
-                rules={[{ required: true, message: 'Vui lòng nhập tên người nhận' }]}
-            >
-                <Input size="large" placeholder="Nhập tên người nhận" className="rounded-lg" />
-            </Form.Item>
+      {/* Add Address Dialog */}
+      <Dialog open={isAddressModalOpen} onOpenChange={setIsAddressModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Address</DialogTitle>
+            <DialogDescription>Fill in the address details below</DialogDescription>
+          </DialogHeader>
 
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Số điện thoại</span>}
-                name="phoneNumber"
-                rules={[
-                    { required: true, message: 'Vui lòng nhập số điện thoại' },
-                    { pattern: /^[0-9]+$/, message: 'Số điện thoại không hợp lệ' }
-                ]}
-            >
-                <Input size="large" placeholder="Nhập số điện thoại" className="rounded-lg" />
-            </Form.Item>
-
-            <Row gutter={12}>
-                <Col span={12}>
-                    <Form.Item
-                        label={<span className="font-medium text-gray-600">Tỉnh/Thành phố</span>}
-                        name="city"
-                        rules={[{ required: true, message: 'Vui lòng chọn Tỉnh/Thành' }]}
-                    >
-                        <Select 
-                            showSearch
-                            size="large" 
-                            placeholder="Chọn Tỉnh/Thành" 
-                            className="rounded-lg w-full"
-                            onChange={handleProvinceChange}
-                            filterOption={(input, option) =>
-                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                            options={provinces.map(p => ({ label: p.name, value: p.name, key: p.code }))}
-                        />
-                    </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item
-                        label={<span className="font-medium text-gray-600">Quận/Huyện</span>}
-                        name="district"
-                        rules={[{ required: true, message: 'Vui lòng chọn Quận/Huyện' }]}
-                    >
-                        <Select 
-                            showSearch
-                            size="large" 
-                            placeholder="Chọn Quận/Huyện" 
-                            className="rounded-lg w-full"
-                            disabled={!districts.length}
-                            onChange={handleDistrictChange}
-                            filterOption={(input, option) =>
-                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                            }
-                            options={districts.map(d => ({ label: d.name, value: d.name, key: d.code }))}
-                        />
-                    </Form.Item>
-                </Col>
-            </Row>
-
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Phường/Xã</span>}
-                name="ward"
-                rules={[{ required: true, message: 'Vui lòng chọn Phường/Xã' }]}
-            >
-                <Select 
-                    showSearch
-                    size="large" 
-                    placeholder="Chọn Phường/Xã" 
-                    className="rounded-lg w-full"
-                    disabled={!wards.length}
-                    filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                    }
-                    options={wards.map(w => ({ label: w.name, value: w.name }))}
-                />
-            </Form.Item>
-
-            <Form.Item
-                label={<span className="font-medium text-gray-600">Địa chỉ cụ thể (Số nhà, đường...)</span>}
-                name="street"
-                rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }]}
-            >
-                <Input.TextArea rows={2} placeholder="Nhập số nhà, tên đường..." className="rounded-lg" />
-            </Form.Item>
-
-            <Form.Item 
-                name="isDefault" 
-                valuePropName="checked"
-                className="mb-6"
-            >
-                <div className="flex items-center gap-3">
-                    <Switch />
-                    <span className="text-gray-600">Đặt làm địa chỉ mặc định</span>
-                </div>
-            </Form.Item>
-
-            <div className="flex gap-3 pt-2">
-                <Button 
-                    className="flex-1 h-12 rounded-xl text-gray-600"
-                    onClick={() => {
-                        setIsAddressModalOpen(false);
-                        addressForm.resetFields();
-                    }}
-                >
-                    Hủy
-                </Button>
-                <Button 
-                    type="primary" 
-                    htmlType="submit"
-                    className="flex-1 h-12 rounded-xl bg-blue-600"
-                    loading={loading}
-                >
-                    Thêm địa chỉ
-                </Button>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="receiverName">Receiver Name</Label>
+              <Input
+                id="receiverName"
+                value={addressForm.receiverName}
+                onChange={(e) => setAddressForm(prev => ({ ...prev, receiverName: e.target.value }))}
+                placeholder="Full name"
+              />
             </div>
-        </Form>
-      </Modal>
 
+            <div className="grid gap-2">
+              <Label htmlFor="phoneNumber">Phone Number</Label>
+              <Input
+                id="phoneNumber"
+                value={addressForm.phoneNumber}
+                onChange={(e) => setAddressForm(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                placeholder="Phone number"
+              />
+            </div>
 
-    
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="city">Province/City</Label>
+                <select
+                  id="city"
+                  value={addressForm.city}
+                  onChange={(e) => handleProvinceChange(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select province</option>
+                  {provinces.map(p => (
+                    <option key={p.code} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
 
-      
-      
-      {/* Premium styles for custom elements */}
-      <style>{`
-        .custom-tabs .ant-tabs-nav::before {
-            border-bottom: none;
-        }
-        .custom-tabs .ant-tabs-ink-bar {
-            height: 3px;
-            border-radius: 3px;
-            background: #2563eb;
-        }
-        .custom-tabs .ant-tabs-tab {
-            margin: 0 16px 0 0 !important;
-            padding: 12px 4px !important;
-            transition: all 0.3s;
-        }
-        .custom-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
-            color: #2563eb !important;
-            font-weight: 600;
-        }
-        .custom-tabs .ant-tabs-tab:hover {
-            color: #2563eb;
-        }
-        .profile-form .ant-form-item-label label {
-            font-size: 0.9rem;
-        }
-      `}</style>
-      
+              <div className="grid gap-2">
+                <Label htmlFor="district">District</Label>
+                <select
+                  id="district"
+                  value={addressForm.district}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
+                  disabled={!districts.length}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select district</option>
+                  {districts.map(d => (
+                    <option key={d.code} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="ward">Ward</Label>
+              <select
+                id="ward"
+                value={addressForm.ward}
+                onChange={(e) => setAddressForm(prev => ({ ...prev, ward: e.target.value }))}
+                disabled={!wards.length}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select ward</option>
+                {wards.map(w => (
+                  <option key={w.code} value={w.name}>{w.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="street">Street Address</Label>
+              <Input
+                id="street"
+                value={addressForm.street}
+                onChange={(e) => setAddressForm(prev => ({ ...prev, street: e.target.value }))}
+                placeholder="House number, street name..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddressModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddAddress} disabled={loading}>Save Address</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Profile;
+export default Profile
