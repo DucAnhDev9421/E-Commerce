@@ -9,6 +9,7 @@ import { Typography, Button, Input, Row, Col, Card, Spin, Empty, Breadcrumb } fr
 import { SendOutlined, MailOutlined, HomeOutlined } from '@ant-design/icons';
 import { useSearchParams, Link } from 'react-router-dom';
 import productApi from '../api/productApi';
+import ProductCard from '../components/home/ProductCard';
 
 const { Title, Text } = Typography;
 
@@ -68,31 +69,7 @@ const Home: React.FC = () => {
             <Row gutter={[24, 24]}>
               {products.map((product) => (
                 <Col xs={24} sm={12} md={8} lg={6} key={product._id}>
-                  <Link to={`/product/${product._id}`}>
-                    <Card
-                      hoverable
-                      cover={
-                        <img 
-                          alt={product.name} 
-                          src={product.images?.[0] ? (product.images[0].startsWith('http') ? product.images[0] : `${import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'}${product.images[0]}`) : 'https://via.placeholder.com/300'} 
-                          className="h-64 object-cover"
-                        />
-                      }
-                      className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all"
-                    >
-                      <Card.Meta 
-                        title={<span className="text-lg font-bold text-gray-800">{product.name}</span>} 
-                        description={
-                          <div className="mt-2">
-                            <Text type="secondary" className="block mb-2 line-clamp-1">{product.categoryId?.name}</Text>
-                            <Text className="text-blue-600 font-extrabold text-xl">
-                              {product.price?.toLocaleString()} đ
-                            </Text>
-                          </div>
-                        } 
-                      />
-                    </Card>
-                  </Link>
+                  <ProductCard product={product} />
                 </Col>
               ))}
             </Row>

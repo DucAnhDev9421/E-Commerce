@@ -32,7 +32,7 @@ let categorySchema = new mongoose.Schema({
 });
 
 // Middleware tự động tạo slug trước khi validate
-categorySchema.pre('validate', function (next) {
+categorySchema.pre('validate', async function () {
     if (this.name && (!this.slug || this.isModified('name'))) {
         const slugify = require('slugify');
         this.slug = slugify(this.name, {
@@ -41,11 +41,10 @@ categorySchema.pre('validate', function (next) {
             locale: 'vi'
         });
     }
-    next();
 });
 
 // Middleware cho findOneAndUpdate
-categorySchema.pre('findOneAndUpdate', function (next) {
+categorySchema.pre('findOneAndUpdate', async function () {
     const update = this.getUpdate();
     if (update.name) {
         const slugify = require('slugify');
@@ -55,7 +54,6 @@ categorySchema.pre('findOneAndUpdate', function (next) {
             locale: 'vi'
         });
     }
-    next();
 });
 
 module.exports = mongoose.model('categories', categorySchema);

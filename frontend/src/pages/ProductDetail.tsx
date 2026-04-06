@@ -239,6 +239,7 @@ const ProductDetail: React.FC = () => {
                             shape="circle"
                             className="bg-white/80 text-text border-none shadow-sm h-10 w-10 flex items-center justify-center font-bold text-xl hover:bg-primary hover:text-white transition-all transition-colors active:scale-90"
                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                            disabled={product.stock <= 0}
                          >-</Button>
                          <InputNumber 
                             min={1} 
@@ -247,17 +248,23 @@ const ProductDetail: React.FC = () => {
                             onChange={(val) => setQuantity(val || 1)}
                             className="w-12 text-center border-none !bg-transparent font-bold text-xl flex items-center justify-center"
                             controls={false}
+                            disabled={product.stock <= 0}
                          />
                          <Button 
                             type="text" 
                             shape="circle"
                             className="bg-white/80 text-text border-none shadow-sm h-10 w-10 flex items-center justify-center font-bold text-xl hover:bg-primary hover:text-white transition-all transition-colors active:scale-90"
                             onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                            disabled={product.stock <= 0}
                          >+</Button>
                       </div>
                       <div className="flex flex-col">
-                        <Text className="text-sm text-text font-bold leading-none">{product.stock}</Text>
-                        <Text className="text-[10px] text-text/40 font-bold uppercase tracking-widest">CÓ SẴN</Text>
+                        <Text className={`text-sm font-bold leading-none ${product.stock <= 0 ? 'text-cta' : 'text-text'}`}>
+                           {product.stock <= 0 ? 'HẾT HÀNG' : product.stock}
+                        </Text>
+                        <Text className="text-[10px] text-text/40 font-bold uppercase tracking-widest">
+                           {product.stock <= 0 ? 'STATUS' : 'CÓ SẴN'}
+                        </Text>
                       </div>
                    </div>
 
@@ -267,19 +274,21 @@ const ProductDetail: React.FC = () => {
                         type="primary" 
                         size="large" 
                         icon={<ShoppingCartOutlined className="scale-110" />}
-                        className="flex-[1.5] h-16 rounded-full bg-text hover:bg-primary font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2 border-none"
+                        className={`flex-[1.5] h-16 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2 border-none ${product.stock <= 0 ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-text hover:bg-primary text-white'}`}
                         onClick={handleAddToCart}
+                        disabled={product.stock <= 0}
                       >
-                        Thêm vào giỏ hàng
+                        {product.stock <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
                       </Button>
                       <Button 
                         type="primary" 
                         size="large"
                         icon={<ThunderboltOutlined className="scale-110" />}
-                        className="flex-1 h-16 rounded-full bg-cta hover:bg-cta/90 font-bold text-lg transition-all shadow-cta/20 shadow-xl flex items-center justify-center gap-2 border-none"
+                        className={`flex-1 h-16 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2 border-none ${product.stock <= 0 ? 'bg-gray-200 cursor-not-allowed text-gray-400' : 'bg-cta hover:bg-cta/90 text-white shadow-cta/20'}`}
                         onClick={handleBuyNow}
+                        disabled={product.stock <= 0}
                       >
-                        Mua ngay
+                        {product.stock <= 0 ? 'Ngừng bán' : 'Mua ngay'}
                       </Button>
                    </div>
                 </div>
