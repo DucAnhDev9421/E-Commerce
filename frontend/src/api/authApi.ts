@@ -1,5 +1,4 @@
 import axiosClient from './axiosClient';
-import type { User } from '../types/auth';
 
 const authApi = {
   register: (data: any) => {

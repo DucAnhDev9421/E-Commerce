@@ -1,600 +1,558 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react"
 import {
-  Table, Button, Space, Modal, Form, Input, notification,
-  Popconfirm, Typography, Tag, Select, Tooltip, Badge, Drawer,
-  Row, Col, Empty, Spin, Upload, Image, Divider
-} from 'antd';
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  RefreshCw,
+  Tags,
+  CheckCircle,
+  XCircle,
+  X,
+  Upload,
+} from "lucide-react"
+import categoryApi from "@/api/categoryApi"
+import productApi from "@/api/productApi"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
-  EditOutlined, DeleteOutlined, PlusOutlined,
-  SearchOutlined, ReloadOutlined, EyeOutlined, TagsOutlined,
-  CheckCircleOutlined, StopOutlined, PictureOutlined,
-  HistoryOutlined,
-  ThunderboltOutlined,
-  AppstoreOutlined,
-  CompassOutlined,
-  SkinOutlined
-} from '@ant-design/icons';
-import categoryApi from '../../api/categoryApi';
-import productApi from '../../api/productApi';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const { Title, Text, Paragraph } = Typography;
-
-const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL?.replace("/api/v1", "") || "http://localhost:5000"
 
 const getImageUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
-};
+  if (!url) return ""
+  if (url.startsWith("http")) return url
+  return `${BASE_URL}${url}`
+}
+
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  active: { label: "Active", variant: "default" },
+  inactive: { label: "Inactive", variant: "secondary" },
+}
 
 const Categories: React.FC = () => {
-  const [categories, setCategories] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
-  const [viewCategory, setViewCategory] = useState<any | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const [fileList, setFileList] = useState<any[]>([]);
-  const [form] = Form.useForm();
+  const [categories, setCategories] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<any | null>(null)
+  const [viewCategory, setViewCategory] = useState<any | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [searchText, setSearchText] = useState("")
+  const [fileList, setFileList] = useState<any[]>([])
+
+  const [formData, setFormData] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    status: "active",
+    image: "",
+  })
 
   const fetchCategories = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response: any = await categoryApi.getAll();
-      setCategories(response);
-      setFiltered(response);
+      const response: any = await categoryApi.getAll()
+      setCategories(response)
+      setFiltered(response)
     } catch (error: any) {
-      notification.error({ title: 'Lỗi', description: error?.message || 'Không thể tải danh mục' });
+      console.error("Error loading categories:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { fetchCategories() }, [fetchCategories])
 
-  // Search filter
   useEffect(() => {
     if (!searchText.trim()) {
-      setFiltered(categories);
+      setFiltered(categories)
     } else {
-      const q = searchText.toLowerCase();
+      const q = searchText.toLowerCase()
       setFiltered(categories.filter(c =>
         c.name?.toLowerCase().includes(q) ||
         c.slug?.toLowerCase().includes(q) ||
         c.description?.toLowerCase().includes(q)
-      ));
+      ))
     }
-  }, [searchText, categories]);
+  }, [searchText, categories])
 
   const handleAdd = () => {
-    setEditingCategory(null);
-    setFileList([]);
-    form.resetFields();
-    form.setFieldsValue({ status: 'active' });
-    setIsModalOpen(true);
-  };
+    setEditingCategory(null)
+    setFileList([])
+    setFormData({
+      name: "",
+      slug: "",
+      description: "",
+      status: "active",
+      image: "",
+    })
+    setIsModalOpen(true)
+  }
 
   const handleEdit = (record: any) => {
-    setEditingCategory(record);
-    form.setFieldsValue(record);
+    setEditingCategory(record)
+    setFormData({
+      name: record.name || "",
+      slug: record.slug || "",
+      description: record.description || "",
+      status: record.status || "active",
+      image: record.image || "",
+    })
     if (record.image) {
       setFileList([{
-        uid: '1',
-        name: 'image.png',
-        status: 'done',
+        uid: "1",
+        name: "image.png",
+        status: "done",
         url: getImageUrl(record.image),
         response: { avatarUrl: record.image }
-      }]);
+      }])
     } else {
-      setFileList([]);
+      setFileList([])
     }
-    setIsModalOpen(true);
-  };
+    setIsModalOpen(true)
+  }
 
-  const handleUpload = async (options: any) => {
-    const { onSuccess, onError, file } = options;
-    const formData = new FormData();
-    formData.append('avatar', file);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    const formDataUpload = new FormData()
+    formDataUpload.append("avatar", file)
     try {
-      const res: any = await productApi.uploadImage(formData);
-      onSuccess(res);
-    } catch (err: any) {
-      onError(err);
-      notification.error({ message: 'Lỗi tải ảnh', description: 'Không thể upload ảnh lên server' });
+      const res: any = await productApi.uploadImage(formDataUpload)
+      const newFile = {
+        uid: "1",
+        name: file.name,
+        status: "done",
+        url: getImageUrl(res.avatarUrl),
+        response: { avatarUrl: res.avatarUrl },
+      }
+      setFileList([newFile])
+    } catch (err) {
+      console.error("Upload error:", err)
     }
-  };
+  }
+
+  const removeImage = () => {
+    setFileList([])
+  }
 
   const handleView = (record: any) => {
-    setViewCategory(record);
-    setIsViewOpen(true);
-  };
+    setViewCategory(record)
+    setIsViewOpen(true)
+  }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id)
+    setIsDeleteOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await categoryApi.delete(id);
-      notification.success({ title: '✅ Xóa danh mục thành công' });
-      fetchCategories();
+      await categoryApi.delete(deleteId)
+      setIsDeleteOpen(false)
+      setDeleteId(null)
+      fetchCategories()
     } catch (error: any) {
-      notification.error({ title: 'Lỗi khi xóa', description: error?.message });
+      console.error("Error deleting:", error)
     }
-  };
+  }
 
   const handleModalOk = async () => {
     try {
-      const formValues = await form.validateFields();
-      setSaving(true);
-      const imageUrls = fileList
-        .filter(f => f.status === 'done')
-        .map(f => f.response?.avatarUrl || f.url);
-      const values = { ...formValues, image: imageUrls.length > 0 ? imageUrls[0] : '' };
+      setSaving(true)
+      const imageUrl = fileList.length > 0 && fileList[0].status === "done"
+        ? fileList[0].response?.avatarUrl || fileList[0].url
+        : ""
+      const data = { ...formData, image: imageUrl }
 
       if (editingCategory) {
-        await categoryApi.update(editingCategory._id, values);
-        notification.success({ title: '✅ Cập nhật danh mục thành công' });
+        await categoryApi.update(editingCategory._id, data)
       } else {
-        await categoryApi.create(values);
-        notification.success({ title: '✅ Thêm danh mục mới thành công' });
+        await categoryApi.create(data)
       }
-      setIsModalOpen(false);
-      fetchCategories();
+      setIsModalOpen(false)
+      fetchCategories()
     } catch (error: any) {
-      if (error?.name !== 'ValidationError' && error?.name !== 'Error') {
-        notification.error({ title: 'Lỗi tải danh mục', description: error?.message });
-      }
+      console.error("Error saving:", error)
     } finally {
-        setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  // Stats
-  const activeCount = categories.filter(c => c.status === 'active').length;
-  const inactiveCount = categories.filter(c => c.status !== 'active').length;
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w ]+/g, "").replace(/ +/g, "-")
+  }
 
-  const columns = [
-    {
-      title: '#',
-      key: 'index',
-      width: 60,
-      render: (_: any, __: any, index: number) => (
-        <Text className="text-text/30 font-mono font-bold">{index + 1}</Text>
-      ),
-    },
-    {
-      title: 'Danh Mục',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string, record: any) => (
-        <Space size="middle" className="py-2">
-          <div className="relative shrink-0 group">
-            {record.image ? (
-              <img
-                src={getImageUrl(record.image)}
-                alt={text}
-                className="w-14 h-14 object-cover rounded-2xl bg-white p-1 border border-emerald-50 shadow-sm transition-transform group-hover:scale-110"
-                onError={(e: any) => { e.target.style.display = 'none'; }}
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-2xl bg-emerald-600/10 border border-emerald-600/20 flex items-center justify-center shadow-lg shadow-emerald-50 text-emerald-600">
-                <AppstoreOutlined className="text-xl" />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col">
-            <Text strong className="text-[15px] tracking-tight leading-tight mb-0.5">{text}</Text>
-            <div className="flex items-center gap-1.5 opacity-40">
-                <CompassOutlined className="text-[10px]" />
-                <Text className="text-[9px] font-bold uppercase tracking-[0.2em]">SLUG: /{record.slug}</Text>
-            </div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Đặc điểm',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-      render: (text: string) => (
-        <div className="flex flex-col">
-            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">MÔ TẢ</Text>
-            <Text className="text-xs text-text/60 italic leading-tight">{text || 'Chưa cập nhật mô tả'}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 150,
-      render: (status: string) => (
-        <div className={`px-4 py-1.5 rounded-full inline-flex items-center gap-2 border ${
-            status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-red-50 border-red-100 text-red-600'
-        }`}>
-             <div className="w-1.5 h-1.5 rounded-full bg-current" />
-             <Text strong className="text-[10px] uppercase tracking-widest text-current">{status === 'active' ? 'Hoạt động' : 'Tạm dừng'}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 150,
-      render: (date: string) => (
-        <div className="flex flex-col">
-            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">NGÀY KHỞI TẠO</Text>
-            <Text className="text-xs font-bold text-text/60">
-                {date ? new Date(date).toLocaleDateString('vi-VN') : '—'}
-            </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      width: 180,
-      render: (_: any, record: any) => (
-        <Space size={8}>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-                shape="circle" 
-                icon={<EyeOutlined />} 
-                onClick={() => handleView(record)}
-                className="bg-blue-50 text-blue-600 border-none hover:bg-blue-100 transition-colors" 
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button 
-                shape="circle" 
-                icon={<EditOutlined />} 
-                onClick={() => handleEdit(record)}
-                className="bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 transition-colors" 
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa danh mục này?"
-            description="Hành động này không thể hoàn tác."
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa" cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button 
-                shape="circle" 
-                danger 
-                icon={<DeleteOutlined />} 
-                className="bg-red-50 text-red-600 border-none hover:bg-red-100 transition-colors" 
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const activeCount = categories.filter(c => c.status === "active").length
+  const inactiveCount = categories.filter(c => c.status !== "active").length
 
   return (
-    <div className="space-y-8">
-      {/* Page Header & Stats Island */}
-      <div className="bg-white/40 backdrop-blur-md rounded-[3rem] p-8 border border-white/60 shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-          <div>
-            <Title level={2} className="!m-0 !font-serif tracking-tight">Quản lý Danh mục</Title>
-            <Text className="text-text/30 font-bold uppercase tracking-[0.3em] text-[10px]">GROUPING & CLASSIFICATION CONTROL</Text>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-              {[
-                { label: 'Tổng số', value: categories.length, icon: <TagsOutlined />, color: '#059669' },
-                { label: 'Hoạt động', value: activeCount, icon: <CheckCircleOutlined />, color: '#10b981' },
-                { label: 'Tạm dừng', value: inactiveCount, icon: <StopOutlined />, color: '#ef4444' },
-              ].map((stat, i) => (
-                <div key={i} className="px-6 py-3 bg-white/60 rounded-[2rem] border border-white shadow-sm flex items-center gap-4 min-w-[160px]">
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-lg" style={{ background: stat.color }}>
-                        {stat.icon}
-                    </div>
-                    <div>
-                        <Title level={4} className="!m-0 !font-black !leading-none">{stat.value}</Title>
-                        <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">{stat.label}</Text>
-                    </div>
-                </div>
-              ))}
-          </div>
-
-          <Button
-            type="primary" 
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-            className="h-16 px-10 rounded-[2rem] bg-emerald-600 border-none font-bold tracking-widest text-xs uppercase shadow-xl shadow-emerald-200 hover:scale-105 transition-all"
-          >
-            THÊM DANH MỤC MỚI
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+          <p className="text-muted-foreground">Manage product categories and groupings</p>
         </div>
+        <Button onClick={handleAdd}>
+          <Plus className="size-4 mr-2" />
+          Add Category
+        </Button>
       </div>
 
-      {/* Main Table Card */}
-      <div className="bg-white/40 backdrop-blur-md rounded-[3.5rem] border border-white/80 shadow-2xl overflow-hidden glass-panel relative">
-        {/* Toolbar */}
-        <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-                <Input
-                    prefix={<SearchOutlined className="text-emerald-600" />}
-                    placeholder="Tìm kiếm danh mục..."
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
-                    allowClear
-                    className="h-12 w-full md:w-80 rounded-2xl border-none bg-white/60 shadow-sm focus:bg-white transition-all pl-4"
-                />
-            </div>
-            
-            <div className="flex items-center gap-3">
-                <Tooltip title="Làm mới dữ liệu">
-                    <Button 
-                        shape="circle" 
-                        icon={<ReloadOutlined />} 
-                        onClick={fetchCategories} 
-                        loading={loading}
-                        className="bg-white/60 text-emerald-600 border-none shadow-sm hover:scale-110"
-                    />
-                </Tooltip>
-                <div className="h-6 w-px bg-text/10" />
-                <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">SẮP XẾP MẶC ĐỊNH</Text>
-            </div>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={filtered}
-          rowKey="_id"
-          loading={loading}
-          className="premium-admin-table"
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => <Text className="font-bold text-text/30 text-xs">TỔNG CỘNG {total} DANH MỤC</Text>,
-            className: "px-8 py-6"
-          }}
-          locale={{ emptyText: <Empty description="Chưa có danh mục nào" className="p-20" /> }}
-        />
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Categories</CardTitle>
+            <Tags className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{categories.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CheckCircle className="size-5 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{activeCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Inactive</CardTitle>
+            <XCircle className="size-5 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{inactiveCount}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal
-        title={<Title level={4} className="!m-0 !font-serif">{editingCategory ? 'Chỉnh sửa chuyên mục' : 'Khởi tạo chuyên mục mới'}</Title>}
-        open={isModalOpen}
-        onOk={handleModalOk}
-        onCancel={() => setIsModalOpen(false)}
-        okText="GHI NHẬN HỆ THỐNG"
-        cancelText="HỦY BỎ"
-        confirmLoading={saving}
-        className="premium-admin-modal"
-        centered
-        width={600}
-      >
-        <Form
-          form={form} layout="vertical"
-          className="mt-8"
-          onValuesChange={(changed) => {
-            if (changed.name) {
-              const slug = changed.name
-                .toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^\w ]+/g, '').replace(/ +/g, '-');
-              form.setFieldsValue({ slug });
-            }
-          }}
-        >
-          <Form.Item name="name" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Tên danh mục</Text>}
-            rules={[{ required: true, message: 'Vui lòng nhập tên danh mục!' }]}
-          >
-            <Input placeholder="Ví dụ: Điện thoại, Laptop..." className="h-12 rounded-2xl bg-white/60 border-none shadow-sm" />
-          </Form.Item>
-
-          <Form.Item name="slug" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Đường dẫn SEO (Tự động)</Text>}
-            extra={<Text className="text-[10px] text-text/40 italic ml-2 mt-1 block">* Để trống nếu bạn muốn hệ thống tự động tạo từ tên danh mục mới</Text>}
-          >
-            <Input placeholder="dien-thoai-da-nang" addonBefore="/" className="h-12 rounded-2xl overflow-hidden border-none bg-white/40" />
-          </Form.Item>
-
-          <Form.Item name="description" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Mô tả tóm tắt</Text>}>
-            <Input.TextArea rows={3} className="rounded-3xl bg-white/60 border-none p-4" placeholder="Thông tin giới thiệu về danh mục..." />
-          </Form.Item>
-
-          <Form.Item name="status" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Trạng thái vận hành</Text>} initialValue="active">
-            <Select className="h-12 custom-glass-select">
-              <Select.Option value="active">✅ Hoạt động bình thường</Select.Option>
-              <Select.Option value="inactive">⏸️ Tạm ngừng hiển thị</Select.Option>
-            </Select>
-          </Form.Item>
-
-          <Divider orientation="left" className="border-white/20">
-             <Space><PictureOutlined className="text-emerald-600" /><Text className="font-bold text-[11px] uppercase tracking-widest">Ảnh đại diện chuyên mục</Text></Space>
-          </Divider>
-
-          <Form.Item>
-            <Upload
-              customRequest={handleUpload}
-              listType="picture-card"
-              fileList={fileList}
-              onChange={({ fileList: newList }) => setFileList(newList)}
-              accept="image/*"
-              maxCount={1}
-              className="glass-uploader-single"
-            >
-              {fileList.length >= 1 ? null : (
-                <div className="flex flex-col items-center">
-                  <PlusOutlined className="text-xl mb-2" />
-                  <Text className="text-[10px] font-bold text-text/30">UPLOAD</Text>
-                </div>
-              )}
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* View Drawer */}
-      <Drawer
-        title={<Title level={3} className="!m-0 !font-serif">Hồ sơ danh mục</Title>}
-        placement="right"
-        width={480}
-        onClose={() => setIsViewOpen(false)}
-        open={isViewOpen}
-        className="glass-panel"
-        extra={
-            <Button 
-              type="primary" 
-              icon={<EditOutlined />}
-              onClick={() => { setIsViewOpen(false); handleEdit(viewCategory); }}
-              className="h-12 px-6 rounded-2xl bg-emerald-600 border-none font-bold text-xs tracking-widest uppercase shadow-xl"
-            >
-              CẬP NHẬT
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline" size="icon" onClick={fetchCategories} disabled={loading}>
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
-          }
-      >
-        {viewCategory && (
-          <div className="space-y-10">
-            <div className="relative group">
-                <div className="aspect-video rounded-[3rem] overflow-hidden bg-white/40 border-4 border-white p-4 flex items-center justify-center shadow-2xl relative">
-                    <div className="absolute inset-0 bg-emerald-600/5 backdrop-blur-sm" />
-                    {viewCategory.image ? (
-                        <Image
-                            src={getImageUrl(viewCategory.image)}
-                            className="h-full w-full object-contain rounded-3xl relative z-10 transition-transform group-hover:scale-105 duration-500"
-                        />
-                    ) : (
-                        <div className="w-24 h-24 bg-emerald-600 rounded-[2rem] flex items-center justify-center text-white text-5xl shadow-2xl shadow-emerald-200 relative z-10">
-                             <AppstoreOutlined />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-12 rounded-lg" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12">
+                    <Tags className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">No categories found</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((item: any, idx: number) => (
+                  <TableRow key={item._id}>
+                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="size-12 rounded-lg border bg-muted overflow-hidden shrink-0">
+                          {item.image ? (
+                            <img src={getImageUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Tags className="size-5 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
-                    )}
-                </div>
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-12 py-5 bg-white/95 backdrop-blur-2xl rounded-[2.5rem] border border-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] text-center min-w-[320px]">
-                    <Title level={3} className="!m-0 !font-serif tracking-tighter">{viewCategory.name}</Title>
-                    <div className="flex items-center justify-center gap-2 mt-1 opacity-60">
-                        <CompassOutlined className="text-emerald-600" />
-                        <Text className="text-[11px] font-bold uppercase tracking-[0.2em]">{viewCategory.slug}</Text>
+                        <span className="font-medium">{item.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground font-mono text-sm">
+                      /{item.slug}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                      {item.description || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusConfig[item.status]?.variant || "outline"}>
+                        {statusConfig[item.status]?.label || item.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString("vi-VN") : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleView(item)}>
+                          <Eye className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item._id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* View Sheet */}
+      <Sheet open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Category Details</SheetTitle>
+            <SheetDescription>View category information</SheetDescription>
+          </SheetHeader>
+          {viewCategory && (
+            <ScrollArea className="h-[calc(100%-120px)] mt-6 pr-4">
+              <div className="space-y-6">
+                <div className="aspect-video rounded-lg border bg-muted overflow-hidden">
+                  {viewCategory.image ? (
+                    <img src={getImageUrl(viewCategory.image)} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Tags className="size-12 text-muted-foreground/30" />
                     </div>
+                  )}
                 </div>
+
+                <Separator />
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <h3 className="text-xl font-semibold">{viewCategory.name}</h3>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Slug</p>
+                  <p className="font-mono text-sm">/{viewCategory.slug}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge variant={statusConfig[viewCategory.status]?.variant || "outline"}>
+                    {statusConfig[viewCategory.status]?.label || viewCategory.status}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Description</p>
+                  <p className="text-sm">{viewCategory.description || "No description"}</p>
+                </div>
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Created</p>
+                    <p className="text-sm font-medium">
+                      {viewCategory.createdAt ? new Date(viewCategory.createdAt).toLocaleString("vi-VN") : "-"}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Updated</p>
+                    <p className="text-sm font-medium">
+                      {viewCategory.updatedAt ? new Date(viewCategory.updatedAt).toLocaleString("vi-VN") : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
+            <DialogDescription>Fill in the category details below</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Category Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, name: e.target.value, slug: generateSlug(e.target.value) }))
+                }}
+                placeholder="Enter category name"
+              />
             </div>
 
-            <div className="pt-8 space-y-6">
-                <div className="p-8 rounded-[2.5rem] bg-white/40 border border-white space-y-6">
-                    <div>
-                        <Text className="font-bold text-text/40 uppercase text-[10px] tracking-widest block mb-1">TRẠNG THÁI HIỆN TẠI</Text>
-                        <Tag color={viewCategory.status === 'active' ? 'success' : 'error'} className="rounded-full px-6 border-none font-bold uppercase text-[10px] tracking-widest py-1">
-                            {viewCategory.status === 'active' ? 'Đang hoạt động' : 'Tạm dừng'}
-                        </Tag>
-                    </div>
-                    
-                    <Divider className="!m-0 border-white/20" />
+            <div className="grid gap-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
+                placeholder="category-slug"
+              />
+            </div>
 
-                    <div>
-                        <Text className="font-bold text-text/40 uppercase text-[10px] tracking-widest block mb-2">MÔ TẢ GIỚI THIỆU</Text>
-                        <Paragraph className="text-text/60 italic leading-relaxed !m-0">
-                            {viewCategory.description || "Chuyên mục này chưa có nội dung mô tả chi tiết từ quản trị viên."}
-                        </Paragraph>
-                    </div>
-                    
-                    <Divider className="!m-0 border-white/20" />
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                placeholder="Category description..."
+              />
+            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Text className="font-bold text-text/40 uppercase text-[10px] tracking-widest block mb-1">NGÀY TẠO</Text>
-                            <Text strong className="text-xs">{new Date(viewCategory.createdAt).toLocaleString('vi-VN')}</Text>
-                        </div>
-                        <div>
-                            <Text className="font-bold text-text/40 uppercase text-[10px] tracking-widest block mb-1">SỬA LẦN CUỐI</Text>
-                            <Text strong className="text-xs">{new Date(viewCategory.updatedAt).toLocaleString('vi-VN')}</Text>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="flex items-center gap-4 text-text/30 text-[10px] font-bold uppercase tracking-widest justify-center">
-                    <HistoryOutlined /> SYSTEM LOGS: AUDIT TRAIL VERIFIED
-                </div>
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
+            <Separator />
+
+            <div className="grid gap-3">
+              <Label>Category Image</Label>
+              <div className="flex items-center gap-4">
+                {fileList.length > 0 ? (
+                  <div className="relative size-24 rounded-lg border bg-muted overflow-hidden">
+                    <img src={fileList[0].url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={removeImage}
+                      className="absolute top-1 right-1 size-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="size-24 rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/5 transition-colors">
+                    <Upload className="size-6 text-muted-foreground/50 mb-1" />
+                    <span className="text-xs text-muted-foreground/50">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                  </label>
+                )}
+              </div>
             </div>
           </div>
-        )}
-      </Drawer>
 
-      <style>{`
-        .premium-admin-table .ant-table {
-            background: transparent !important;
-        }
-        .premium-admin-table .ant-table-thead > tr > th {
-            background: rgba(0, 0, 0, 0.02) !important;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
-            font-size: 10px !important;
-            font-weight: 800 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.1em !important;
-            color: #94a3b8 !important;
-            padding: 24px !important;
-        }
-        .premium-admin-table .ant-table-tbody > tr > td {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.03) !important;
-            padding: 20px 24px !important;
-            transition: all 0.3s ease;
-        }
-        .premium-admin-table .ant-table-tbody > tr:hover > td {
-            background: rgba(5, 150, 105, 0.03) !important;
-        }
-        .custom-glass-select .ant-select-selector {
-            height: 48px !important;
-            border-radius: 1rem !important;
-            border: none !important;
-            background: rgba(255, 255, 255, 0.6) !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
-            display: flex !important;
-            align-items: center !important;
-            padding: 0 16px !important;
-        }
-        .premium-admin-modal .ant-modal-content {
-            border-radius: 3rem !important;
-            background: rgba(255, 255, 255, 0.8) !important;
-            backdrop-filter: blur(20px) !important;
-            border: 1px solid white !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-            padding: 40px !important;
-        }
-        .premium-admin-modal .ant-modal-header {
-            background: transparent !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-            padding-bottom: 24px !important;
-        }
-        .premium-admin-modal .ant-modal-footer {
-            border-top: none !important;
-            margin-top: 32px !important;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-        }
-        .premium-admin-modal .ant-modal-footer .ant-btn {
-            height: 56px !important;
-            padding: 0 40px !important;
-            border-radius: 2rem !important;
-            font-weight: 700 !important;
-            font-size: 12px !important;
-            letter-spacing: 0.1em !important;
-        }
-        .glass-uploader-single .ant-upload-list-item {
-            border-radius: 1.5rem !important;
-            border: 2px dashed rgba(5, 150, 105, 0.1) !important;
-            width: 104px !important;
-            height: 104px !important;
-        }
-        .glass-uploader-single .ant-upload-select {
-            border-radius: 1.5rem !important;
-            border: 2px dashed rgba(5, 150, 105, 0.2) !important;
-            background: rgba(5, 150, 105, 0.02) !important;
-            width: 104px !important;
-            height: 104px !important;
-        }
-      `}</style>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleModalOk} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Categories;
+export default Categories

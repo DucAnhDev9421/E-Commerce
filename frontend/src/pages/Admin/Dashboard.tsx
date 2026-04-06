@@ -1,107 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { Row, Col, Card, Typography, Statistic, Tag, Avatar, Spin, Empty, Progress, List, Button } from 'antd';
+import React, { useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import {
-  UserOutlined, SafetyCertificateOutlined, ShoppingCartOutlined,
-  TagsOutlined, ShoppingOutlined, ArrowUpOutlined, ArrowDownOutlined,
-  RiseOutlined, AppstoreOutlined, CheckCircleOutlined, ArrowRightOutlined,
-  ThunderboltOutlined,
-  HistoryOutlined
-} from '@ant-design/icons';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import type { RootState } from '../../store';
-import type { Role } from '../../types/auth';
-import categoryApi from '../../api/categoryApi';
-import productApi from '../../api/productApi';
-import userApi from '../../api/userApi';
-import roleApi from '../../api/roleApi';
+  Users,
+  Tags,
+  ShoppingBag,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  ArrowUpRight,
+  Package,
+} from 'lucide-react'
+import type { RootState } from '@/store'
+import type { Role } from '@/types/auth'
+import categoryApi from '@/api/categoryApi'
+import productApi from '@/api/productApi'
+import userApi from '@/api/userApi'
+import roleApi from '@/api/roleApi'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+} from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const { Title, Text } = Typography;
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'
+const getImageUrl = (url: string) => {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${BASE_URL}${url}`
+}
 
-const StatCard: React.FC<{
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  color: string;
-  bg: string;
-  suffix?: string;
-  trend?: number;
-  loading?: boolean;
-}> = ({ title, value, icon, color, bg, suffix, trend, loading }) => (
-  <Card
-    className="rounded-[2.5rem] border-none shadow-xl bg-white/40 backdrop-blur-md overflow-hidden relative group hover:scale-102 transition-all duration-500"
-    bodyStyle={{ padding: 32 }}
-  >
-    {/* Decorative Background Shape */}
-    <div 
-        className="absolute top-[-10%] right-[-10%] w-24 h-24 rounded-full blur-3xl opacity-20 transition-all duration-700 group-hover:scale-150 group-hover:opacity-40" 
-        style={{ background: color }}
-    />
-    
-    <div className="flex justify-between items-start relative z-10">
-      <div className="flex-1">
-        <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em] mb-2 block">
-          {title}
-        </Text>
-        {loading ? (
-          <div className="mt-2"><Spin size="small" /></div>
-        ) : (
-          <div className="flex items-baseline gap-1 mt-2">
-            <span className="text-4xl font-serif font-black text-text tracking-tighter">
-                {value}
-            </span>
-            {suffix && <span className="text-lg font-bold text-text/40">{suffix}</span>}
-          </div>
-        )}
-        
-        {trend !== undefined && !loading && (
-          <div className={`mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${trend >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-            {trend >= 0 ? <ArrowUpOutlined size={10} /> : <ArrowDownOutlined size={10} />}
-            {Math.abs(trend)}% <span className="opacity-40 ml-1">so với tháng trước</span>
-          </div>
-        )}
-      </div>
-      
-      <div 
-        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-lg transition-all duration-500 group-hover:rotate-12 group-hover:scale-110" 
-        style={{ background: color, color: '#fff', boxShadow: `0 8px 16px ${color}40` }}
-      >
-        {icon}
-      </div>
-    </div>
+interface StatCardProps {
+  title: string
+  value: number | string
+  description?: string
+  icon: React.ElementType
+  trend?: number
+  loading?: boolean
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, description, icon: Icon, trend, loading }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      <Icon className="size-5 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {loading ? (
+        <>
+          <Skeleton className="h-8 w-20 mb-2" />
+          <Skeleton className="h-4 w-16" />
+        </>
+      ) : (
+        <>
+          <div className="text-2xl font-bold">{value}</div>
+          {description && (
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          )}
+          {trend !== undefined && (
+            <div className="flex items-center gap-1 mt-2">
+              <Badge variant={trend >= 0 ? "default" : "destructive"} className="text-xs">
+                {trend >= 0 ? <ArrowUpRight className="size-3 mr-1" /> : null}
+                {Math.abs(trend)}%
+              </Badge>
+              <span className="text-xs text-muted-foreground">from last month</span>
+            </div>
+          )}
+        </>
+      )}
+    </CardContent>
   </Card>
-);
+)
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [stats, setStats] = useState({ users: 0, categories: 0, products: 0, roles: 0, inStock: 0, outOfStock: 0 });
-  const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate()
+  const { user } = useSelector((state: RootState) => state.auth)
+  const [stats, setStats] = useState({ users: 0, categories: 0, products: 0, roles: 0, inStock: 0, outOfStock: 0 })
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const roleName = typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN';
-  const now = new Date();
-  const greeting = now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+  const roleName = typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN'
+  const now = new Date()
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening'
 
   useEffect(() => {
     const fetchAll = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
         const [userRes, catRes, prodRes, roleRes]: any[] = await Promise.allSettled([
           userApi.getAll(),
           categoryApi.getAll(),
           productApi.getAll(),
           roleApi.getAll(),
-        ]);
+        ])
 
-        const users = userRes.status === 'fulfilled' ? userRes.value : [];
-        const cats = catRes.status === 'fulfilled' ? catRes.value : [];
-        const prods = prodRes.status === 'fulfilled' ? (prodRes.value.items || []) : [];
-        const roles = roleRes.status === 'fulfilled' ? roleRes.value : [];
+        const users = userRes.status === 'fulfilled' ? userRes.value : []
+        const cats = catRes.status === 'fulfilled' ? catRes.value : []
+        const prods = prodRes.status === 'fulfilled' ? (prodRes.value.items || []) : []
+        const roles = roleRes.status === 'fulfilled' ? roleRes.value : []
 
-        setCategories(cats);
-        setProducts(prods);
+        setProducts(prods)
         setStats({
           users: users.length,
           categories: cats.length,
@@ -109,242 +113,213 @@ const Dashboard: React.FC = () => {
           roles: roles.length,
           inStock: prods.filter((p: any) => p.status === 'in_stock').length,
           outOfStock: prods.filter((p: any) => p.status === 'out_of_stock').length,
-        });
+        })
       } catch {
         // silently fail - show zeros
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    fetchAll();
-  }, []);
-
-  const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock || 0), 0);
-  const activeCategories = categories.filter(c => c.status === 'active').length;
+    }
+    fetchAll()
+  }, [])
 
   const recentProducts = [...products]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 4);
+    .slice(0, 5)
+
+  const stockPercentage = stats.products > 0 ? Math.round((stats.inStock / stats.products) * 100) : 0
 
   return (
-    <div className="space-y-10">
-      {/* Immersive Greeting */}
-      <div className="relative p-10 md:p-12 rounded-[3.5rem] bg-text overflow-hidden group shadow-2xl">
-         {/* Abstract Glass Background Shapes */}
-         <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-emerald-600/20 rounded-full blur-[100px] -z-10 group-hover:scale-110 transition-transform duration-1000" />
-         <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[80px] -z-10" />
-         
-         <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-             <div className="relative">
-                <Avatar 
-                    src={user?.avatarUrl} 
-                    icon={<UserOutlined />} 
-                    size={120} 
-                    className="bg-emerald-600 shadow-2xl ring-8 ring-white/5"
-                />
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center border-4 border-text shadow-lg">
-                    <CheckCircleOutlined className="text-white text-lg" />
-                </div>
-             </div>
-
-             <div className="flex-1 text-center md:text-left">
-                <Text className="text-white/40 font-bold uppercase tracking-[0.4em] text-xs block mb-4">HỆ THỐNG QUẢN TRỊ TRỰC TUYẾN</Text>
-                <Title level={1} className="!m-0 !font-serif !text-5xl md:!text-6xl !text-white tracking-tighter leading-none mb-4">
-                    {greeting}, {user?.fullName?.split(' ').pop()}!
-                </Title>
-                <div className="flex items-center justify-center md:justify-start gap-4 mt-8 flex-wrap">
-                    <div className="px-6 py-2 bg-emerald-600 text-white rounded-full font-bold text-xs tracking-widest uppercase shadow-xl shadow-emerald-900/20">
-                        {roleName}
-                    </div>
-                    <div className="px-6 py-2 bg-white/5 backdrop-blur-xl border border-white/10 text-white/60 rounded-full font-bold text-xs tracking-widest uppercase flex items-center gap-2">
-                        <HistoryOutlined /> {now.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-                    </div>
-                </div>
-             </div>
-
-             <div className="hidden lg:flex flex-col gap-4">
-                <Button 
-                    type="primary" 
-                    icon={<AppstoreOutlined />} 
-                    className="h-14 px-10 rounded-3xl bg-white text-text border-none font-bold text-xs tracking-widest uppercase shadow-xl hover:scale-105 transition-all w-full flex items-center justify-center"
-                    onClick={() => navigate('/admin/products')}
-                >
-                    QUẢN LÝ KHO HÀNG
-                </Button>
-                <Button 
-                    className="h-14 px-10 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 text-white font-bold text-xs tracking-widest uppercase shadow-xl hover:bg-white/10 transition-all w-full flex items-center justify-center"
-                    onClick={() => navigate('/admin/users')}
-                >
-                    NGƯỜI DÙNG MỚI
-                </Button>
-             </div>
-         </div>
+    <div className="space-y-8">
+      {/* Welcome Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {greeting}, {user?.fullName?.split(' ').pop()}
+          </h1>
+          <p className="text-muted-foreground">
+            Welcome back to your admin dashboard. Here's what's happening today.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="px-3 py-1">
+            {roleName}
+          </Badge>
+          <Badge variant="secondary">
+            {now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </Badge>
+        </div>
       </div>
 
-      {/* Stats row */}
-      <Row gutter={[24, 24]}>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard title="Người dùng" value={stats.users} icon={<UserOutlined />} color="#059669" bg="#059669" trend={12} loading={loading} />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard title="Danh mục" value={stats.categories} icon={<TagsOutlined />} color="#10b981" bg="#10b981" trend={5} loading={loading} />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard title="Sản phẩm" value={stats.products} icon={<ShoppingOutlined />} color="#1d4ed8" bg="#1d4ed8" trend={8} loading={loading} />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Giá trị kho"
-            value={loading ? 0 : Math.round(totalValue / 1000000)}
-            suffix="M₫"
-            icon={<RiseOutlined />}
-            color="#7c3aed"
-            bg="#7c3aed"
-            trend={3}
-            loading={loading}
-          />
-        </Col>
-      </Row>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Users"
+          value={stats.users}
+          icon={Users}
+          trend={12}
+          loading={loading}
+        />
+        <StatCard
+          title="Categories"
+          value={stats.categories}
+          icon={Tags}
+          trend={5}
+          loading={loading}
+        />
+        <StatCard
+          title="Products"
+          value={stats.products}
+          icon={ShoppingBag}
+          trend={8}
+          loading={loading}
+        />
+        <StatCard
+          title="In Stock"
+          value={`${stats.inStock} / ${stats.products}`}
+          icon={CheckCircle}
+          loading={loading}
+        />
+      </div>
 
-      <Row gutter={[32, 32]}>
-        {/* Inventory Status - Modern Glass */}
-        <Col xs={24} lg={12}>
-           <Card 
-             title={<Text className="font-serif text-2xl tracking-tight !m-0">Tình trạng kho hàng</Text>}
-             className="rounded-[3rem] border-none shadow-2xl bg-white/50 backdrop-blur-xl h-full"
-             bodyStyle={{ padding: 40 }}
-             extra={<Button type="link" className="text-emerald-600 font-bold">XEM CHI TIẾT</Button>}
-           >
-                {loading ? <div className="text-center py-20"><Spin size="large" /></div> : (
-                  <div className="space-y-10">
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-emerald-600/10 rounded-2xl flex items-center justify-center text-emerald-600 text-2xl">
-                             <CheckCircleOutlined />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between mb-2">
-                                <Text strong className="text-lg">Sản phẩm còn hàng</Text>
-                                <Text strong className="text-emerald-600 text-lg">{stats.inStock} / {stats.products}</Text>
-                            </div>
-                            <Progress 
-                                percent={stats.products ? Math.round((stats.inStock / stats.products) * 100) : 0} 
-                                strokeColor="#059669" 
-                                trailColor="rgba(5, 150, 105, 0.05)"
-                                strokeWidth={12}
-                                className="progress-rounded"
-                            />
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-red-600/10 rounded-2xl flex items-center justify-center text-red-600 text-2xl">
-                             <ThunderboltOutlined />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between mb-2">
-                                <Text strong className="text-lg">Sản phẩm hết hàng</Text>
-                                <Text strong className="text-red-600 text-lg">{stats.outOfStock} / {stats.products}</Text>
-                            </div>
-                            <Progress 
-                                percent={stats.products ? Math.round((stats.outOfStock / stats.products) * 100) : 0} 
-                                strokeColor="#ef4444" 
-                                trailColor="rgba(239, 68, 68, 0.05)"
-                                strokeWidth={12}
-                                className="progress-rounded"
-                            />
-                        </div>
-                    </div>
+      {/* Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Inventory Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Inventory Status</CardTitle>
+            <CardDescription>Overview of your product stock levels</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <CheckCircle className="size-4 text-green-600" />
+                  In Stock
+                </span>
+                <span className="font-medium">{stats.inStock} products</span>
+              </div>
+              <Progress value={stockPercentage} className="h-2 [&>div]:bg-green-600" />
+            </div>
 
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-600 text-2xl">
-                             <TagsOutlined />
-                        </div>
-                        <div className="flex-1">
-                            <div className="flex justify-between mb-2">
-                                <Text strong className="text-lg">Danh mục đang chạy</Text>
-                                <Text strong className="text-blue-600 text-lg">{activeCategories} / {stats.categories}</Text>
-                            </div>
-                            <Progress 
-                                percent={stats.categories ? Math.round((activeCategories / stats.categories) * 100) : 0} 
-                                strokeColor="#1d4ed8" 
-                                trailColor="rgba(29, 78, 216, 0.05)"
-                                strokeWidth={12}
-                                className="progress-rounded"
-                            />
-                        </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <XCircle className="size-4 text-red-600" />
+                  Out of Stock
+                </span>
+                <span className="font-medium">{stats.outOfStock} products</span>
+              </div>
+              <Progress value={100 - stockPercentage} className="h-2 [&>div]:bg-red-600" />
+            </div>
+
+            <div className="pt-4 border-t">
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/products')}>
+                Manage Products
+                <ArrowUpRight className="size-4 ml-2" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Products */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Products</CardTitle>
+            <CardDescription>Latest added products to your store</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="size-12 rounded-lg" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
                     </div>
                   </div>
-                )}
-           </Card>
-        </Col>
+                ))}
+              </div>
+            ) : recentProducts.length > 0 ? (
+              <Table>
+                <TableBody>
+                  {recentProducts.map((item: any) => (
+                    <TableRow key={item._id}>
+                      <TableCell className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="size-12 rounded-lg border bg-muted overflow-hidden">
+                            {item.images?.[0] ? (
+                              <img
+                                src={getImageUrl(item.images[0])}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="size-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{item.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {(item.price || 0).toLocaleString('vi-VN')}₫
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge variant={item.status === 'in_stock' ? 'default' : 'destructive'}>
+                          {item.status === 'in_stock' ? 'In Stock' : 'Out'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Package className="size-12 text-muted-foreground/30 mb-4" />
+                <p className="text-muted-foreground">No products yet</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/admin/products')}>
+                  Add Product
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Recent Products - Glass List */}
-        <Col xs={24} lg={12}>
-           <Card 
-             title={<Text className="font-serif text-2xl tracking-tight !m-0">Sản phẩm mới cập nhật</Text>}
-             className="rounded-[3rem] border-none shadow-2xl bg-white/50 backdrop-blur-xl h-full overflow-hidden"
-             bodyStyle={{ padding: 0 }}
-             extra={<Button shape="circle" icon={<ArrowRightOutlined />} className="bg-emerald-600 text-white border-none shadow-lg" onClick={() => navigate('/admin/products')} />}
-           >
-                <div className="p-8 pb-0">
-                    <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em] mb-8 block">DANH SÁCH 4 SẢN PHẨM GẦN NHẤT</Text>
-                </div>
-                {loading ? (
-                    <div className="text-center py-20"><Spin /></div>
-                ) : (
-                    <div className="divide-y divide-gray-100/50">
-                        {recentProducts.map((item: any) => (
-                            <div key={item._id} className="p-6 hover:bg-emerald-600/5 transition-all flex items-center gap-6 group cursor-pointer" onClick={() => navigate('/admin/products')}>
-                                <div className="w-20 h-20 bg-white rounded-3xl overflow-hidden shadow-sm p-2 group-hover:scale-105 transition-transform">
-                                    {item.images?.[0] ? (
-                                        <img 
-                                            src={item.images[0].startsWith('http') ? item.images[0] : `http://localhost:5000${item.images[0]}`} 
-                                            alt={item.name}
-                                            className="w-full h-full object-contain"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-text/10 text-2xl">
-                                             <ShoppingOutlined />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <Text strong className="text-lg block truncate">{item.name}</Text>
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <Text className="text-emerald-600 font-bold">{(item.price).toLocaleString('vi-VN')}₫</Text>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-text/10" />
-                                        <Text className="text-xs text-text/40">{item.categoryId?.name}</Text>
-                                    </div>
-                                </div>
-                                <div className={`px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${item.status === 'in_stock' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                                    {item.status === 'in_stock' ? 'Còn' : 'Hết'}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {recentProducts.length === 0 && !loading && (
-                    <div className="py-20 flex flex-col items-center">
-                        <Empty description="Chưa có dữ liệu" />
-                    </div>
-                )}
-           </Card>
-        </Col>
-      </Row>
-
-      <style>{`
-        .ant-progress-bg {
-            border-radius: 9999px !important;
-        }
-        .progress-rounded .ant-progress-inner {
-            border-radius: 9999px !important;
-        }
-        .hover\:scale-102:hover {
-            transform: scale(1.02);
-        }
-      `}</style>
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>Common tasks you might want to perform</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2" onClick={() => navigate('/admin/products')}>
+              <ShoppingBag className="size-6" />
+              <span>Manage Products</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2" onClick={() => navigate('/admin/categories')}>
+              <Tags className="size-6" />
+              <span>Categories</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2" onClick={() => navigate('/admin/users')}>
+              <Users className="size-6" />
+              <span>Users</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2" onClick={() => navigate('/')}>
+              <TrendingUp className="size-6" />
+              <span>View Store</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard

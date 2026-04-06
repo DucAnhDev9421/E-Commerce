@@ -1,656 +1,655 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'
 import {
-  Table, Button, Space, Modal, Form, Input, notification,
-  Popconfirm, Typography, Tag, Select, Tooltip, InputNumber,
-  Upload, Image, Row, Col, Empty, Drawer, Divider
-} from 'antd';
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  RefreshCw,
+  Package,
+  Image as ImageIcon,
+  X,
+  Upload,
+} from 'lucide-react'
+import productApi from '@/api/productApi'
+import categoryApi from '@/api/categoryApi'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import {
-  EditOutlined, DeleteOutlined, PlusOutlined, ShoppingOutlined,
-  SearchOutlined, ReloadOutlined, EyeOutlined,
-  CheckCircleOutlined, StopOutlined,
-  PictureOutlined,
-  ThunderboltOutlined,
-  RiseOutlined,
-  HistoryOutlined
-} from '@ant-design/icons';
-import productApi from '../../api/productApi';
-import categoryApi from '../../api/categoryApi';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Skeleton } from '@/components/ui/skeleton'
 
-const { Title, Text, Paragraph } = Typography;
-
-const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'
 
 const getImageUrl = (url: string) => {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${BASE_URL}${url}`;
-};
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${BASE_URL}${url}`
+}
 
-const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-  in_stock: { label: 'Còn hàng', color: 'success', icon: <CheckCircleOutlined /> },
-  out_of_stock: { label: 'Hết hàng', color: 'error', icon: <StopOutlined /> },
-  discontinued: { label: 'Ngừng KD', color: 'default', icon: <StopOutlined /> },
-};
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  in_stock: { label: 'In Stock', variant: 'default' },
+  out_of_stock: { label: 'Out of Stock', variant: 'destructive' },
+  discontinued: { label: 'Discontinued', variant: 'secondary' },
+}
 
 const Products: React.FC = () => {
-  const [products, setProducts] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isViewOpen, setIsViewOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any | null>(null);
-  const [viewProduct, setViewProduct] = useState<any | null>(null);
-  const [fileList, setFileList] = useState<any[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [filterCategory, setFilterCategory] = useState<string>('');
-  const [form] = Form.useForm();
+  const [products, setProducts] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<any | null>(null)
+  const [viewProduct, setViewProduct] = useState<any | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [fileList, setFileList] = useState<any[]>([])
+  const [searchText, setSearchText] = useState('')
+  const [filterCategory, setFilterCategory] = useState<string>('')
+
+  const [formData, setFormData] = useState({
+    name: '',
+    slug: '',
+    price: 0,
+    stock: 0,
+    categoryId: '',
+    description: '',
+    status: 'in_stock',
+    images: [] as string[],
+  })
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       const [productRes, categoryRes]: any = await Promise.all([
         productApi.getAll(),
         categoryApi.getAll(),
-      ]);
-      const productList = productRes.items || [];
-      setProducts(productList);
-      setFiltered(productList);
-      setCategories(categoryRes);
+      ])
+      const productList = productRes.items || []
+      setProducts(productList)
+      setFiltered(productList)
+      setCategories(categoryRes)
     } catch (error: any) {
-      notification.error({ title: 'Lỗi tải dữ liệu', description: error?.message });
+      console.error('Error loading data:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData() }, [fetchData])
 
-  // Client-side filter
   useEffect(() => {
-    let result = [...products];
+    let result = [...products]
     if (searchText.trim()) {
-      const q = searchText.toLowerCase();
+      const q = searchText.toLowerCase()
       result = result.filter(p =>
         p.name?.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q)
-      );
+      )
     }
     if (filterCategory) {
-      result = result.filter(p => p.categoryId?._id === filterCategory);
+      result = result.filter(p => p.categoryId?._id === filterCategory)
     }
-    setFiltered(result);
-  }, [searchText, filterCategory, products]);
+    setFiltered(result)
+  }, [searchText, filterCategory, products])
 
   const handleAdd = () => {
-    setEditingProduct(null);
-    setFileList([]);
-    form.resetFields();
-    form.setFieldsValue({ status: 'in_stock', stock: 0 });
-    setIsModalOpen(true);
-  };
+    setEditingProduct(null)
+    setFileList([])
+    setFormData({
+      name: '',
+      slug: '',
+      price: 0,
+      stock: 0,
+      categoryId: '',
+      description: '',
+      status: 'in_stock',
+      images: [],
+    })
+    setIsModalOpen(true)
+  }
 
   const handleEdit = (record: any) => {
-    setEditingProduct(record);
-    form.setFieldsValue({ ...record, categoryId: record.categoryId?._id });
+    setEditingProduct(record)
+    setFormData({
+      name: record.name || '',
+      slug: record.slug || '',
+      price: record.price || 0,
+      stock: record.stock || 0,
+      categoryId: record.categoryId?._id || '',
+      description: record.description || '',
+      status: record.status || 'in_stock',
+      images: record.images || [],
+    })
     const imgs = (record.images || []).map((url: string, i: number) => ({
       uid: String(i),
       name: `image-${i}`,
       status: 'done',
       url: getImageUrl(url),
       response: { avatarUrl: url },
-    }));
-    setFileList(imgs);
-    setIsModalOpen(true);
-  };
+    }))
+    setFileList(imgs)
+    setIsModalOpen(true)
+  }
 
   const handleView = (record: any) => {
-    setViewProduct(record);
-    setIsViewOpen(true);
-  };
+    setViewProduct(record)
+    setIsViewOpen(true)
+  }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id)
+    setIsDeleteOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await productApi.delete(id);
-      notification.success({ title: '✅ Xóa sản phẩm thành công' });
-      fetchData();
+      await productApi.delete(deleteId)
+      setIsDeleteOpen(false)
+      setDeleteId(null)
+      fetchData()
     } catch (error: any) {
-      notification.error({ title: 'Lỗi xóa', description: error?.message });
+      console.error('Error deleting:', error)
     }
-  };
+  }
 
-  const handleUpload = async (options: any) => {
-    const { onSuccess, onError, file } = options;
-    const formData = new FormData();
-    formData.append('avatar', file);
-    try {
-      const res: any = await productApi.uploadImage(formData);
-      onSuccess(res);
-    } catch (err: any) {
-      onError(err);
-      notification.error({ title: 'Lỗi tải ảnh', description: 'Không thể upload ảnh lên server' });
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const formData = new FormData()
+      formData.append('avatar', file)
+      try {
+        const res: any = await productApi.uploadImage(formData)
+        const newFile = {
+          uid: String(Date.now() + i),
+          name: file.name,
+          status: 'done',
+          url: getImageUrl(res.avatarUrl),
+          response: { avatarUrl: res.avatarUrl },
+        }
+        setFileList(prev => [...prev, newFile])
+      } catch (err) {
+        console.error('Upload error:', err)
+      }
     }
-  };
+  }
+
+  const removeImage = (uid: string) => {
+    setFileList(prev => prev.filter(f => f.uid !== uid))
+  }
 
   const handleModalOk = async () => {
     try {
-      const values = await form.validateFields();
-      setSaving(true);
+      setSaving(true)
       const imageUrls = fileList
         .filter(f => f.status === 'done')
-        .map(f => f.response?.avatarUrl || f.url);
-      const data = { ...values, images: imageUrls };
+        .map(f => f.response?.avatarUrl || f.url)
+      const data = { ...formData, images: imageUrls }
+
       if (editingProduct) {
-        await productApi.update(editingProduct._id, data);
-        notification.success({ title: '✅ Cập nhật sản phẩm thành công' });
+        await productApi.update(editingProduct._id, data)
       } else {
-        await productApi.create(data);
-        notification.success({ title: '✅ Thêm sản phẩm mới thành công' });
+        await productApi.create(data)
       }
-      setIsModalOpen(false);
-      fetchData();
+      setIsModalOpen(false)
+      fetchData()
     } catch (error: any) {
-      if (error?.name !== 'ValidationError' && error?.name !== 'Error') {
-        notification.error({ title: 'Lỗi lưu', description: error?.message });
-      }
+      console.error('Error saving:', error)
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  // Stats
-  const outStockCount = products.filter(p => p.status === 'out_of_stock').length;
-  const totalValue = products.reduce((sum, p) => sum + (p.price * (p.stock || 0)), 0);
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w ]+/g, '').replace(/ +/g, '-')
+  }
 
-  const columns = [
-    {
-      title: '#',
-      key: 'index', width: 60,
-      render: (_: any, __: any, idx: number) => <Text className="text-text/30 font-mono font-bold">{idx + 1}</Text>,
-    },
-    {
-      title: 'Sản phẩm',
-      dataIndex: 'name', key: 'name',
-      render: (text: string, record: any) => (
-        <Space size="middle" className="py-2">
-          <div className="relative shrink-0 group">
-            {record.images?.[0] ? (
-              <img
-                src={getImageUrl(record.images[0])}
-                alt={text}
-                className="w-16 h-16 object-contain rounded-2xl bg-white p-2 border border-emerald-50 shadow-sm transition-transform group-hover:scale-110"
-                onError={(e: any) => { e.target.style.display = 'none'; }}
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-white/50 border border-white flex items-center justify-center">
-                <PictureOutlined className="text-text/10 text-2xl" />
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col">
-            <Text strong className="text-base tracking-tight leading-tight mb-1">{text}</Text>
-            <Text className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">{record.categoryId?.name || 'KHÔNG CÓ DANH MỤC'}</Text>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Giá bán',
-      dataIndex: 'price', key: 'price',
-      width: 150,
-      render: (price: number) => (
-        <div className="flex flex-col">
-          <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">ĐƠN GIÁ</Text>
-          <Text strong className="text-emerald-600 text-lg">
-            {price?.toLocaleString('vi-VN')}₫
-          </Text>
-        </div>
-      ),
-      sorter: (a: any, b: any) => a.price - b.price,
-    },
-    {
-      title: 'Kho hàng',
-      dataIndex: 'stock', key: 'stock', width: 120,
-      render: (stock: number) => (
-        <div className="flex flex-col">
-            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">TỒN KHO</Text>
-            <div className={`mt-1 inline-flex items-center gap-2 font-bold ${stock > 10 ? 'text-emerald-600' : stock > 0 ? 'text-amber-500' : 'text-red-500'}`}>
-                {stock} <Text className="text-[10px] font-light text-text/40">SẢN PHẨM</Text>
-            </div>
-        </div>
-      ),
-      sorter: (a: any, b: any) => a.stock - b.stock,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status', key: 'status', width: 150,
-      render: (status: string) => {
-        const cfg = statusConfig[status] || statusConfig.in_stock;
-        return (
-          <div className={`px-4 py-1.5 rounded-full inline-flex items-center gap-2 border ${
-            status === 'in_stock' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 
-            status === 'out_of_stock' ? 'bg-red-50 border-red-100 text-red-600' : 
-            'bg-gray-50 border-gray-100 text-gray-600'
-          }`}>
-             <div className="w-1.5 h-1.5 rounded-full bg-current" />
-             <Text strong className="text-[10px] uppercase tracking-widest text-current">{cfg.label}</Text>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Hành động',
-      key: 'action', width: 180,
-      render: (_: any, record: any) => (
-        <Space size={8}>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-                shape="circle" 
-                icon={<EyeOutlined />} 
-                onClick={() => handleView(record)}
-                className="bg-blue-50 text-blue-600 border-none hover:bg-blue-100 transition-colors" 
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
-            <Button 
-                shape="circle" 
-                icon={<EditOutlined />} 
-                onClick={() => handleEdit(record)}
-                className="bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 transition-colors" 
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa sản phẩm này?"
-            description="Hành động này không thể hoàn tác."
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa" cancelText="Hủy"
-          >
-            <Tooltip title="Xóa">
-              <Button 
-                shape="circle" 
-                danger 
-                icon={<DeleteOutlined />} 
-                className="bg-red-50 text-red-600 border-none hover:bg-red-100 transition-colors" 
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const outStockCount = products.filter(p => p.status === 'out_of_stock').length
 
   return (
-    <div className="space-y-8">
-      {/* Header & Stats Island */}
-      <div className="bg-white/40 backdrop-blur-md rounded-[3rem] p-8 border border-white/60 shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-          <div>
-            <Title level={2} className="!m-0 !font-serif tracking-tight">Quản lý Sản phẩm</Title>
-            <Text className="text-text/30 font-bold uppercase tracking-[0.3em] text-[10px]">TOTAL INVENTORY & CATALOG CONTROL</Text>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-              {[
-                { label: 'Sản phẩm', value: products.length, icon: <ShoppingOutlined />, color: '#059669' },
-                { label: 'Hết hàng', value: outStockCount, icon: <ThunderboltOutlined />, color: '#ef4444' },
-                { label: 'Giá trị', value: (Math.round(totalValue / 1000000)) + 'M₫', icon: <RiseOutlined />, color: '#7c3aed' },
-              ].map((stat, i) => (
-                <div key={i} className="px-6 py-3 bg-white/60 rounded-[2rem] border border-white shadow-sm flex items-center gap-4 min-w-[160px]">
-                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white text-lg shadow-lg" style={{ background: stat.color }}>
-                        {stat.icon}
-                    </div>
-                    <div>
-                        <Title level={4} className="!m-0 !font-black !leading-none">{stat.value}</Title>
-                        <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">{stat.label}</Text>
-                    </div>
-                </div>
-              ))}
-          </div>
-
-          <Button
-            type="primary" 
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-            className="h-16 px-10 rounded-[2rem] bg-emerald-600 border-none font-bold tracking-widest text-xs uppercase shadow-xl shadow-emerald-200 hover:scale-105 transition-all"
-          >
-            THÊM SẢN PHẨM MỚI
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+          <p className="text-muted-foreground">Manage your product inventory and catalog</p>
         </div>
+        <Button onClick={handleAdd}>
+          <Plus className="size-4 mr-2" />
+          Add Product
+        </Button>
       </div>
 
-      {/* Main Table - Premium Glass */}
-      <div className="bg-white/40 backdrop-blur-md rounded-[3.5rem] border border-white/80 shadow-2xl overflow-hidden glass-panel relative">
-        {/* Toolbar */}
-        <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-                <Input
-                    prefix={<SearchOutlined className="text-emerald-600" />}
-                    placeholder="Tìm kiếm theo tên sản phẩm..."
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
-                    allowClear
-                    className="h-12 w-full md:w-80 rounded-2xl border-none bg-white/60 shadow-sm focus:bg-white transition-all pl-4"
-                />
-                <Select
-                    placeholder="Lọc danh mục"
-                    allowClear 
-                    className="h-12 w-full md:w-60 custom-glass-select"
-                    onChange={v => setFilterCategory(v || '')}
-                    value={filterCategory || undefined}
-                >
-                    {categories.map(c => (
-                    <Select.Option key={c._id} value={c._id}>{c.name}</Select.Option>
-                    ))}
-                </Select>
-            </div>
-            
-            <div className="flex items-center gap-3">
-                <Tooltip title="Làm mới dữ liệu">
-                    <Button 
-                        shape="circle" 
-                        icon={<ReloadOutlined />} 
-                        onClick={fetchData} 
-                        loading={loading}
-                        className="bg-white/60 text-emerald-600 border-none shadow-sm hover:scale-110"
-                    />
-                </Tooltip>
-                <div className="h-6 w-px bg-text/10" />
-                <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">SẮP XẾP MỚI NHẤT</Text>
-            </div>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={filtered}
-          rowKey="_id"
-          loading={loading}
-          className="premium-admin-table"
-          pagination={{
-            pageSize: 10, 
-            showSizeChanger: true,
-            showTotal: (total) => <Text className="font-bold text-text/30 text-xs">TỔNG CỘNG {total} SẢN PHẨM</Text>,
-            className: "px-8 py-6"
-          }}
-          locale={{ emptyText: <Empty description="Chưa có sản phẩm nào" className="p-20" /> }}
-        />
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Products</CardTitle>
+            <Package className="size-5 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{products.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Out of Stock</CardTitle>
+            <Badge variant="destructive">
+              {outStockCount}
+            </Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{outStockCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{categories.length}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Product Drawer (View) */}
-      <Drawer
-        title={<Title level={3} className="!m-0 !font-serif">Chi tiết sản phẩm</Title>}
-        placement="right"
-        width={560}
-        onClose={() => setIsViewOpen(false)}
-        open={isViewOpen}
-        className="glass-panel"
-        extra={
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />}
-            onClick={() => { setIsViewOpen(false); if (viewProduct) handleEdit(viewProduct); }}
-            className="h-12 px-6 rounded-2xl bg-emerald-600 border-none font-bold text-xs tracking-widest uppercase shadow-xl"
-          >
-            SỬA NGAY
-          </Button>
-        }
-      >
-        {viewProduct && (
-          <div className="space-y-10">
-            {/* Image Gallery */}
-            <div className="bg-white/40 rounded-[2.5rem] p-6 border border-white/60">
-                {viewProduct.images?.length > 0 ? (
-                    <Image.PreviewGroup>
-                    <div className="grid grid-cols-3 gap-4">
-                        {viewProduct.images.map((url: string, i: number) => (
-                        <Image
-                            key={i}
-                            src={getImageUrl(url)}
-                            className="w-full aspect-square object-contain rounded-2xl bg-white border border-emerald-50 p-2 shadow-sm"
-                        />
-                        ))}
-                    </div>
-                    </Image.PreviewGroup>
-                ) : (
-                    <div className="h-48 flex flex-col items-center justify-center text-text/20">
-                        <PictureOutlined className="text-5xl mb-4" />
-                        <Text strong>Chưa có hình ảnh</Text>
-                    </div>
-                )}
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search products..."
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                className="pl-10"
+              />
             </div>
-
-            <div className="space-y-2">
-                <Text className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.3em]">MÃ SẢN PHẨM: {viewProduct._id}</Text>
-                <Title level={2} className="!m-0 !font-serif">{viewProduct.name}</Title>
-                <Text italic className="text-text/40 block">Slug: /{viewProduct.slug}</Text>
-            </div>
-
-            <Divider className="border-white/20" />
-
-            <div className="grid grid-cols-2 gap-8">
-                 <div className="bg-white/40 p-6 rounded-3xl border border-white">
-                      <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">GIÁ BÁN HIỆN TẠI</Text>
-                      <Title level={3} className="!m-0 !text-emerald-700">{(viewProduct.price).toLocaleString('vi-VN')}₫</Title>
-                 </div>
-                 <div className="bg-white/40 p-6 rounded-3xl border border-white">
-                      <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">SỐ LƯỢNG TRONG KHO</Text>
-                      <Title level={3} className="!m-0 !text-blue-700">{viewProduct.stock} Sp</Title>
-                 </div>
-            </div>
-
-            <div className="p-8 rounded-[2.5rem] bg-white/40 border border-white space-y-6">
-                <div className="flex justify-between items-center">
-                    <Text className="font-bold text-text/40 uppercase text-xs tracking-widest">DANH MỤC</Text>
-                    <Tag color="blue" className="rounded-full px-4 border-none font-bold uppercase text-[10px] tracking-widest">{viewProduct.categoryId?.name}</Tag>
-                </div>
-                <div className="flex justify-between items-center">
-                    <Text className="font-bold text-text/40 uppercase text-xs tracking-widest">TRẠNG THÁI</Text>
-                    <Tag color={viewProduct.status === 'in_stock' ? 'success' : 'error'} className="rounded-full px-4 border-none font-bold uppercase text-[10px] tracking-widest">
-                        {statusConfig[viewProduct.status]?.label}
-                    </Tag>
-                </div>
-                <div>
-                     <Text className="font-bold text-text/40 uppercase text-xs tracking-widest block mb-2">MÔ TẢ CHI TIẾT</Text>
-                     <Paragraph className="text-text/60 leading-relaxed italic">
-                        {viewProduct.description || "Sản phẩm chưa có mô tả chi tiết."}
-                     </Paragraph>
-                </div>
-            </div>
-            
-            <div className="flex items-center gap-4 text-text/30 text-[10px] font-bold uppercase tracking-widest justify-center">
-                 <HistoryOutlined /> NGÀY TẠO: {new Date(viewProduct.createdAt).toLocaleString('vi-VN')}
-            </div>
-          </div>
-        )}
-      </Drawer>
-
-      {/* Add/Edit Modal - Premium Glass */}
-      <Modal
-        title={<Title level={4} className="!m-0 !font-serif">{editingProduct ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</Title>}
-        open={isModalOpen}
-        onOk={handleModalOk}
-        onCancel={() => setIsModalOpen(false)}
-        okText="LƯU THÔNG TIN"
-        cancelText="HỦY BỎ"
-        confirmLoading={saving}
-        className="premium-admin-modal"
-        centered
-        width={800}
-      >
-        <Form
-          form={form} layout="vertical"
-          className="mt-8"
-          onValuesChange={(changed) => {
-            if (changed.name) {
-              const slug = changed.name
-                .toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^\w ]+/g, '').replace(/ +/g, '-');
-              form.setFieldsValue({ slug });
-            }
-          }}
-        >
-          <Row gutter={24}>
-            <Col span={12}>
-              <Form.Item name="name" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Tên sản phẩm</Text>}
-                rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}
-              >
-                <Input placeholder="Ví dụ: iPhone 15 Pro Max" className="h-12 rounded-2xl bg-white/60 border-none shadow-sm" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="slug" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Đường dẫn (Slug)</Text>}
-                rules={[{ required: true }]}
-              >
-                <Input placeholder="iphone-15-pro-max" addonBefore="/" className="h-12 rounded-2xl overflow-hidden border-none" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={24}>
-            <Col span={8}>
-              <Form.Item name="price" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Giá bán (VNĐ)</Text>}
-                rules={[{ required: true }]}
-              >
-                <InputNumber
-                  className="w-full h-12 rounded-2xl bg-white/60 border-none pt-1" 
-                  min={0}
-                  formatter={v => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                  parser={v => v!.replace(/,/g, '') as any}
-                  addonAfter="₫"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="stock" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Tồn kho</Text>}
-                rules={[{ required: true }]}
-              >
-                <InputNumber className="w-full h-12 rounded-2xl bg-white/60 border-none pt-1" min={0} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="categoryId" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Danh mục</Text>}
-                rules={[{ required: true }]}
-              >
-                <Select className="h-12 custom-glass-select" placeholder="Chọn...">
-                  {categories.map(cat => (
-                    <Select.Option key={cat._id} value={cat._id}>{cat.name}</Select.Option>
+            <Select value={filterCategory || 'all'} onValueChange={v => setFilterCategory(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectLabel>Categories</SelectLabel>
+                  {categories.map(c => (
+                    <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>
                   ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="description" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Mô tả sản phẩm</Text>}>
-            <Input.TextArea rows={4} className="rounded-3xl bg-white/60 border-none p-4" placeholder="Môt tả ngắn gọn..." />
-          </Form.Item>
-
-          <Form.Item name="status" label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Trạng thái kinh doanh</Text>}>
-            <Select className="h-12 custom-glass-select">
-              <Select.Option value="in_stock">✅ Còn hàng</Select.Option>
-              <Select.Option value="out_of_stock">❌ Hết hàng</Select.Option>
-              <Select.Option value="discontinued">🚫 Ngừng kinh doanh</Select.Option>
+                </SelectGroup>
+              </SelectContent>
             </Select>
-          </Form.Item>
+            <Button variant="outline" size="icon" onClick={fetchData} disabled={loading}>
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-          <Divider orientation={"left" as any} className="border-white/20">
-            <Space><PictureOutlined className="text-emerald-600" /><Text className="font-bold text-[11px] uppercase tracking-widest">Album hình ảnh (Tối đa 8)</Text></Space>
-          </Divider>
-
-          <Form.Item>
-            <Upload
-              customRequest={handleUpload}
-              listType="picture-card"
-              fileList={fileList}
-              onChange={({ fileList: newList }) => setFileList(newList)}
-              accept="image/*"
-              className="glass-uploader"
-              multiple
-            >
-              {fileList.length >= 8 ? null : (
-                <div className="flex flex-col items-center">
-                  <PlusOutlined className="text-xl mb-2" />
-                  <Text className="text-[10px] font-bold text-text/30">UPLOAD</Text>
-                </div>
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-12 rounded-lg" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <Package className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">No products found</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((item: any, idx: number) => (
+                  <TableRow key={item._id}>
+                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="size-12 rounded-lg border bg-muted overflow-hidden shrink-0">
+                          {item.images?.[0] ? (
+                            <img src={getImageUrl(item.images[0])} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="size-5 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{item.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {item.categoryId?.name || 'No category'}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {(item.price || 0).toLocaleString('vi-VN')}₫
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={item.stock > 10 ? 'default' : item.stock > 0 ? 'secondary' : 'destructive'}>
+                        {item.stock || 0}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusConfig[item.status]?.variant || 'outline'}>
+                        {statusConfig[item.status]?.label || item.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleView(item)}>
+                          <Eye className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item._id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <style>{`
-        .premium-admin-table .ant-table {
-            background: transparent !important;
-        }
-        .premium-admin-table .ant-table-thead > tr > th {
-            background: rgba(0, 0, 0, 0.02) !important;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
-            font-size: 10px !important;
-            font-weight: 800 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.1em !important;
-            color: #94a3b8 !important;
-            padding: 24px !important;
-        }
-        .premium-admin-table .ant-table-tbody > tr > td {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.03) !important;
-            padding: 20px 24px !important;
-            transition: all 0.3s ease;
-        }
-        .premium-admin-table .ant-table-tbody > tr:hover > td {
-            background: rgba(5, 150, 105, 0.03) !important;
-        }
-        .custom-glass-select .ant-select-selector {
-            height: 48px !important;
-            border-radius: 1rem !important;
-            border: none !important;
-            background: rgba(255, 255, 255, 0.6) !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
-            display: flex !important;
-            align-items: center !important;
-            padding: 0 16px !important;
-        }
-        .premium-admin-modal .ant-modal-content {
-            border-radius: 3rem !important;
-            background: rgba(255, 255, 255, 0.8) !important;
-            backdrop-filter: blur(20px) !important;
-            border: 1px solid white !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-            padding: 40px !important;
-        }
-        .premium-admin-modal .ant-modal-header {
-            background: transparent !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-            padding-bottom: 24px !important;
-        }
-        .premium-admin-modal .ant-modal-footer {
-            border-top: none !important;
-            margin-top: 32px !important;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-        }
-        .premium-admin-modal .ant-modal-footer .ant-btn {
-            height: 56px !important;
-            padding: 0 40px !important;
-            border-radius: 2rem !important;
-            font-weight: 700 !important;
-            font-size: 12px !important;
-            letter-spacing: 0.1em !important;
-        }
-        .glass-uploader .ant-upload-list-item {
-            border-radius: 1.5rem !important;
-            border: 2px dashed rgba(5, 150, 105, 0.1) !important;
-        }
-        .glass-uploader .ant-upload-select {
-            border-radius: 1.5rem !important;
-            border: 2px dashed rgba(5, 150, 105, 0.2) !important;
-            background: rgba(5, 150, 105, 0.02) !important;
-        }
-      `}</style>
+      {/* View Sheet */}
+      <Sheet open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Product Details</SheetTitle>
+            <SheetDescription>View product information</SheetDescription>
+          </SheetHeader>
+          {viewProduct && (
+            <ScrollArea className="h-[calc(100%-120px)] mt-6 pr-4">
+              <div className="space-y-6">
+                {/* Images */}
+                <div className="grid grid-cols-3 gap-3">
+                  {viewProduct.images?.length > 0 ? (
+                    viewProduct.images.map((url: string, i: number) => (
+                      <div key={i} className="aspect-square rounded-lg border bg-muted overflow-hidden">
+                        <img src={getImageUrl(url)} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 aspect-video flex flex-col items-center justify-center bg-muted rounded-lg">
+                      <ImageIcon className="size-10 text-muted-foreground/30 mb-2" />
+                      <p className="text-sm text-muted-foreground">No images</p>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Product ID</p>
+                  <p className="font-mono text-sm">{viewProduct._id?.slice(-8).toUpperCase()}</p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <h3 className="text-xl font-semibold">{viewProduct.name}</h3>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Price</p>
+                    <p className="text-xl font-bold text-primary">
+                      {(viewProduct.price || 0).toLocaleString('vi-VN')}₫
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">Stock</p>
+                    <p className="text-xl font-bold">{viewProduct.stock || 0}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Category</p>
+                  <Badge variant="secondary">{viewProduct.categoryId?.name || 'N/A'}</Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge variant={statusConfig[viewProduct.status]?.variant || 'outline'}>
+                    {statusConfig[viewProduct.status]?.label || viewProduct.status}
+                  </Badge>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Description</p>
+                  <p className="text-sm">{viewProduct.description || 'No description'}</p>
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+            <DialogDescription>Fill in the product details below</DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Product Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={e => {
+                  setFormData(prev => ({ ...prev, name: e.target.value, slug: generateSlug(e.target.value) }))
+                }}
+                placeholder="Enter product name"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={e => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                placeholder="product-slug"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="price">Price (VND)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={formData.price}
+                  onChange={e => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  value={formData.stock}
+                  onChange={e => setFormData(prev => ({ ...prev, stock: Number(e.target.value) }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={formData.categoryId || 'none'} onValueChange={v => setFormData(prev => ({ ...prev, categoryId: v === 'none' ? '' : v }))}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="none">No category</SelectItem>
+                      {categories.map(cat => (
+                        <SelectItem key={cat._id} value={cat._id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Product description..."
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v }))}>
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="in_stock">In Stock</SelectItem>
+                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                    <SelectItem value="discontinued">Discontinued</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            <div className="grid gap-3">
+              <Label>Product Images (max 8)</Label>
+              <div className="grid grid-cols-4 gap-3">
+                {fileList.map(file => (
+                  <div key={file.uid} className="relative aspect-square rounded-lg border bg-muted overflow-hidden group">
+                    <img src={file.url} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeImage(file.uid)}
+                      className="absolute top-1 right-1 size-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                ))}
+                {fileList.length < 8 && (
+                  <label className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/5 transition-colors">
+                    <Upload className="size-6 text-muted-foreground/50 mb-1" />
+                    <span className="text-xs text-muted-foreground/50">Upload</span>
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
+                  </label>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleModalOk} disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Product</DialogTitle>
+            <DialogDescription>This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Products;
+// Helper function
+function cn(...classes: (string | boolean | undefined | null)[]) {
+  return classes.filter(Boolean).join(' ')
+}
+
+export default Products
