@@ -2,12 +2,13 @@ let express = require('express');
 let router = express.Router();
 
 let roleController = require('../controllers/roles');
+let { verifyToken, checkRole } = require('../utils/authHandler');
 
 
 /**
- * Create role
+ * Create role (Yêu cầu Admin)
  */
-router.post('/', async function (req, res) {
+router.post('/', verifyToken, checkRole('ADMIN'), async function (req, res) {
     try {
 
         let result = await roleController.CreateRole(req.body);
@@ -26,9 +27,9 @@ router.post('/', async function (req, res) {
 
 
 /**
- * Get all roles
+ * Get all roles (Yêu cầu Admin)
  */
-router.get('/', async function (req, res, next) {
+router.get('/', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
         let result = await roleController.GetAllRoles();
@@ -41,9 +42,9 @@ router.get('/', async function (req, res, next) {
 
 
 /**
- * Get role theo id
+ * Get role theo id (Yêu cầu Admin)
  */
-router.get('/:id', async function (req, res, next) {
+router.get('/:id', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
         let result = await roleController.GetARoleById(req.params.id);
@@ -61,9 +62,9 @@ router.get('/:id', async function (req, res, next) {
 
 
 /**
- * Update role
+ * Update role (Yêu cầu Admin)
  */
-router.put('/:id', async function (req, res, next) {
+router.put('/:id', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
         let result = await roleController.UpdateARole(
@@ -84,9 +85,9 @@ router.put('/:id', async function (req, res, next) {
 
 
 /**
- * Delete role (soft delete)
+ * Delete role (soft delete) (Yêu cầu Admin)
  */
-router.delete('/:id', async function (req, res, next) {
+router.delete('/:id', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
         let result = await roleController.DeleteARole(req.params.id);

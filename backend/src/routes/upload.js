@@ -5,7 +5,7 @@ let multer = require('multer');
 let path = require('path');
 let fs = require('fs');
 
-let { verifyToken } = require('../utils/authHandler');
+let { verifyToken, checkRole } = require('../utils/authHandler');
 
 
 /**
@@ -41,7 +41,7 @@ let upload = multer({ storage: storage });
 
 
 /**
- * Upload avatar
+ * Upload file (Yêu cầu đăng nhập)
  */
 router.post(
     '/',
