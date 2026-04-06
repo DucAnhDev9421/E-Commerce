@@ -8,7 +8,7 @@ let { verifyToken, checkRole } = require('../utils/authHandler');
 /**
  * Create role (Yêu cầu Admin)
  */
-router.post('/', verifyToken, checkRole('ADMIN'), async function (req, res) {
+router.post('/', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
         let result = await roleController.CreateRole(req.body);

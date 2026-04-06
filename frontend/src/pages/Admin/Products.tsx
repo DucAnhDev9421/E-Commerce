@@ -56,6 +56,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'
 
+const formatVND = (value: number) =>
+  value.toLocaleString('vi-VN')
+
 const getImageUrl = (url: string) => {
   if (!url) return ''
   if (url.startsWith('http')) return url
@@ -83,6 +86,7 @@ const Products: React.FC = () => {
   const [fileList, setFileList] = useState<any[]>([])
   const [searchText, setSearchText] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('')
+  const [priceInput, setPriceInput] = useState('')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -133,6 +137,7 @@ const Products: React.FC = () => {
   const handleAdd = () => {
     setEditingProduct(null)
     setFileList([])
+    setPriceInput('0')
     setFormData({
       name: '',
       slug: '',
@@ -148,10 +153,12 @@ const Products: React.FC = () => {
 
   const handleEdit = (record: any) => {
     setEditingProduct(record)
+    const priceVal = record.price || 0
+    setPriceInput(formatVND(priceVal))
     setFormData({
       name: record.name || '',
       slug: record.slug || '',
-      price: record.price || 0,
+      price: priceVal,
       stock: record.stock || 0,
       categoryId: record.categoryId?._id || '',
       description: record.description || '',
@@ -198,7 +205,7 @@ const Products: React.FC = () => {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const formData = new FormData()
-      formData.append('avatar', file)
+      formData.append('image', file)
       try {
         const res: any = await productApi.uploadImage(formData)
         const newFile = {
@@ -536,9 +543,17 @@ const Products: React.FC = () => {
                 <Label htmlFor="price">Price (VND)</Label>
                 <Input
                   id="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={e => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  value={priceInput}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^\d]/g, '')
+                    const num = Number(raw) || 0
+                    setPriceInput(formatVND(num))
+                    setFormData(prev => ({ ...prev, price: num }))
+                  }}
+                  onBlur={() => {
+                    setPriceInput(formatVND(formData.price))
+                  }}
+                  placeholder="0"
                 />
               </div>
               <div className="grid gap-2">

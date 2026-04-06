@@ -49,8 +49,7 @@ let productSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Middleware tự động tạo slug trước khi validate
-productSchema.pre('validate', function (next) {
+productSchema.pre('validate', async function () {
     if (this.name && (!this.slug || this.isModified('name'))) {
         const slugify = require('slugify');
         this.slug = slugify(this.name, {
@@ -59,11 +58,19 @@ productSchema.pre('validate', function (next) {
             locale: 'vi'
         });
     }
-    next();
+
+    // Tự động cập nhật status dựa trên stock (trừ khi đã ngừng kinh doanh)
+    if (this.status !== 'discontinued') {
+        if (this.stock <= 0) {
+            this.status = 'out_of_stock';
+        } else if (this.status === 'out_of_stock' && this.stock > 0) {
+            this.status = 'in_stock';
+        }
+    }
 });
 
 // Middleware cho findOneAndUpdate (Update slug)
-productSchema.pre('findOneAndUpdate', function (next) {
+productSchema.pre('findOneAndUpdate', async function () {
     const update = this.getUpdate();
     if (update.name) {
         const slugify = require('slugify');
@@ -73,7 +80,22 @@ productSchema.pre('findOneAndUpdate', function (next) {
             locale: 'vi'
         });
     }
-    next();
+
+    // Xử lý status nếu có update stock
+    if (update.$set && update.$set.stock !== undefined) {
+        if (update.$set.stock <= 0) {
+            update.$set.status = 'out_of_stock';
+        } else if (update.$set.status !== 'discontinued') {
+            update.$set.status = 'in_stock';
+        }
+    }
+    
+    // Nếu sử dụng $inc (như trong checkout)
+    if (update.$inc && update.$inc.stock !== undefined) {
+        // Lưu ý: middleware pre('findOneAndUpdate') không biết giá trị stock mới sau $inc.
+        // Giải pháp tốt nhất là update status trong controller sau khi thực hiện $inc,
+        // hoặc chuyển findOneAndUpdate sang sử dụng aggregation pipeline.
+    }
 });
 
 module.exports = mongoose.model('products', productSchema);

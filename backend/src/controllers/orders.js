@@ -54,6 +54,12 @@ let checkout = async function (req, res) {
                 );
             }
 
+            // Đồng bộ trạng thái out_of_stock nếu hết hàng
+            if (updatedProduct.stock === 0) {
+                updatedProduct.status = 'out_of_stock';
+                await updatedProduct.save({ session });
+            }
+
             const priceToBuy = product.discount
                 ? product.price - (product.price * product.discount / 100)
                 : product.price;
@@ -308,11 +314,16 @@ let cancelOrder = async function (req, res) {
 
             const items = await OrderItemModel.find({ order: orderId }).session(session);
             for (const item of items) {
-                await ProductModel.findOneAndUpdate(
+                const updated = await ProductModel.findOneAndUpdate(
                     { _id: item.product },
                     { $inc: { stock: item.quantity } },
-                    { session }
+                    { session, new: true }
                 );
+
+                if (updated && updated.stock > 0 && updated.status === 'out_of_stock') {
+                    updated.status = 'in_stock';
+                    await updated.save({ session });
+                }
             }
 
             await session.commitTransaction();
@@ -392,11 +403,16 @@ let vnpayReturn = async function (req, res, next) {
 
                 const orderItems = await OrderItemModel.find({ order: orderId }).session(session);
                 for (const item of orderItems) {
-                    await ProductModel.findOneAndUpdate(
+                    const updated = await ProductModel.findOneAndUpdate(
                         { _id: item.product },
                         { $inc: { stock: item.quantity } },
-                        { session }
+                        { session, new: true }
                     );
+
+                    if (updated && updated.stock > 0 && updated.status === 'out_of_stock') {
+                        updated.status = 'in_stock';
+                        await updated.save({ session });
+                    }
                 }
 
                 await session.commitTransaction();
