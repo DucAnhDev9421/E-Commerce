@@ -1,305 +1,254 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, Typography } from 'antd';
+import React, { useState } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  DashboardOutlined,
-  UserOutlined,
-  SafetyCertificateOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined,
-  LogoutOutlined,
-  HomeOutlined,
-  ShoppingOutlined,
-  BellOutlined,
-  SettingOutlined,
-  TagsOutlined,
-  ShopOutlined,
-} from '@ant-design/icons';
-import { useNavigate, Outlet, useLocation, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import { logout } from '../store/authSlice';
-import type { Role } from '../types/auth';
-import { getAvatarUrl } from '../utils/imageUtils';
+  LayoutDashboard,
+  Users,
+  Tags,
+  ShoppingBag,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  LogOut,
+  Bell,
+  Settings,
+  User,
+  Menu,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { useDispatch, useSelector } from 'react-redux'
+import type { RootState } from '@/store'
+import { logout } from '@/store/authSlice'
+import { getAvatarUrl } from '@/utils/imageUtils'
+import type { Role } from '@/types/auth'
+import { cn } from '@/lib/utils'
 
-const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
+const navItems = [
+  { key: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { key: '/admin/categories', label: 'Categories', icon: Tags },
+  { key: '/admin/products', label: 'Products', icon: ShoppingBag },
+  { key: '/admin/users', label: 'Users', icon: Users },
+  { key: '/admin/roles', label: 'Roles', icon: Shield },
+]
+
+const pageTitles: Record<string, string> = {
+  '/admin': 'Dashboard',
+  '/admin/products': 'Products',
+  '/admin/categories': 'Categories',
+  '/admin/users': 'Users',
+  '/admin/roles': 'Roles',
+}
 
 const AdminLayout: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const dispatch = useDispatch()
+  const { user } = useSelector((state: RootState) => state.auth)
 
-  const isExpanded = !collapsed || isHovered;
+  const roleName = typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN'
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigate('/login');
-  };
+    dispatch(logout())
+    navigate('/login')
+  }
 
-  const menuItems = [
-    {
-      key: '/admin',
-      icon: <DashboardOutlined className="text-lg" />,
-      label: 'Tổng quan',
-    },
-    {
-        key: 'catalog-header',
-        type: 'group' as const,
-        label: isExpanded ? (
-            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-4">
-                DANH MỤC
-            </Text>
-        ) : null,
-        children: [
-            {
-              key: '/admin/categories',
-              icon: <TagsOutlined className="text-lg" />,
-              label: 'Danh mục',
-            },
-            {
-              key: '/admin/products',
-              icon: <ShoppingOutlined className="text-lg" />,
-              label: 'Sản phẩm',
-            },
-        ]
-    },
-    {
-        key: 'system-header',
-        type: 'group' as const,
-        label: isExpanded ? (
-            <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-4">
-                HỆ THỐNG
-            </Text>
-        ) : null,
-        children: [
-            {
-              key: '/admin/users',
-              icon: <UserOutlined className="text-lg" />,
-              label: 'Người dùng',
-            },
-            {
-              key: '/admin/roles',
-              icon: <SafetyCertificateOutlined className="text-lg" />,
-              label: 'Phân quyền',
-            },
-        ]
-    },
-  ];
+  const NavContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className={cn("flex items-center h-16 px-4 border-b", collapsed ? "justify-center" : "gap-3")}>
+        <div className="flex items-center justify-center size-10 rounded-lg bg-primary">
+          <ShoppingBag className="size-5 text-primary-foreground" />
+        </div>
+        {!collapsed && (
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">Admin Panel</span>
+            <span className="text-[10px] text-muted-foreground">E-Commerce</span>
+          </div>
+        )}
+      </div>
 
-  const roleName = typeof user?.role === 'object' ? (user.role as Role).name : 'ADMIN';
+      {/* User Info */}
+      {!collapsed && (
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+            <Avatar className="size-9">
+              <AvatarImage src={getAvatarUrl(user?.avatarUrl) || undefined} />
+              <AvatarFallback>{user?.fullName?.charAt(0) || 'A'}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{user?.fullName}</p>
+              <Badge variant="secondary" className="mt-1 text-[10px] px-1.5 py-0">{roleName}</Badge>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <ScrollArea className="flex-1 py-4">
+        <nav className="px-3 space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.key
+            const Icon = item.icon
+            return (
+              <button
+                key={item.key}
+                onClick={() => {
+                  navigate(item.key)
+                  setMobileOpen(false)
+                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  collapsed && "justify-center px-0",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+                title={collapsed ? item.label : undefined}
+              >
+                <Icon className="size-5 shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </button>
+            )
+          })}
+        </nav>
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="p-4 border-t space-y-2">
+        {!collapsed && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground"
+            onClick={() => navigate('/')}
+          >
+            <Home className="size-4 mr-3" />
+            View Website
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          className={cn("text-destructive hover:text-destructive hover:bg-destructive/10", collapsed ? "w-full justify-center px-0" : "w-full justify-start")}
+          onClick={handleLogout}
+        >
+          <LogOut className="size-4 mr-3" />
+          {!collapsed && "Sign Out"}
+        </Button>
+      </div>
+    </div>
+  )
 
   return (
-    <Layout className="min-h-screen bg-[#f8fbfa] overflow-hidden relative">
-      {/* Background Organic Orbs */}
-      <div className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] bg-emerald-100 rounded-full blur-[100px] opacity-40 animate-pulse pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-[35%] h-[35%] bg-blue-50 rounded-full blur-[80px] opacity-30 pointer-events-none" />
-      
-      {/* Smart Floating Sider */}
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={!isExpanded}
-        width={280}
-        theme="light"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className={`fixed left-6 top-6 bottom-6 z-50 transition-all duration-500 ease-in-out !bg-white/40 backdrop-blur-3xl rounded-[3rem] border border-white/80 shadow-2xl glass-panel shrink-0 flex flex-col ${isExpanded ? 'w-[280px]' : 'w-[80px]'}`}
-        style={{
-            height: 'calc(100vh - 48px)',
-            display: 'flex',
-            flexDirection: 'column'
-        }}
+    <div className="min-h-screen bg-background">
+      {/* Desktop Sidebar */}
+      <aside
+        className={cn(
+          "hidden md:flex fixed left-0 top-0 bottom-0 z-40 flex-col bg-card border-r",
+          collapsed ? "w-16" : "w-64"
+        )}
       >
-        <div className={`h-24 flex items-center flex-none ${!isExpanded ? 'justify-center' : 'px-8'} mb-4 border-b border-white/20 transition-all duration-500`}>
-          <div className="w-10 h-10 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 shrink-0">
-             <ShopOutlined className="text-white text-xl" />
-          </div>
-          {isExpanded && (
-            <div className="ml-4 overflow-hidden animate-in fade-in slide-in-from-left-4 duration-500">
-               <Text className="block font-serif text-lg tracking-tighter text-slate-800 leading-none font-bold">MODERN</Text>
-               <Text className="block text-[10px] font-bold text-emerald-600 uppercase tracking-[0.3em] -mt-1">ADMIN BOX</Text>
-            </div>
-          )}
-        </div>
+        <NavContent />
+      </aside>
 
-        {/* Scrollable middle section */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden admin-sidebar-scroll custom-scrollbar">
-            {/* User Quick Access Expansion */}
-            <div className={`px-4 mb-4 mt-4 transition-all duration-500 ${!isExpanded ? 'opacity-0 scale-95 h-0 overflow-hidden' : 'opacity-100 scale-100 h-auto'}`}>
-                <div className="p-4 rounded-[2rem] bg-emerald-600/5 border border-emerald-600/5 flex items-center gap-3">
-                    <Avatar 
-                        src={getAvatarUrl(user?.avatarUrl) || undefined} 
-                        icon={<UserOutlined />} 
-                        className="bg-emerald-600 shadow-md ring-2 ring-white"
-                        size={44}
-                    />
-                    <div className="overflow-hidden">
-                        <Text strong className="block text-sm truncate uppercase tracking-tight">{user?.fullName}</Text>
-                        <Badge status="success" text={<Text className="text-[10px] font-bold text-emerald-600 uppercase">{roleName}</Text>} />
+      {/* Mobile Sidebar */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="w-64 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation Menu</SheetTitle>
+          </SheetHeader>
+          <NavContent />
+        </SheetContent>
+      </Sheet>
+
+      {/* Main Content */}
+      <main className={cn("flex-1 flex flex-col min-h-screen", collapsed ? "md:ml-16" : "md:ml-64")}>
+        {/* Header */}
+        <header className="sticky top-0 z-30 h-16 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b px-4 md:px-6">
+          <div className="flex items-center justify-between h-full">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu className="size-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden md:flex"
+                onClick={() => setCollapsed(!collapsed)}
+              >
+                {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold">{pageTitles[location.pathname] || 'Admin'}</h1>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="size-5" />
+                <span className="absolute top-1 right-1 size-2 bg-primary rounded-full" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative size-9 rounded-full">
+                    <Avatar className="size-9">
+                      <AvatarImage src={getAvatarUrl(user?.avatarUrl) || undefined} />
+                      <AvatarFallback>{user?.fullName?.charAt(0) || 'A'}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span>{user?.fullName}</span>
+                      <span className="text-xs font-normal text-muted-foreground">{user?.email}</span>
                     </div>
-                </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin/profile')}>
+                    <User className="mr-2 size-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin/settings')}>
+                    <Settings className="mr-2 size-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 size-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
+          </div>
+        </header>
 
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          className="bg-transparent border-none px-2 admin-sidebar-menu"
-        />
-
+        {/* Page Content */}
+        <div className="flex-1 p-4 md:p-6 lg:p-8">
+          <Outlet />
         </div>
+      </main>
+    </div>
+  )
+}
 
-        {/* Bottom Actions - Now flex-none and mt-auto */}
-        <div className={`flex-none p-6 mt-auto transition-all duration-500 ${!isExpanded ? 'text-center' : ''}`}>
-            <Button 
-                block 
-                type="text" 
-                icon={<LogoutOutlined />} 
-                onClick={handleLogout}
-                className={`h-12 rounded-2xl font-bold text-red-500 hover:bg-red-50 hover:text-red-600 border border-transparent hover:border-red-100 flex items-center ${!isExpanded ? 'justify-center w-12 mx-auto px-0' : 'justify-center'}`}
-            >
-                {isExpanded && "ĐĂNG XUẤT"}
-            </Button>
-        </div>
-      </Sider>
-
-      {/* Main Layout Area - Fixed Padding to prevent shifts */}
-      <Layout className="bg-transparent transition-all duration-300 pl-[124px] pr-6 pt-6 pb-6 min-h-screen">
-        {/* Header - Glass Bar */}
-        <Header className="h-20 bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/60 shadow-lg px-8 flex items-center justify-between mb-8 transition-all relative z-40">
-           <div className="flex items-center gap-4">
-               <Button 
-                    type="text" 
-                    icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
-                    onClick={() => setCollapsed(!collapsed)}
-                    className={`w-10 h-10 flex items-center justify-center bg-white/50 rounded-xl hover:bg-white/80 transition-all border border-white/40 shadow-sm ${!collapsed ? 'text-emerald-600 bg-emerald-50' : ''}`}
-               />
-               <div className="hidden md:flex flex-col ml-4">
-                   <Text className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">TRANG ĐANG XEM</Text>
-                   <Text strong className="text-lg font-serif">
-                       {location.pathname === '/admin' ? 'Tổng quan Dashboard' : 
-                        location.pathname === '/admin/products' ? 'Quản lý Sản phẩm' :
-                        location.pathname === '/admin/categories' ? 'Quản lý Danh mục' :
-                        location.pathname === '/admin/users' ? 'Quản lý Người dùng' :
-                        location.pathname === '/admin/roles' ? 'Quản lý Phân quyền' : 'Hệ thống'}
-                   </Text>
-               </div>
-           </div>
-
-           <div className="flex items-center gap-6">
-                <Link to="/">
-                    <Button 
-                        icon={<HomeOutlined />} 
-                        className="h-10 rounded-xl bg-slate-900 text-white border-none font-bold text-xs tracking-widest uppercase shadow-md hover:scale-105 transition-all flex items-center gap-2"
-                    >
-                        XEM WEBSITE
-                    </Button>
-                </Link>
-
-                <div className="h-8 w-px bg-slate-200" />
-
-                <Badge count={5} size="small" offset={[-2, 2]}>
-                    <Button 
-                        type="text" 
-                        icon={<BellOutlined className="text-xl text-slate-400" />} 
-                        className="w-10 h-10 flex items-center justify-center bg-white/50 rounded-xl border border-white/40 shadow-sm"
-                    />
-                </Badge>
-
-                <Dropdown 
-                    menu={{
-                        items: [
-                            { key: 'profile', label: 'Hồ sơ cá nhân', icon: <UserOutlined /> },
-                            { key: 'settings', label: 'Cài đặt', icon: <SettingOutlined /> },
-                            { type: 'divider' },
-                            { key: 'logout', label: 'Đăng xuất', danger: true, icon: <LogoutOutlined />, onClick: handleLogout },
-                        ]
-                    }}
-                    placement="bottomRight"
-                >
-                    <Avatar 
-                        src={getAvatarUrl(user?.avatarUrl) || undefined} 
-                        icon={<UserOutlined />} 
-                        className="cursor-pointer bg-emerald-600 shadow-md ring-4 ring-white/50 hover:scale-110 transition-transform" 
-                        size={40}
-                    />
-                </Dropdown>
-           </div>
-        </Header>
-
-        {/* Dynamic Content */}
-        <Content className="relative z-30">
-             <div className="glass-panel min-h-[calc(100vh-144px)] p-8 rounded-[3.5rem] bg-white/60 backdrop-blur-xl border border-white/80 shadow-2xl relative overflow-hidden">
-                <Outlet />
-             </div>
-        </Content>
-      </Layout>
-
-      <style>{`
-        .admin-sidebar-menu .ant-menu-item {
-          height: 52px !important;
-          margin-bottom: 8px !important;
-          border-radius: 1.5rem !important;
-          width: calc(100% - 12px) !important;
-          margin-left: 6px !important;
-          color: #475569 !important;
-          font-weight: 600 !important;
-          transition: all 0.3s ease !important;
-          border: 1px solid transparent !important;
-        }
-        .admin-sidebar-menu .ant-menu-item-selected {
-          background: rgba(5, 150, 105, 0.1) !important;
-          color: #059669 !important;
-          border: 1px solid rgba(5, 150, 105, 0.1) !important;
-          box-shadow: 0 4px 12px rgba(5, 150, 105, 0.05) !important;
-        }
-        .admin-sidebar-menu .ant-menu-item-active {
-            background: rgba(0, 0, 0, 0.02) !important;
-        }
-        .admin-sidebar-menu .ant-menu-item .ant-menu-item-icon {
-            transition: transform 0.3s ease;
-            font-size: 1.2rem !important;
-        }
-        .admin-sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
-            transform: scale(1.1);
-            color: #059669 !important;
-        }
-        .admin-sidebar-menu .ant-menu-item-group-title {
-            padding-top: 16px !important;
-            padding-bottom: 8px !important;
-            transition: opacity 0.3s ease;
-        }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-        }
-        
-        .ant-menu-inline-collapsed .ant-menu-item {
-            padding: 0 calc(50% - 11px) !important;
-            margin-left: 6px !important;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(5, 150, 105, 0.1);
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(5, 150, 105, 0.2);
-        }
-      `}</style>
-    </Layout>
-  );
-};
-
-export default AdminLayout;
+export default AdminLayout

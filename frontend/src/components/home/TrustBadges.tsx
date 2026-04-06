@@ -1,5 +1,5 @@
 import React from 'react';
-import { Row, Col, Typography, Space } from 'antd';
+import { Row, Col, Typography } from 'antd';
 import { 
   RocketOutlined, 
   SafetyCertificateOutlined, 
@@ -7,7 +7,7 @@ import {
   CustomerServiceOutlined 
 } from '@ant-design/icons';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const TrustBadges: React.FC = () => {
   const badges = [

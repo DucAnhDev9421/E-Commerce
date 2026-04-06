@@ -1,370 +1,323 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react"
 import {
-  Table, Button, Space, Modal, Form, Input, notification,
-  Popconfirm, Typography, Tooltip, Empty
-} from 'antd';
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  Shield,
+  Key,
+} from "lucide-react"
+import roleApi from "@/api/roleApi"
+import type { Role } from "@/types/auth"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
-  EditOutlined, DeleteOutlined, PlusOutlined, SafetyCertificateOutlined,
-  SearchOutlined, ReloadOutlined, KeyOutlined,
-  HistoryOutlined
-} from '@ant-design/icons';
-import roleApi from '../../api/roleApi';
-import type { Role } from '../../types/auth';
-
-const { Title, Text } = Typography;
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const Roles: React.FC = () => {
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [filtered, setFiltered] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const [form] = Form.useForm();
+  const [roles, setRoles] = useState<Role[]>([])
+  const [filtered, setFiltered] = useState<Role[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [editingRole, setEditingRole] = useState<Role | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [searchText, setSearchText] = useState("")
+
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+  })
 
   const fetchRoles = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      const response: any = await roleApi.getAll();
-      setRoles(response);
-      setFiltered(response);
-    } catch (error: any) {
-      notification.error({
-        title: 'Lỗi tải danh sách quyền',
-        description: error?.message || 'Có lỗi xảy ra',
-      });
+      const response: any = await roleApi.getAll()
+      setRoles(response)
+      setFiltered(response)
+    } catch (error) {
+      console.error("Error loading roles:", error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
+    fetchRoles()
+  }, [fetchRoles])
 
-  // Search filter
   useEffect(() => {
     if (!searchText.trim()) {
-      setFiltered(roles);
+      setFiltered(roles)
     } else {
-      const q = searchText.toLowerCase();
+      const q = searchText.toLowerCase()
       setFiltered(roles.filter(r =>
         r.name?.toLowerCase().includes(q) ||
         r.description?.toLowerCase().includes(q)
-      ));
+      ))
     }
-  }, [searchText, roles]);
+  }, [searchText, roles])
 
   const handleAdd = () => {
-    setEditingRole(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
+    setEditingRole(null)
+    setFormData({
+      name: "",
+      description: "",
+    })
+    setIsModalOpen(true)
+  }
 
   const handleEdit = (record: Role) => {
-    setEditingRole(record);
-    form.setFieldsValue(record);
-    setIsModalOpen(true);
-  };
+    setEditingRole(record)
+    setFormData({
+      name: record.name || "",
+      description: record.description || "",
+    })
+    setIsModalOpen(true)
+  }
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id)
+    setIsDeleteOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteId) return
     try {
-      await roleApi.delete(id);
-      notification.success({ title: '✅ Xóa quyền thành công' });
-      fetchRoles();
-    } catch (error: any) {
-      notification.error({
-        title: 'Lỗi xóa quyền',
-        description: error?.message,
-      });
+      await roleApi.delete(deleteId)
+      setIsDeleteOpen(false)
+      setDeleteId(null)
+      fetchRoles()
+    } catch (error) {
+      console.error("Error deleting:", error)
     }
-  };
+  }
 
   const handleModalOk = async () => {
     try {
-      const values = await form.validateFields();
+      setSaving(true)
       if (editingRole) {
-        await roleApi.update(editingRole._id, values);
-        notification.success({ title: '✅ Cập nhật quyền thành công' });
+        await roleApi.update(editingRole._id, formData)
       } else {
-        await roleApi.create(values);
-        notification.success({ title: '✅ Thêm quyền mới thành công' });
+        await roleApi.create(formData)
       }
-      setIsModalOpen(false);
-      fetchRoles();
-    } catch (error: any) {
-      if (error?.name !== 'ValidationError') {
-        notification.error({
-          title: 'Lỗi lưu thông tin',
-          description: error?.message,
-        });
-      }
+      setIsModalOpen(false)
+      fetchRoles()
+    } catch (error) {
+      console.error("Error saving:", error)
+    } finally {
+      setSaving(false)
     }
-  };
-
-  const columns = [
-    {
-      title: '#',
-      key: 'index',
-      width: 60,
-      render: (_: any, __: any, index: number) => (
-        <Text className="text-text/30 font-mono font-bold">{index + 1}</Text>
-      ),
-    },
-    {
-      title: 'Quyền Hạn',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text: string) => (
-        <Space size="middle" className="py-2">
-          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-100 shrink-0">
-            <SafetyCertificateOutlined className="text-white text-xl" />
-          </div>
-          <div>
-            <Text strong className="text-base tracking-tight leading-tight">{text}</Text>
-            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-[0.2em] block">HỆ THỐNG ĐỊNH DANH</Text>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Mô tả chi tiết',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text: string) => (
-        <div className="flex flex-col">
-            <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest block mb-1">PHẠM VI TRUY CẬP</Text>
-            <Text className="text-xs text-text/60 italic leading-tight">{text || 'Không có mô tả chi tiết cho quyền này'}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'isDeleted',
-      key: 'isDeleted',
-      width: 180,
-      render: (isDeleted: boolean) => (
-        <div className={`px-4 py-1.5 rounded-full inline-flex items-center gap-2 border ${
-            !isDeleted ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-red-50 border-red-100 text-red-600'
-        }`}>
-             <div className="w-1.5 h-1.5 rounded-full bg-current" />
-             <Text strong className="text-[10px] uppercase tracking-widest text-current">{!isDeleted ? 'Hoạt động' : 'Vô hiệu hóa'}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 150,
-      render: (_: any, record: Role) => (
-        <Space size={8}>
-          <Tooltip title="Chỉnh sửa quyền">
-            <Button 
-                shape="circle" 
-                icon={<EditOutlined />} 
-                onClick={() => handleEdit(record)}
-                className="bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 transition-colors" 
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa quyền?"
-            description="Lưu ý quan trọng: Việc xóa quyền hệ thống có thể gây lỗi truy cập cho người dùng đang gán quyền này."
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xóa" cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa quyền">
-              <Button 
-                shape="circle" 
-                danger 
-                icon={<DeleteOutlined />} 
-                className="bg-red-50 text-red-600 border-none hover:bg-red-100 transition-colors" 
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header & Stats Island */}
-      <div className="bg-white/40 backdrop-blur-md rounded-[3rem] p-8 border border-white/60 shadow-xl">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-          <div>
-            <Title level={2} className="!m-0 !font-serif tracking-tight">Phân quyền Hệ thống</Title>
-            <Text className="text-text/30 font-bold uppercase tracking-[0.3em] text-[10px]">SECURITY ROLE & PERMISSION ENGINE</Text>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-              <div className="px-8 py-4 bg-blue-600/5 rounded-[2rem] border border-blue-600/10 flex items-center gap-4 min-w-[200px]">
-                  <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg">
-                      <KeyOutlined />
-                  </div>
-                  <div>
-                      <Title level={3} className="!m-0 !font-black !leading-none text-blue-800">{roles.length}</Title>
-                      <Text className="text-[10px] font-bold text-blue-600/50 uppercase tracking-widest block mt-1">TỔNG VAI TRÒ</Text>
-                  </div>
-              </div>
-          </div>
-
-          <Button
-            type="primary" 
-            size="large"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-            className="h-16 px-10 rounded-[2rem] bg-blue-600 border-none font-bold tracking-widest text-xs uppercase shadow-xl shadow-blue-200 hover:scale-105 transition-all"
-          >
-            KHỞI TẠO QUYỀN MỚI
-          </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Roles</h1>
+          <p className="text-muted-foreground">Manage system roles and permissions</p>
         </div>
+        <Button onClick={handleAdd}>
+          <Plus className="size-4 mr-2" />
+          Add Role
+        </Button>
       </div>
 
-      {/* Main Table Card */}
-      <div className="bg-white/40 backdrop-blur-md rounded-[3.5rem] border border-white/80 shadow-2xl overflow-hidden glass-panel relative">
-        {/* Toolbar */}
-        <div className="p-8 pb-4 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-4 w-full md:w-auto">
-                <Input
-                    prefix={<SearchOutlined className="text-blue-600" />}
-                    placeholder="Tìm kiếm theo tên quyền..."
-                    value={searchText}
-                    onChange={e => setSearchText(e.target.value)}
-                    allowClear
-                    className="h-12 w-full md:w-96 rounded-2xl border-none bg-white/60 shadow-sm focus:bg-white transition-all pl-4"
-                />
+      {/* Stats */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Roles</CardTitle>
+            <Key className="size-5 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{roles.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Roles</CardTitle>
+            <Shield className="size-5 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {roles.filter(r => !r.isDeleted).length}
             </div>
-            
-            <div className="flex items-center gap-3">
-                <Tooltip title="Làm mới dữ liệu">
-                    <Button 
-                        shape="circle" 
-                        icon={<ReloadOutlined />} 
-                        onClick={fetchRoles} 
-                        loading={loading}
-                        className="bg-white/60 text-blue-600 border-none shadow-sm hover:scale-110"
-                    />
-                </Tooltip>
-                <div className="h-6 w-px bg-text/10" />
-                <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">SẮP XẾP ƯU TIÊN</Text>
-            </div>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={filtered}
-          rowKey="_id"
-          loading={loading}
-          className="premium-admin-table-blue"
-          pagination={{
-            pageSize: 10,
-            showTotal: (total) => <Text className="font-bold text-text/30 text-xs">TỔNG CỘNG {total} QUYỀN HỆ THỐNG</Text>,
-            className: "px-8 py-6"
-          }}
-          locale={{ emptyText: <Empty description="Chưa có vai trò nào trong hệ thống" className="p-20" /> }}
-        />
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal
-        title={<Title level={4} className="!m-0 !font-serif text-blue-900">{editingRole ? 'Chỉnh sửa định danh quyền' : 'Thiết lập quyền hạn mới'}</Title>}
-        open={isModalOpen}
-        onOk={handleModalOk}
-        onCancel={() => setIsModalOpen(false)}
-        okText="XÁC NHẬN LƯU"
-        cancelText="BỎ QUA"
-        className="premium-admin-modal-blue"
-        centered
-        width={500}
-        destroyOnClose
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          className="mt-8"
-        >
-          <Form.Item
-            name="name"
-            label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Định danh (VÍ DỤ: MANAGER, EDITOR)</Text>}
-            rules={[
-              { required: true, message: 'Vui lòng nhập định danh!' },
-              { pattern: /^[A-Z_]+$/, message: 'Khuyến nghị: Viết HOA và dùng dấu gạch dưới' }
-            ]}
-          >
-            <Input placeholder="VÍ DỤ: TECH_SUPPORT" className="h-12 rounded-2xl bg-white/60 border-none shadow-sm" />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label={<Text className="font-bold text-[11px] uppercase tracking-widest ml-2">Mô tả phạm vi quyền hạn</Text>}
-          >
-            <Input.TextArea rows={4} className="rounded-3xl bg-white/60 border-none p-4" placeholder="Ví dụ: Có quyền can thiệp vào kho hàng và sản phẩm..." />
-          </Form.Item>
-          
-          <div className="flex items-center gap-4 text-text/30 text-[10px] font-bold uppercase tracking-widest justify-center mt-4">
-                <HistoryOutlined /> CHANGES WILL BE LOGGED IN SYSTEM AUDIT TRAIL
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search roles..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline" size="icon" onClick={fetchRoles} disabled={loading}>
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+            </Button>
           </div>
-        </Form>
-      </Modal>
+        </CardContent>
+      </Card>
 
-      <style>{`
-        .premium-admin-table-blue .ant-table {
-            background: transparent !important;
-        }
-        .premium-admin-table-blue .ant-table-thead > tr > th {
-            background: rgba(0, 0, 0, 0.02) !important;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.4) !important;
-            font-size: 10px !important;
-            font-weight: 800 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.1em !important;
-            color: #94a3b8 !important;
-            padding: 24px !important;
-        }
-        .premium-admin-table-blue .ant-table-tbody > tr > td {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.03) !important;
-            padding: 20px 24px !important;
-            transition: all 0.3s ease;
-        }
-        .premium-admin-table-blue .ant-table-tbody > tr:hover > td {
-            background: rgba(37, 99, 235, 0.03) !important;
-        }
-        .premium-admin-modal-blue .ant-modal-content {
-            border-radius: 3rem !important;
-            background: rgba(239, 246, 255, 0.8) !important;
-            backdrop-filter: blur(20px) !important;
-            border: 1px solid white !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-            padding: 40px !important;
-        }
-        .premium-admin-modal-blue .ant-modal-header {
-            background: transparent !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-            padding-bottom: 24px !important;
-        }
-        .premium-admin-modal-blue .ant-modal-footer {
-            border-top: none !important;
-            margin-top: 32px !important;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-        }
-        .premium-admin-modal-blue .ant-modal-footer .ant-btn {
-            height: 56px !important;
-            padding: 0 40px !important;
-            border-radius: 2rem !important;
-            font-weight: 700 !important;
-            font-size: 12px !important;
-            letter-spacing: 0.1em !important;
-        }
-        .premium-admin-modal-blue .ant-btn-primary {
-            background: #2563eb !important;
-            box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2) !important;
-        }
-      `}</style>
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="size-12 rounded-lg" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <Shield className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+                    <p className="text-muted-foreground">No roles found</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((item: any, idx: number) => (
+                  <TableRow key={item._id}>
+                    <TableCell className="font-medium text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="size-12 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
+                          <Shield className="size-5 text-white" />
+                        </div>
+                        <span className="font-medium">{item.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[300px] truncate text-muted-foreground">
+                      {item.description || "No description"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={item.isDeleted ? "destructive" : "default"}>
+                        {item.isDeleted ? "Disabled" : "Active"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item._id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingRole ? "Edit Role" : "Add New Role"}</DialogTitle>
+            <DialogDescription>Fill in the role details below</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Role Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., ADMIN, MANAGER, EDITOR"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Role description..."
+                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleModalOk} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Role</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this role? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default Roles;
+export default Roles

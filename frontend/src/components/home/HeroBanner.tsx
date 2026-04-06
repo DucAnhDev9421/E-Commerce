@@ -1,6 +1,6 @@
 import React from 'react';
 import { Carousel, Button, Typography, Space } from 'antd';
-import { RightOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { ArrowRightOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
 
