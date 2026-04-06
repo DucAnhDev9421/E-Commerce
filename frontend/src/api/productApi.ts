@@ -17,7 +17,7 @@ const productApi = {
     return axiosClient.delete(`/products/${id}`);
   },
   uploadImage: (formData: FormData) => {
-    return axiosClient.post('/upload/avatar', formData, {
+    return axiosClient.post('/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

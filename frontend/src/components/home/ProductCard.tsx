@@ -24,6 +24,7 @@ export interface Product {
   rating?: number;
   reviews?: number;
   sold?: number;
+  stock?: number;
 }
 
 interface ProductCardProps {
@@ -91,10 +92,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const reviews = product.reviews || 0;
   const categoryName = product.categoryId?.name || 'Công nghệ';
 
+  const isOutOfStock = product.status === 'out_of_stock' || (product.stock !== undefined && product.stock <= 0);
+
   return (
     <Card
-      hoverable
-      className="group h-full border-0 shadow-sm transition-all duration-300 rounded-[2rem] overflow-hidden glass-card"
+      hoverable={!isOutOfStock}
+      className={`group h-full border-0 shadow-sm transition-all duration-300 rounded-[2rem] overflow-hidden glass-card ${isOutOfStock ? 'opacity-75 grayscale-[0.5]' : ''}`}
       styles={{ body: { padding: '20px' } }}
       cover={
         <div 
@@ -111,22 +114,33 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             }}
           />
           
+          {/* Out of Stock Overlay */}
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-20">
+               <div className="bg-white/90 px-6 py-2 rounded-full border-2 border-cta shadow-2xl scale-110">
+                  <Text className="text-cta font-black tracking-widest uppercase text-sm">HẾT HÀNG</Text>
+               </div>
+            </div>
+          )}
+
           {/* Overlay Actions */}
-          <div className="absolute inset-0 bg-background/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-            <Button 
-              shape="circle" 
-              icon={<EyeOutlined />} 
-              className="translate-y-10 group-hover:translate-y-0 transition-transform duration-300 bg-white/90 border-none hover:bg-primary hover:text-white flex items-center justify-center backdrop-blur-md"
-            />
-            <Button 
-              shape="circle" 
-              icon={<HeartOutlined />} 
-              className="translate-y-10 group-hover:translate-y-0 transition-transform duration-310 delay-[50ms] bg-white/90 border-none hover:bg-cta hover:text-white flex items-center justify-center backdrop-blur-md"
-            />
-          </div>
+          {!isOutOfStock && (
+            <div className="absolute inset-0 bg-background/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+              <Button 
+                shape="circle" 
+                icon={<EyeOutlined />} 
+                className="translate-y-10 group-hover:translate-y-0 transition-transform duration-300 bg-white/90 border-none hover:bg-primary hover:text-white flex items-center justify-center backdrop-blur-md"
+              />
+              <Button 
+                shape="circle" 
+                icon={<HeartOutlined />} 
+                className="translate-y-10 group-hover:translate-y-0 transition-transform duration-310 delay-[50ms] bg-white/90 border-none hover:bg-cta hover:text-white flex items-center justify-center backdrop-blur-md"
+              />
+            </div>
+          )}
 
           {/* Badges */}
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
+          <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
             {discount > 0 && (
               <Tag className="m-0 bg-cta text-white font-bold border-none rounded-full px-3 py-1 shadow-md">
                 -{discount}%
@@ -178,12 +192,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="pt-3 pb-1">
           <div className="flex justify-between text-[11px] font-bold mb-1.5 uppercase tracking-tighter">
             <span className="text-gray-900">ĐÃ BÁN {product.sold || 0}</span>
-            <span className="text-red-500">{((product.sold || 0) > 10) ? 'SẮP HẾT HÀNG' : 'SỐ LƯỢNG CÓ HẠN'}</span>
+            <span className={isOutOfStock ? 'text-cta font-black' : 'text-red-500'}>
+               {isOutOfStock ? 'TẠM HẾT HÀNG' : ((product.sold || 0) > 10) ? 'SẮP HẾT HÀNG' : 'SỐ LƯỢNG CÓ HẠN'}
+            </span>
           </div>
           <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full transition-all duration-1000" 
-              style={{ width: `${Math.min(100, ((product.sold || 0) / 20) * 100)}%` }}
+              className={`h-full rounded-full transition-all duration-1000 ${isOutOfStock ? 'bg-gray-300' : 'bg-gradient-to-r from-red-500 to-orange-400'}`}
+              style={{ width: isOutOfStock ? '100%' : `${Math.min(100, ((product.sold || 0) / ((product.sold || 0) + (product.stock || 20))) * 100)}%` }}
             ></div>
           </div>
         </div>
@@ -194,19 +210,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             type="primary" 
             icon={<ShoppingCartOutlined />}
             size="large"
-            className="w-full !bg-primary hover:!bg-primary/90 h-12 font-bold border-none shadow-md rounded-full flex items-center justify-center transition-all"
+            className={`w-full h-12 font-bold border-none shadow-md rounded-full flex items-center justify-center transition-all ${isOutOfStock ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : '!bg-primary hover:!bg-primary/90 text-white'}`}
             onClick={handleAddToCart}
+            disabled={isOutOfStock}
           >
-            THÊM GIỚ HÀNG
+            {isOutOfStock ? 'HẾT HÀNG' : 'THÊM GIỎ HÀNG'}
           </Button>
           <Button 
             type="default" 
-            icon={<ShoppingOutlined className="text-cta" />}
+            icon={<ShoppingOutlined className={isOutOfStock ? 'text-gray-400' : 'text-cta'} />}
             size="large"
-            className="w-full border-2 border-cta text-cta h-12 font-bold rounded-full flex items-center justify-center hover:bg-cta/10 transition-all bg-white/50 backdrop-blur-sm"
+            className={`w-full h-12 font-bold rounded-full flex items-center justify-center transition-all ${isOutOfStock ? 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed' : 'border-2 border-cta text-cta bg-white/50 backdrop-blur-sm'}`}
             onClick={handleBuyNow}
+            disabled={isOutOfStock}
           >
-            MUA NGAY
+            {isOutOfStock ? 'LIÊN HỆ' : 'MUA NGAY'}
           </Button>
         </div>
       </div>

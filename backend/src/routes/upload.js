@@ -5,7 +5,7 @@ let multer = require('multer');
 let path = require('path');
 let fs = require('fs');
 
-let { verifyToken } = require('../utils/authHandler');
+let { verifyToken, checkRole } = require('../utils/authHandler');
 
 
 /**
@@ -41,30 +41,40 @@ let upload = multer({ storage: storage });
 
 
 /**
- * Upload avatar
+ * Upload file (Yêu cầu đăng nhập)
  */
 router.post(
     '/',
     verifyToken,
-    upload.single('image'),
-    function (req, res, next) {
+    upload.any(),
+    function (req, res) {
 
         try {
 
-            if (!req.file) {
-                return res.status(400).send({
-                    message: "Không có file nào được tải lên"
+            if (!req.files || req.files.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Không có file nào được tải lên",
+                    data: null
                 });
             }
 
-            res.send({
+            const file = req.files[0];
+            return res.status(200).json({
                 success: true,
-                filename: req.file.filename,
-                avatarUrl: "/uploads/" + req.file.filename
+                message: "Tải ảnh lên thành công",
+                data: {
+                    filename: file.filename,
+                    avatarUrl: "/uploads/" + file.filename
+                }
             });
 
         } catch (error) {
-            res.status(500).send({ message: error.message });
+            return res.status(500).json({
+                success: false,
+                message: error.message,
+                data: null
+            });
         }
 
     }

@@ -13,7 +13,6 @@ router.post('/', verifyToken, async function (req, res, next) {
     try {
         let data = req.body;
 
-        // Gán user từ token
         data.user = req.user._id;
 
         let result = await addressController.CreateAAddress(data);
@@ -43,7 +42,7 @@ router.get('/', verifyToken, async function (req, res, next) {
 /**
  * Get address theo id
  */
-router.get('/:id', async function (req, res, next) {
+router.get('/:id', verifyToken, async function (req, res, next) {
     try {
 
         let result = await addressController.GetAAddressById(req.params.id);
@@ -63,15 +62,16 @@ router.get('/:id', async function (req, res, next) {
 /**
  * Update address
  */
-router.put('/:id', async function (req, res, next) {
+router.put('/:id', verifyToken, async function (req, res, next) {
     try {
 
-        let result = await addressController.UpdateAAddress(req.params.id, req.body);
+        let existingAddress = await addressController.GetAAddressById(req.params.id);
 
-        if (!result) {
-            return res.status(404).json({ success: false, message: "Không tìm thấy địa chỉ để update", data: null });
+        if (!existingAddress) {
+            return res.status(404).json({ success: false, message: "Không tìm thấy địa chỉ để cập nhật", data: null });
         }
 
+        let result = await addressController.UpdateAAddress(req.params.id, req.body);
         res.status(200).json({ success: true, message: "Cập nhật địa chỉ thành công", data: result });
 
     } catch (error) {
@@ -83,16 +83,17 @@ router.put('/:id', async function (req, res, next) {
 /**
  * Soft delete address
  */
-router.delete('/:id', async function (req, res, next) {
+router.delete('/:id', verifyToken, async function (req, res, next) {
     try {
 
-        let result = await addressController.DeleteAAddress(req.params.id);
+        let existingAddress = await addressController.GetAAddressById(req.params.id);
 
-        if (!result) {
+        if (!existingAddress) {
             return res.status(404).json({ success: false, message: "Không tìm thấy địa chỉ để xóa", data: null });
         }
 
-        res.status(200).json({ success: true, message: "Xóa địa chỉ thành công (soft delete)", data: null });
+        let result = await addressController.DeleteAAddress(req.params.id);
+        res.status(200).json({ success: true, message: "Xóa địa chỉ thành công (soft delete)", data: result });
 
     } catch (error) {
         next(error);
