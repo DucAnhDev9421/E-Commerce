@@ -22,6 +22,11 @@ export interface Order {
   paymentStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
   note?: string;
   createdAt?: string;
+  userInfo?: {
+    fullName?: string;
+    email?: string;
+    username?: string;
+  };
 }
 
 const orderApi = {
@@ -43,6 +48,17 @@ const orderApi = {
   cancelOrder: (id: string): Promise<any> => {
     const url = `/orders/${id}/cancel`;
     return axiosClient.patch(url);
+  },
+
+  // Admin endpoints
+  getAllOrders: (params?: { page?: number; limit?: number; status?: string }): Promise<any> => {
+    const url = '/orders/admin/all';
+    return axiosClient.get(url, { params });
+  },
+
+  updateOrderStatus: (id: string, status: string): Promise<any> => {
+    const url = `/orders/${id}/status`;
+    return axiosClient.patch(url, { status });
   }
 };
 

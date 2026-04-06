@@ -14,6 +14,7 @@ import {
   Settings,
   User,
   Menu,
+  Receipt,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -39,6 +40,7 @@ const navItems = [
   { key: '/admin', label: 'Dashboard', icon: LayoutDashboard },
   { key: '/admin/categories', label: 'Categories', icon: Tags },
   { key: '/admin/products', label: 'Products', icon: ShoppingBag },
+  { key: '/admin/orders', label: 'Orders', icon: Receipt },
   { key: '/admin/users', label: 'Users', icon: Users },
   { key: '/admin/roles', label: 'Roles', icon: Shield },
 ]
@@ -49,6 +51,7 @@ const pageTitles: Record<string, string> = {
   '/admin/categories': 'Categories',
   '/admin/users': 'Users',
   '/admin/roles': 'Roles',
+  '/admin/orders': 'Orders',
 }
 
 const AdminLayout: React.FC = () => {

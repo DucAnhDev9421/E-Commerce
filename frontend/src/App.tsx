@@ -17,6 +17,7 @@ import Roles from './pages/Admin/Roles';
 import AdminUsers from './pages/Admin/Users';
 import Categories from './pages/Admin/Categories';
 import Products from './pages/Admin/Products';
+import Orders from './pages/Admin/Orders';
 
 function App() {
   return (
@@ -70,6 +71,7 @@ function App() {
               <Route path="users" element={<AdminUsers />} />
               <Route path="categories" element={<Categories />} />
               <Route path="products" element={<Products />} />
+              <Route path="orders" element={<Orders />} />
               <Route path="roles" element={<Roles />} />
             </Route>
           </Route>
