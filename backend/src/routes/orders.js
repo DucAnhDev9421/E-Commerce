@@ -53,13 +53,20 @@ router.patch(
 );
 
 /**
- * ============================================================
  * ADMIN / MANAGER ROUTES
- * ============================================================
  * RBAC: checkRole('ADMIN', 'MANAGER') chặn user thường
  * Rate limit riêng cho admin (60 req/phút)
  * Validation: express-validator cho status update
  */
+// GET /orders/admin/all → Lấy toàn bộ đơn hàng (ADMIN/MANAGER)
+router.get(
+    '/admin/all',
+    verifyToken,
+    checkRole('ADMIN', 'MANAGER'),
+    adminOrdersRateLimiter,
+    ordersController.getOrders
+);
+
 // PATCH /orders/:id/status → Cập nhật trạng thái đơn hàng
 router.patch(
     '/:id/status',
