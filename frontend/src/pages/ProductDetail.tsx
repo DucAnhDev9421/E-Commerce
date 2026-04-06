@@ -1,23 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { Button, InputNumber, Divider, Typography, Row, Col, Empty, notification, Rate, Breadcrumb, Image, Tabs, Spin } from 'antd';
-import { 
-  ShoppingCartOutlined, 
-  SafetyCertificateOutlined, 
-  CheckCircleOutlined,
-  EyeOutlined,
-  HeartOutlined,
-  ThunderboltOutlined,
-  HistoryOutlined,
-  GlobalOutlined,
-  HomeOutlined,
-  TruckOutlined
-} from '@ant-design/icons';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addToCart } from '../store/cartSlice';
 import productApi from '../api/productApi';
-
-const { Title, Text, Paragraph } = Typography;
+import { 
+  ShoppingCart, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Eye, 
+  Heart, 
+  Zap, 
+  History, 
+  Globe, 
+  Home, 
+  Truck,
+  Star,
+  ChevronRight,
+  Minus,
+  Plus,
+  Share2
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from "@/components/ui/card";
+import { message } from 'antd';
 
 const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
 
@@ -29,6 +39,7 @@ const ProductDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -43,10 +54,7 @@ const ProductDetail: React.FC = () => {
           setMainImage(firstImage);
         }
       } catch (error: any) {
-        notification.error({
-          title: 'Lỗi tải chi tiết sản phẩm',
-          description: error?.message || 'Không thể lấy thông tin sản phẩm',
-        });
+        message.error('Lỗi tải chi tiết sản phẩm: ' + (error?.message || 'Không thể lấy thông tin sản phẩm'));
       } finally {
         setLoading(false);
       }
@@ -54,14 +62,9 @@ const ProductDetail: React.FC = () => {
     fetchProduct();
   }, [id]);
 
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
-
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      notification.info({
-        message: 'Yêu cầu đăng nhập',
-        description: 'Vui lòng đăng nhập để có thể thêm sản phẩm vào giỏ hàng.',
-      });
+      message.info('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.');
       navigate('/login');
       return;
     }
@@ -69,25 +72,15 @@ const ProductDetail: React.FC = () => {
     if (!product) return;
     try {
       await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
-      notification.success({ 
-        title: 'Đã thêm vào giỏ hàng',
-        description: `${product.name} (x${quantity}) đã vào giỏ hàng.`,
-        placement: 'bottomRight'
-      });
+      message.success(`${product.name} đã được thêm vào giỏ hàng.`);
     } catch (error: any) {
-      notification.error({
-        message: 'Lỗi',
-        description: error || 'Không thể thêm sản phẩm vào giỏ hàng'
-      });
+      message.error('Không thể thêm sản phẩm: ' + (error || 'Lỗi hệ thống'));
     }
   };
 
   const handleBuyNow = async () => {
     if (!isAuthenticated) {
-      notification.info({
-        message: 'Yêu cầu đăng nhập',
-        description: 'Vui lòng đăng nhập để bắt đầu đặt hàng.',
-      });
+      message.info('Vui lòng đăng nhập để bắt đầu đặt hàng.');
       navigate('/login');
       return;
     }
@@ -97,331 +90,298 @@ const ProductDetail: React.FC = () => {
       await dispatch(addToCart({ productId: product._id, quantity })).unwrap();
       navigate('/checkout');
     } catch (error: any) {
-      notification.error({
-        message: 'Lỗi',
-        description: error || 'Không thể tiến hành đặt hàng'
-      });
+      message.error('Lỗi: ' + (error || 'Không thể tiến hành đặt hàng'));
     }
   };
 
-  if (loading) return (
-    <div className="flex flex-col justify-center items-center h-[80vh] gap-4">
-      <Spin size="large" />
-      <Text className="text-blue-500 animate-pulse font-bold tracking-widest uppercase">Đang tải tuyệt phẩm...</Text>
-    </div>
-  );
-  
-  if (!product) return <div className="py-20 flex justify-center"><Empty description="Sản phẩm không tồn tại" /></div>;
+  if (loading) return <ProductDetailSkeleton />;
+  if (!product) return <ProductNotFound />;
 
   const discount = product.discount || 0;
   const oldPrice = discount > 0 ? product.price / (1 - discount / 100) : 0;
 
   return (
-    <div className="bg-background min-h-screen pt-6 pb-24 font-sans relative overflow-hidden">
-      {/* Background Orbs */}
-      <div className="absolute top-[10%] left-[-5%] w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] pointer-events-none opacity-50 mix-blend-multiply"></div>
-      <div className="absolute bottom-[20%] right-[-5%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-[100px] pointer-events-none opacity-50 mix-blend-multiply"></div>
+    <div className="min-h-screen bg-background pb-20 pt-8 animate-fadeIn">
+      {/* Container with Breadcrumbs */}
+      <div className="container mx-auto px-4">
+        <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto whitespace-nowrap pb-2">
+          <Link to="/" className="hover:text-primary transition-colors flex items-center gap-1.5 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <Home className="size-4" /> Trang chủ
+          </Link>
+          <ChevronRight className="size-3.5 opacity-40 shrink-0" />
+          <span className="opacity-60">{product.categoryId?.name}</span>
+          <ChevronRight className="size-3.5 opacity-40 shrink-0" />
+          <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
+        </nav>
 
-      {/* Premium Breadcrumb Overlay */}
-      <div className="container mx-auto px-4 mb-8 relative z-10">
-        <Breadcrumb separator="/" className="bg-white/40 backdrop-blur-md p-4 px-8 rounded-full border border-white/60 shadow-sm inline-flex items-center gap-2">
-          <Breadcrumb.Item><Link to="/" className="hover:text-primary transition-colors text-text/60"><HomeOutlined className="mr-1" /> Trang chủ</Link></Breadcrumb.Item>
-          <Breadcrumb.Item className="text-text/40 text-[10px] font-bold uppercase tracking-wider">{product.categoryId?.name}</Breadcrumb.Item>
-          <Breadcrumb.Item className="font-serif text-primary">{product.name}</Breadcrumb.Item>
-        </Breadcrumb>
-      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Left Column: Gallery */}
+          <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-6">
+            <div className="relative group rounded-3xl overflow-hidden bg-card border shadow-sm aspect-[4/3] md:aspect-[16/9] lg:aspect-auto lg:h-[600px] flex items-center justify-center">
+              <img 
+                src={mainImage} 
+                className="w-full h-full object-contain p-4 md:p-8 transition-transform duration-700 group-hover:scale-105" 
+                alt={product.name} 
+              />
+              {discount > 0 && (
+                <Badge variant="destructive" className="absolute top-6 right-6 text-base font-bold px-4 py-1.5 shadow-lg rounded-full">
+                  -{discount}%
+                </Badge>
+              )}
+              <div className="absolute bottom-6 right-6 flex items-center gap-2">
+                <Button size="icon" variant="secondary" className="rounded-full shadow-md bg-background/80 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all outline-none border border-border">
+                  <Heart className="size-5" />
+                </Button>
+                <Button size="icon" variant="secondary" className="rounded-full shadow-md bg-background/80 backdrop-blur-sm hover:scale-110 active:scale-95 transition-all outline-none border border-border">
+                  <Share2 className="size-5" />
+                </Button>
+              </div>
+            </div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        {/* Main Product Showcase Card */}
-        <div className="glass-panel p-8 md:p-12 rounded-[4rem] border border-white/60 shadow-2xl overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -z-10 translate-x-1/2 -translate-y-1/2 opacity-50"></div>
-          
-          <Row gutter={[64, 48]}>
-            {/* Gallery Section - Redesigned */}
-            <Col xs={24} lg={11}>
-              <div className="flex flex-col md:flex-row gap-6 h-full">
-                {/* Thumbnails vertical (side gallery) */}
-                <div className="hidden md:flex flex-col gap-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide shrink-0">
-                  {product.images?.map((img: string, idx: number) => {
-                    const fullUrl = img.startsWith('http') ? img : `${BASE_URL}${img}`;
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`w-24 h-24 rounded-3xl border-2 overflow-hidden cursor-pointer transition-all duration-500 p-2 shrink-0 hover:scale-105 active:scale-95 ${mainImage === fullUrl ? 'border-primary shadow-lg bg-white' : 'border-white/40 opacity-40 hover:opacity-100 bg-white/20'}`}
-                        onClick={() => setMainImage(fullUrl)}
-                      >
-                        <img src={fullUrl} className="w-full h-full object-contain rounded-2xl" alt={`thumb ${idx}`} />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Main Image Showcase */}
-                <div className="flex-1">
-                  <div className="relative w-full h-[450px] md:h-[550px] flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-[3.5rem] overflow-hidden border border-white/60 group shadow-xl transition-all duration-700">
-                    <Image
-                      src={mainImage}
-                      className="w-full h-full object-contain p-8 md:p-14 transition-transform duration-1000 group-hover:scale-110"
-                      preview={{
-                        mask: <div className="text-white flex flex-col items-center gap-3 font-black italic tracking-widest drop-shadow-lg"><EyeOutlined style={{ fontSize: 48 }} /> <span className="text-lg">KHÁM PHÁ CHI TIẾT</span></div>
-                      }}
-                    />
-                    
-                    {/* Discount Badge */}
-                    {discount > 0 && (
-                      <div className="absolute top-8 right-8 animate-bounce">
-                        <div className="bg-cta text-white px-6 py-2.5 rounded-full font-serif font-black text-xl shadow-2xl flex items-center gap-2">
-                           <ThunderboltOutlined /> -{discount}%
-                        </div>
-                      </div>
+            {/* Thumbnails */}
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {product.images?.map((img: string, idx: number) => {
+                const fullUrl = img.startsWith('http') ? img : `${BASE_URL}${img}`;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => setMainImage(fullUrl)}
+                    className={cn(
+                      "relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all duration-300 shrink-0 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 bg-card",
+                      mainImage === fullUrl ? "border-primary shadow-md" : "border-border/50 opacity-60 hover:opacity-100"
                     )}
+                  >
+                    <img src={fullUrl} className="w-full h-full object-cover p-2" alt={product.name} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                    {/* Like Button */}
-                    <div className="absolute bottom-8 right-8">
-                       <Button shape="circle" icon={<HeartOutlined className="text-xl" />} className="h-16 w-16 bg-white/60 backdrop-blur-md border border-white/60 shadow-xl hover:text-cta transition-all hover:scale-110 flex items-center justify-center" />
-                    </div>
-                  </div>
+          {/* Right Column: Info & Actions */}
+          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-8">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 pointer-events-none rounded-md px-3 py-1 font-medium tracking-wide">CHÍNH HÃNG</Badge>
+                <div className="flex items-center gap-1 ml-auto">
+                    <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-semibold">4.9</span>
+                    <span className="text-xs text-muted-foreground font-normal">(120 đánh giá)</span>
                 </div>
               </div>
-            </Col>
+              
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground leading-tight">
+                {product.name}
+              </h1>
 
-            {/* Content & Action Section - Redesigned */}
-            <Col xs={24} lg={13}>
-              <div className="flex flex-col h-full space-y-8 py-2">
-                <header>
-                  <div className="flex flex-wrap items-center gap-3 mb-4">
-                    <span className="bg-primary text-white text-[10px] font-bold px-4 py-1.5 rounded-full tracking-[0.2em] shadow-lg shadow-primary/20">PREMIUM SELECTION</span>
-                    <span className="bg-secondary/10 text-secondary text-[10px] font-bold px-4 py-1.5 rounded-full border border-secondary/20 tracking-[0.1em] flex items-center gap-1">
-                       <CheckCircleOutlined /> CHÍNH HÃNG 100% 
+              <div className="space-y-1">
+                <div className="flex items-baseline gap-4">
+                  <span className="text-4xl font-black text-primary tracking-tighter">
+                    {product.price.toLocaleString('vi-VN')}₫
+                  </span>
+                  {oldPrice > product.price && (
+                    <span className="text-xl text-muted-foreground/50 line-through font-normal">
+                      {Math.floor(oldPrice).toLocaleString('vi-VN')}₫
                     </span>
-                  </div>
-                  <Title level={1} className="!text-3xl md:!text-5xl !font-serif !font-normal !mb-4 text-text tracking-tight leading-tight">
-                    {product.name}
-                  </Title>
-                  <div className="flex items-center gap-6 bg-white/40 backdrop-blur-sm w-fit px-6 py-2.5 rounded-full border border-white/60">
-                    <Rate disabled defaultValue={5} className="text-cta text-sm" />
-                    <Divider type="vertical" className="bg-text/10 h-4" />
-                    <Text className="text-text/60 text-xs font-light">4.9/5 • 2.5K Lượt xem • 800+ Đã bán</Text>
-                  </div>
-                </header>
-
-                <div className="bg-primary/5 p-10 rounded-[3rem] border border-white/60 shadow-sm relative group transition-all duration-500 overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-5 font-serif italic text-6xl tracking-tighter select-none">EXCLUSIVE</div>
-                  <div className="flex flex-col md:flex-row md:items-center gap-6">
-                    <div className="flex flex-col">
-                        <Title level={1} className="!m-0 !text-primary !font-serif !text-5xl tracking-tighter leading-none">
-                          {product.price.toLocaleString('vi-VN')}₫
-                        </Title>
-                        {oldPrice > product.price && (
-                          <Text delete className="text-text/30 text-xl font-light mt-2">
-                            {Math.floor(oldPrice).toLocaleString('vi-VN')}₫
-                          </Text>
-                        )}
-                    </div>
-                    {discount > 0 && (
-                        <div className="bg-white/60 backdrop-blur-md px-6 py-4 rounded-3xl border border-white shadow-sm">
-                           <Text className="block text-[10px] font-bold uppercase text-primary/60 tracking-wider mb-1">TIẾT KIỆM NGAY</Text>
-                           <Text strong className="text-xl text-secondary font-serif">
-                              -{Math.floor(oldPrice - product.price).toLocaleString('vi-VN')}₫
-                           </Text>
-                        </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-
-                <div className="space-y-6">
-                   {/* Quantity Selection Redesign */}
-                   <div className="flex items-center gap-8">
-                      <span className="text-xs font-bold text-text/40 uppercase tracking-widest shrink-0">SỐ LƯỢNG</span>
-                      <div className="bg-white/40 backdrop-blur-sm p-1 rounded-full border border-white/60 inline-flex items-center gap-2 shadow-sm">
-                         <Button 
-                            type="text" 
-                            shape="circle"
-                            className="bg-white/80 text-text border-none shadow-sm h-10 w-10 flex items-center justify-center font-bold text-xl hover:bg-primary hover:text-white transition-all transition-colors active:scale-90"
-                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                            disabled={product.stock <= 0}
-                         >-</Button>
-                         <InputNumber 
-                            min={1} 
-                            max={product.stock} 
-                            value={quantity} 
-                            onChange={(val) => setQuantity(val || 1)}
-                            className="w-12 text-center border-none !bg-transparent font-bold text-xl flex items-center justify-center"
-                            controls={false}
-                            disabled={product.stock <= 0}
-                         />
-                         <Button 
-                            type="text" 
-                            shape="circle"
-                            className="bg-white/80 text-text border-none shadow-sm h-10 w-10 flex items-center justify-center font-bold text-xl hover:bg-primary hover:text-white transition-all transition-colors active:scale-90"
-                            onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                            disabled={product.stock <= 0}
-                         >+</Button>
-                      </div>
-                      <div className="flex flex-col">
-                        <Text className={`text-sm font-bold leading-none ${product.stock <= 0 ? 'text-cta' : 'text-text'}`}>
-                           {product.stock <= 0 ? 'HẾT HÀNG' : product.stock}
-                        </Text>
-                        <Text className="text-[10px] text-text/40 font-bold uppercase tracking-widest">
-                           {product.stock <= 0 ? 'STATUS' : 'CÓ SẴN'}
-                        </Text>
-                      </div>
+                {discount > 0 && (
+                   <div className="text-sm text-primary font-medium flex items-center gap-1.5 animate-pulse">
+                      <Zap className="size-3.5 fill-current" />
+                      Tiết kiệm {Math.floor(oldPrice - product.price).toLocaleString('vi-VN')}₫ ngay hôm nay
                    </div>
+                )}
+              </div>
+            </div>
 
-                   {/* Action Buttons Hub */}
-                   <div className="flex flex-col sm:flex-row gap-6 pt-6">
-                      <Button 
-                        type="primary" 
-                        size="large" 
-                        icon={<ShoppingCartOutlined className="scale-110" />}
-                        className={`flex-[1.5] h-16 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2 border-none ${product.stock <= 0 ? 'bg-gray-300 cursor-not-allowed text-gray-500' : 'bg-text hover:bg-primary text-white'}`}
-                        onClick={handleAddToCart}
-                        disabled={product.stock <= 0}
-                      >
-                        {product.stock <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
-                      </Button>
-                      <Button 
-                        type="primary" 
-                        size="large"
-                        icon={<ThunderboltOutlined className="scale-110" />}
-                        className={`flex-1 h-16 rounded-full font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-2 border-none ${product.stock <= 0 ? 'bg-gray-200 cursor-not-allowed text-gray-400' : 'bg-cta hover:bg-cta/90 text-white shadow-cta/20'}`}
-                        onClick={handleBuyNow}
-                        disabled={product.stock <= 0}
-                      >
-                        {product.stock <= 0 ? 'Ngừng bán' : 'Mua ngay'}
-                      </Button>
-                   </div>
-                </div>
+            <Separator className="opacity-50" />
 
-                 {/* Vertical Badges */}
-                 <div className="pt-10 border-t border-text/5">
-                    <Row gutter={[24, 24]}>
-                       {[
-                         { icon: <HistoryOutlined />, label: 'BẢO HÀNH TRỌN ĐỜI', desc: 'An tâm tuyệt đối', color: 'primary' },
-                         { icon: <GlobalOutlined />, label: 'XUẤT XỨ CHÍNH HÃNG', desc: 'Nguồn hàng uy tín', color: 'secondary' },
-                         { icon: <TruckOutlined />, label: 'GIAO FREE NHANH', desc: 'Nhanh như chớp', color: 'cta' }
-                       ].map((item: any, idx: number) => (
-                         <Col span={8} key={idx}>
-                           <div className="flex flex-col items-center gap-3 p-4 group cursor-help text-center">
-                              <div className={`w-14 h-14 bg-white/40 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-all duration-500 group-hover:bg-primary group-hover:text-white border border-white/60`}>
-                                {item.icon}
-                              </div>
-                              <div>
-                                 <Text className="block text-[9px] font-bold tracking-widest text-text/80 uppercase mb-0.5">{item.label}</Text>
-                                 <Text className="text-[10px] text-text/40 font-medium block">{item.desc}</Text>
-                              </div>
-                           </div>
-                         </Col>
-                       ))}
-                    </Row>
+            {/* Config & Actions */}
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center justify-between">
+                 <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Số lượng</span>
+                 <div className="flex items-center border rounded-full p-1 bg-muted/30">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="size-10 rounded-full hover:bg-background shadow-none" 
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={product.stock <= 0}
+                    >
+                      <Minus className="size-4" />
+                    </Button>
+                    <span className="min-w-10 text-center font-bold text-lg">{quantity}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="size-10 rounded-full hover:bg-background shadow-none" 
+                      onClick={() => setQuantity(Math.min(product.stock || 99, quantity + 1))}
+                      disabled={product.stock <= 0}
+                    >
+                      <Plus className="size-4" />
+                    </Button>
                  </div>
-               </div>
-             </Col>
-           </Row>
-         </div>
+              </div>
 
-        {/* Dynamic Multi-Section Tabs - Revamped */}
-        <div className="mt-32">
-          <Tabs 
-            defaultActiveKey="1" 
-            className="premium-tabs-system h-full"
-            centered
-            items={[
-              {
-                key: '1',
-                label: <span className="text-base md:text-lg px-8 py-3 font-serif tracking-tight">CHI TIẾT SẢN PHẨM</span>,
-                children: (
-                  <div className="animate-slideUp pt-12">
-                    <Row gutter={[64, 64]}>
-                       <Col xs={24} lg={14}>
-                          <div className="bg-white/40 backdrop-blur-md p-10 md:p-14 rounded-[3.5rem] shadow-xl border border-white/60 relative overflow-hidden h-full">
-                             <div className="absolute top-0 right-0 p-12 opacity-[0.02] rotate-12 scale-150 text-primary"><GlobalOutlined style={{ fontSize: 400 }} /></div>
-                             <Title level={2} className="!text-3xl !font-serif !mb-8 text-text tracking-tight border-b border-primary/20 pb-4">CÂU CHUYỆN SẢN PHẨM</Title>
-                             <Paragraph className="text-text/70 text-lg leading-relaxed font-light">
-                               {product.description || 'Sản phẩm này không chỉ là một món hàng công nghệ, mà là sự kết tinh của tư duy đột phá và kỹ nghệ chế tác thượng thừa.'}
-                             </Paragraph>
-                             
-                             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="p-8 glass-panel bg-primary/10 rounded-3xl shadow-sm flex flex-col gap-3 text-text border border-primary/20">
-                                   <Title level={4} className="!text-primary !font-serif !mb-0 flex items-center gap-2"><ThunderboltOutlined className="text-xs" /> HIỆU NĂNG</Title>
-                                   <Text className="text-text/60 text-sm font-light leading-relaxed">Xử lý mọi tác vụ trong nháy mắt với công nghệ chip tiên tiến nhất.</Text>
-                                </div>
-                                <div className="p-8 glass-panel bg-text/5 rounded-3xl shadow-sm flex flex-col gap-3 text-text border border-white/20">
-                                   <Title level={4} className="!text-text !font-serif !mb-0 flex items-center gap-2"><SafetyCertificateOutlined className="text-xs" /> BỀN BỈ</Title>
-                                   <Text className="text-text/60 text-sm font-light leading-relaxed">Chế tác từ vật liệu cao cấp, đảm bảo tuổi thọ lên đến hàng thập kỷ.</Text>
-                                </div>
-                             </div>
-                          </div>
-                       </Col>
-                       <Col xs={24} lg={10}>
-                          <div className="flex flex-col gap-8 h-full">
-                             <div className="bg-white/40 backdrop-blur-md p-10 rounded-[3rem] shadow-xl border border-white/60 flex-1">
-                                <Title level={4} className="!font-serif !mb-8 uppercase tracking-widest text-text/50"> THÔNG SỐ KỸ THUẬT</Title>
-                                <div className="space-y-4">
-                                   {[
-                                      { l: 'THƯƠNG HIỆU', v: 'Modern Luxury' },
-                                      { l: 'MÃ SẢN PHẨM', v: product.slug?.toUpperCase() || 'MOD-001' },
-                                      { l: 'DANH MỤC', v: product.categoryId?.name },
-                                      { l: 'CHẤT LIỆU', v: 'Hợp kim siêu bền' },
-                                      { l: 'XUẤT XỨ', v: 'Chính hãng (Full Box)' }
-                                   ].map((item, i) => (
-                                      <div key={i} className="flex justify-between items-center py-3 border-b border-text/5 last:border-0 hover:translate-x-1 transition-transform">
-                                         <Text className="text-[10px] font-bold text-text/30 uppercase tracking-widest">{item.l}</Text>
-                                         <span className="font-serif text-text text-base italic">{item.v}</span>
-                                      </div>
-                                   ))}
-                                </div>
-                             </div>
-                             
-                             <div className="bg-primary/5 p-10 rounded-[3rem] border border-primary/10">
-                                <Title level={4} className="!font-serif uppercase !text-primary !mb-4">Dịch vụ v.i.p</Title>
-                                <ul className="space-y-3 font-light text-text list-none p-0 m-0">
-                                   <li className="flex items-center gap-2">✨ Miễn phí bảo trì 5 năm</li>
-                                   <li className="flex items-center gap-2">✈️ Giao tận tay người mua</li>
-                                   <li className="flex items-center gap-2">💎 Quà tặng độc bản đi kèm</li>
-                                </ul>
-                             </div>
-                          </div>
-                       </Col>
-                    </Row>
+              <div className="flex flex-col gap-3">
+                 <Button 
+                    size="lg" 
+                    className="h-16 text-lg font-bold rounded-full transition-all group overflow-hidden relative"
+                    onClick={handleBuyNow}
+                    disabled={product.stock <= 0}
+                 >
+                    <span className="relative z-10 flex items-center gap-2">
+                       {product.stock <= 0 ? 'HẾT HÀNG' : 'MUA NGAY'}
+                       {product.stock > 0 && <ChevronRight className="size-5 transition-all group-hover:translate-x-1" />}
+                    </span>
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 transition-all group-hover:h-full" />
+                 </Button>
+                 <Button 
+                    size="lg" 
+                    variant="outline" 
+                    className="h-16 text-lg font-bold rounded-full border-primary/20 hover:bg-primary/5 hover:border-primary transition-all gap-2"
+                    onClick={handleAddToCart}
+                    disabled={product.stock <= 0}
+                 >
+                    <ShoppingCart className="size-5" />
+                    {product.stock <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
+                 </Button>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium bg-muted/20 p-4 rounded-2xl border border-dotted">
+                 <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                 Sản phẩm đang còn {product.stock} chiếc trong kho
+              </div>
+            </div>
+
+            {/* Service Highlights */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2 p-4 rounded-2xl border bg-card/50">
+                 <Truck className="size-6 text-primary" />
+                 <span className="text-xs font-bold uppercase tracking-tight">Giao hàng nhanh</span>
+                 <span className="text-[10px] text-muted-foreground leading-none">Miễn phí cho đơn từ 2tr</span>
+              </div>
+              <div className="flex flex-col gap-2 p-4 rounded-2xl border bg-card/50">
+                 <History className="size-6 text-primary" />
+                 <span className="text-xs font-bold uppercase tracking-tight">Bảo hành 2 năm</span>
+                 <span className="text-[10px] text-muted-foreground leading-none">Chính sách 1 đổi 1</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Section */}
+        <div className="mt-24">
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b rounded-none gap-8">
+              <TabsTrigger 
+                value="details" 
+                className="data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent bg-transparent rounded-none px-4 py-4 text-base font-bold tracking-tight uppercase"
+              >
+                Chi tiết sản phẩm
+              </TabsTrigger>
+              <TabsTrigger 
+                value="reviews" 
+                className="data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent bg-transparent rounded-none px-4 py-4 text-base font-bold tracking-tight uppercase"
+              >
+                Đánh giá (99+)
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="details" className="mt-12">
+               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                  <div className="lg:col-span-7 prose prose-emerald max-w-none">
+                     <h3 className="text-2xl font-bold flex items-center gap-3 mb-6">
+                        <CheckCircle2 className="size-6 text-primary" /> 
+                        Câu chuyện sản phẩm
+                     </h3>
+                     <p className="text-lg text-muted-foreground leading-relaxed font-light">
+                        {product.description || 'Sản phẩm tuyệt vời với thiết kế hiện đại và tinh tế. Phù hợp với mọi không gian và phong cách sống của bạn.'}
+                     </p>
+                     
+                     <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="bg-muted/30 border-none shadow-none">
+                          <CardContent className="p-6">
+                             <Zap className="size-6 text-primary mb-3" />
+                             <h4 className="font-bold mb-1">Hiệu năng tối ưu</h4>
+                             <p className="text-xs text-muted-foreground">Được trang bị công nghệ mới nhất cho trải nghiệm mượt mà.</p>
+                          </CardContent>
+                        </Card>
+                        <Card className="bg-muted/30 border-none shadow-none">
+                          <CardContent className="p-6">
+                             <ShieldCheck className="size-6 text-primary mb-3" />
+                             <h4 className="font-bold mb-1">An toàn tuyệt đối</h4>
+                             <p className="text-xs text-muted-foreground">Đảm bảo các tiêu chuẩn an toàn quốc tế khắt khe nhất.</p>
+                          </CardContent>
+                        </Card>
+                     </div>
                   </div>
-                ),
-              },
-              {
-                 key: '2',
-                 label: <span className="text-base md:text-lg px-8 py-3 font-serif tracking-tight transition-all duration-300">ĐÁNH GIÁ (99+)</span>,
-                 children: (
-                  <div className="animate-slideUp pt-12 flex flex-col items-center">
-                    <Empty description={<Text className="text-xl font-serif text-text/20 uppercase tracking-tighter">Đang cập nhật những phản hồi từ khách hàng</Text>} />
+                  <div className="lg:col-span-5 flex flex-col gap-6">
+                     <div className="bg-card border rounded-3xl p-8 shadow-sm">
+                        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-8 text-center ring-1 ring-border rounded-full py-1">Thông số kỹ thuật</h4>
+                        <div className="space-y-5">
+                          {[
+                            { l: 'Thương hiệu', v: 'Luxury Modern' },
+                            { l: 'Mã sản phẩm', v: product.slug?.toUpperCase() || 'MOD-ITEM' },
+                            { l: 'Phân khúc', v: 'Premium Edition' },
+                            { l: 'Năm ra mắt', v: '2024' },
+                            { l: 'Tình trạng', v: 'Hàng chính hãng' },
+                          ].map((item, i) => (
+                            <div key={i} className="flex justify-between items-center py-2 group hover:bg-muted/30 px-2 rounded-lg transition-all">
+                              <span className="text-xs font-medium text-muted-foreground uppercase">{item.l}</span>
+                              <span className="font-bold text-foreground text-sm italic">{item.v}</span>
+                            </div>
+                          ))}
+                        </div>
+                     </div>
+                     <div className="bg-primary/5 rounded-3xl p-8 border border-primary/20 relative overflow-hidden group">
+                        <div className="relative z-10">
+                           <h4 className="text-lg font-bold text-primary mb-2">Đặc biệt tại Modern Store</h4>
+                           <p className="text-sm text-primary/70 leading-relaxed font-light">
+                              Mỗi sản phẩm được kiểm tra thủ công bởi đội ngũ chuyên gia trước khi đóng gói gửi đến bạn.
+                           </p>
+                        </div>
+                        <Globe className="absolute -bottom-10 -right-10 size-40 text-primary/5 group-hover:rotate-45 transition-transform duration-1000" />
+                     </div>
                   </div>
-                 )
-              }
-            ]}
-          />
+               </div>
+            </TabsContent>
+            <TabsContent value="reviews" className="mt-12 pb-20">
+               <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/20 rounded-[3rem] border border-dashed">
+                  <div className="p-6 bg-background rounded-full shadow-md">
+                     <Star className="size-12 text-muted-foreground/20" />
+                  </div>
+                  <div className="space-y-1">
+                     <h3 className="text-xl font-bold">Chưa có đánh giá nào</h3>
+                     <p className="text-muted-foreground max-w-xs mx-auto">Hãy là người đầu tiên trải nghiệm và chia sẻ cảm nhận về sản phẩm này.</p>
+                  </div>
+                  <Button variant="outline" className="rounded-full px-8 mt-4">Viết đánh giá</Button>
+               </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
-      {/* Extreme Sticky Bottom Hub (Mobile) */}
-      <div className="fixed bottom-6 left-6 right-6 z-[100] md:hidden">
-         <div className="bg-text/90 backdrop-blur-3xl p-6 rounded-[2.5rem] shadow-2xl flex items-center justify-between gap-4 border border-white/20">
-            <div className="flex flex-col pl-4">
-               <Text className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">TỔNG CỘNG</Text>
-               <span className="text-2xl text-white font-serif leading-none">{product.price?.toLocaleString('vi-VN')}₫</span>
+      {/* Mobile Sticky Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden px-4 pb-6 pt-2 bg-gradient-to-t from-background to-transparent pointer-events-none">
+         <div className="bg-background/80 backdrop-blur-3xl border shadow-2xl p-4 rounded-[2rem] flex items-center gap-4 pointer-events-auto">
+            <div className="flex flex-col pl-4 flex-1">
+               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Giá thanh toán</span>
+               <span className="text-xl font-black text-primary leading-none tracking-tighter">{product.price?.toLocaleString('vi-VN')}₫</span>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2">
                 <Button 
-                   shape="circle" 
-                   icon={<ShoppingCartOutlined className="text-xl" />} 
-                   className="h-16 w-16 bg-white/10 text-white border-none flex items-center justify-center hover:bg-primary transition-all active:scale-90"
+                   size="icon" 
+                   variant="outline"
+                   className="h-14 w-14 rounded-2xl hover:bg-primary/5"
                    onClick={handleAddToCart}
-                />
+                >
+                   <ShoppingCart className="size-5" />
+                </Button>
                 <Button 
-                   type="primary" 
-                   icon={<ThunderboltOutlined />}
-                   className="h-16 px-10 rounded-3xl bg-primary font-bold uppercase border-none text-base shadow-xl shadow-primary/20 active:scale-95"
+                   className="h-14 px-8 rounded-2xl font-bold bg-primary shadow-lg shadow-primary/20 active:scale-95 transition-all outline-none"
                    onClick={handleBuyNow}
                 >
-                  MUA
+                  MUA NGAY
                 </Button>
             </div>
          </div>
@@ -429,5 +389,44 @@ const ProductDetail: React.FC = () => {
     </div>
   );
 };
+
+const ProductDetailSkeleton = () => (
+  <div className="container mx-auto px-4 py-12">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+        <Skeleton className="w-full aspect-[16/9] rounded-[2rem]" />
+        <div className="flex gap-4">
+           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="size-24 rounded-2xl" />)}
+        </div>
+      </div>
+      <div className="lg:col-span-5 xl:col-span-4 space-y-8">
+        <div className="space-y-4">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-10 w-48" />
+        </div>
+        <Skeleton className="h-px w-full" />
+        <div className="space-y-6">
+           <Skeleton className="h-10 w-full" />
+           <Skeleton className="h-16 w-full rounded-full" />
+           <Skeleton className="h-16 w-full rounded-full" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ProductNotFound = () => (
+  <div className="flex flex-col items-center justify-center py-40 animate-fadeIn">
+     <div className="size-24 bg-muted rounded-full flex items-center justify-center mb-6">
+        <Eye className="size-12 text-muted-foreground" />
+     </div>
+     <h2 className="text-2xl font-bold mb-2">Không tìm thấy sản phẩm</h2>
+     <p className="text-muted-foreground mb-8">Xin lỗi, sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị gỡ bỏ.</p>
+     <Button asChild className="rounded-full px-8">
+        <Link to="/">Quay lại trang chủ</Link>
+     </Button>
+  </div>
+);
 
 export default ProductDetail;
