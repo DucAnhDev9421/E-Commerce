@@ -43,6 +43,9 @@ app.use('/api/v1/carts', require('./routes/carts'));
 app.use('/api/v1/orders', require('./routes/orders'));
 app.use('/api/v1/order-items', require('./routes/orderItems'));
 app.use('/api/v1/upload', require('./routes/upload'));
+app.use('/api/v1/reviews', require('./routes/reviews'));
+app.use('/api/v1/notifications', require('./routes/notifications'));
+
 
 app.get("/api/health", (req, res) => {
   return res.status(200).json({

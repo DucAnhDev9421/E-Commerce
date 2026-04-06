@@ -44,13 +44,21 @@ let productSchema = new mongoose.Schema({
     discount: {
         type: Number,
         default: 0
+    },
+    rating: {
+        type: Number,
+        default: 0
+    },
+    numReviews: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true
 });
 
 // Middleware tự động tạo slug trước khi validate
-productSchema.pre('validate', function (next) {
+productSchema.pre('validate', function () {
     if (this.name && (!this.slug || this.isModified('name'))) {
         const slugify = require('slugify');
         this.slug = slugify(this.name, {
@@ -59,11 +67,10 @@ productSchema.pre('validate', function (next) {
             locale: 'vi'
         });
     }
-    next();
 });
 
 // Middleware cho findOneAndUpdate (Update slug)
-productSchema.pre('findOneAndUpdate', function (next) {
+productSchema.pre('findOneAndUpdate', function () {
     const update = this.getUpdate();
     if (update.name) {
         const slugify = require('slugify');
@@ -73,7 +80,6 @@ productSchema.pre('findOneAndUpdate', function (next) {
             locale: 'vi'
         });
     }
-    next();
 });
 
 module.exports = mongoose.model('products', productSchema);

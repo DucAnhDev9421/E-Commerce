@@ -72,6 +72,7 @@ let RegisterUser = async function (data, session) {
     let defaultAddress = new AddressModel({
         user: savedUser._id,
         street: "Chưa cập nhật",
+        ward: "Chưa cập nhật",
         city: "Chưa cập nhật",
         district: "Chưa cập nhật",
         receiverName: savedUser.fullName,

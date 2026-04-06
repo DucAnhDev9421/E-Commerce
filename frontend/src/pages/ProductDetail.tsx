@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, InputNumber, Divider, Typography, Row, Col, Empty, notification, Rate, Breadcrumb, Image, Tabs, Spin } from 'antd';
+import { Button, InputNumber, Divider, Typography, Row, Col, Empty, notification, Rate, Breadcrumb, Image, Tabs, Spin, Input } from 'antd';
 import { 
   ShoppingCartOutlined, 
   SafetyCertificateOutlined, 
@@ -16,6 +16,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addToCart } from '../store/cartSlice';
 import productApi from '../api/productApi';
+import reviewApi from '../api/reviewApi';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -29,6 +31,9 @@ const ProductDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [mainImage, setMainImage] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -41,6 +46,13 @@ const ProductDetail: React.FC = () => {
         if (res.images && res.images.length > 0) {
           const firstImage = res.images[0].startsWith('http') ? res.images[0] : `${BASE_URL}${res.images[0]}`;
           setMainImage(firstImage);
+        }
+        
+        try {
+          const revRes: any = await reviewApi.getByProduct(id);
+          setReviews(revRes.data || []);
+        } catch(e) {
+          console.error("Lỗi lấy danh sách đánh giá", e);
         }
       } catch (error: any) {
         notification.error({
@@ -101,6 +113,50 @@ const ProductDetail: React.FC = () => {
         message: 'Lỗi',
         description: error || 'Không thể tiến hành đặt hàng'
       });
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!isAuthenticated) {
+      notification.info({
+        message: 'Yêu cầu đăng nhập',
+        description: 'Vui lòng đăng nhập để đánh giá sản phẩm.',
+      });
+      navigate('/login');
+      return;
+    }
+    if (!reviewForm.comment.trim()) {
+      notification.error({ message: 'Vui lòng nhập nội dung đánh giá' });
+      return;
+    }
+    
+    setSubmittingReview(true);
+    try {
+      if (!product) return;
+      const res: any = await reviewApi.create(product._id, reviewForm);
+      notification.success({ 
+         message: 'Thành công', 
+         description: 'Cảm ơn đánh giá của bạn!' 
+      });
+      setReviewForm({ rating: 5, comment: '' });
+      // Fetch fresh reviews
+      const revRes: any = await reviewApi.getByProduct(product._id);
+      setReviews(revRes.data || []);
+      // Update local product stats
+      if (res.data) {
+        setProduct({ 
+           ...product, 
+           rating: res.data.rating, 
+           numReviews: res.data.numReviews 
+        });
+      }
+    } catch(err: any) {
+      notification.error({
+         message: 'Không thể gửi đánh giá',
+         description: err?.response?.data?.message || err.message
+      });
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -199,9 +255,9 @@ const ProductDetail: React.FC = () => {
                     {product.name}
                   </Title>
                   <div className="flex items-center gap-6 bg-white/40 backdrop-blur-sm w-fit px-6 py-2.5 rounded-full border border-white/60">
-                    <Rate disabled defaultValue={5} className="text-cta text-sm" />
+                    <Rate disabled value={product.rating || 0} className="text-cta text-sm" />
                     <Divider type="vertical" className="bg-text/10 h-4" />
-                    <Text className="text-text/60 text-xs font-light">4.9/5 • 2.5K Lượt xem • 800+ Đã bán</Text>
+                    <Text className="text-text/60 text-xs font-light">{product.rating || 0}/5 • {product.numReviews || 0} Đánh giá • {product.stock} Có sẵn</Text>
                   </div>
                 </header>
 
@@ -378,12 +434,67 @@ const ProductDetail: React.FC = () => {
                   </div>
                 ),
               },
-              {
+               {
                  key: '2',
-                 label: <span className="text-base md:text-lg px-8 py-3 font-serif tracking-tight transition-all duration-300">ĐÁNH GIÁ (99+)</span>,
+                 label: <span className="text-base md:text-lg px-8 py-3 font-serif tracking-tight transition-all duration-300">ĐÁNH GIÁ ({product.numReviews || 0})</span>,
                  children: (
-                  <div className="animate-slideUp pt-12 flex flex-col items-center">
-                    <Empty description={<Text className="text-xl font-serif text-text/20 uppercase tracking-tighter">Đang cập nhật những phản hồi từ khách hàng</Text>} />
+                  <div className="animate-slideUp pt-12 max-w-4xl mx-auto">
+                    {reviews.length === 0 ? (
+                      <div className="flex flex-col items-center py-10 bg-white/40 backdrop-blur-md rounded-3xl border border-white/60 shadow-sm">
+                        <Empty description={<Text className="text-xl font-serif text-text/40 uppercase tracking-tighter">Chưa có đánh giá nào</Text>} />
+                      </div>
+                    ) : (
+                      <div className="space-y-6 mb-12">
+                        {reviews.map((rev, idx) => (
+                          <div key={idx} className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white shadow-sm flex gap-4">
+                             <Avatar className="size-12 shadow-sm border border-white/20">
+                                <AvatarFallback className="bg-primary/10 text-primary">{rev.userId?.username?.charAt(0)?.toUpperCase() || 'U'}</AvatarFallback>
+                             </Avatar>
+                             <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                   <Text className="font-bold text-text">{rev.userId?.username || 'Khách hàng'}</Text>
+                                   <Text className="text-xs text-text/40">{new Date(rev.createdAt).toLocaleDateString('vi-VN')}</Text>
+                                </div>
+                                <Rate disabled value={rev.rating} className="text-cta text-xs mb-3" />
+                                <Paragraph className="text-text/80 my-0 font-light leading-relaxed">{rev.comment}</Paragraph>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add Review Form */}
+                    <div className="mt-12 bg-white/40 backdrop-blur-md p-8 md:p-12 rounded-[3rem] border border-white/60 shadow-xl relative overflow-hidden">
+                       <Title level={4} className="!font-serif !mb-6 uppercase tracking-widest text-text">VIẾT ĐÁNH GIÁ CỦA BẠN</Title>
+                       <div className="space-y-6 relative z-10">
+                          <div>
+                             <Text className="block text-xs font-bold text-text/40 uppercase tracking-widest mb-2">Chất lượng sản phẩm</Text>
+                             <Rate 
+                                className="text-xl text-cta" 
+                                value={reviewForm.rating} 
+                                onChange={(val) => setReviewForm({...reviewForm, rating: val})}
+                             />
+                          </div>
+                          <div>
+                             <Text className="block text-xs font-bold text-text/40 uppercase tracking-widest mb-2">Chia sẻ trải nghiệm</Text>
+                             <Input.TextArea 
+                                placeholder="Bạn nghĩ gì về sản phẩm này?"
+                                rows={4}
+                                className="bg-white/50 border-white focus:bg-white rounded-2xl shadow-inner resize-none custom-scrollbar p-4"
+                                value={reviewForm.comment}
+                                onChange={(e) => setReviewForm({...reviewForm, comment: e.target.value})}
+                             />
+                          </div>
+                          <Button 
+                             type="primary" 
+                             className="h-14 px-10 rounded-full font-bold uppercase tracking-wider text-sm shadow-xl shadow-primary/20 border-none float-right"
+                             onClick={handleSubmitReview}
+                             loading={submittingReview}
+                          >
+                             Gửi Đánh Giá
+                          </Button>
+                       </div>
+                    </div>
                   </div>
                  )
               }
