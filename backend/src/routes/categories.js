@@ -33,7 +33,7 @@ router.get('/:id', async function (req, res, next) {
 });
 
 // Tạo mới category (Yêu cầu Admin)
-router.post('/', CheckLogin, CheckRole('admin'), async function (req, res, next) {
+router.post('/', CheckLogin, CheckRole('ADMIN','MANAGER'), async function (req, res, next) {
     try {
         let result = await categoryController.CreateCategory(req.body);
         res.status(201).json({
@@ -47,7 +47,7 @@ router.post('/', CheckLogin, CheckRole('admin'), async function (req, res, next)
 });
 
 // Cập nhật category (Yêu cầu Admin)
-router.put('/:id', CheckLogin, CheckRole('admin'), async function (req, res, next) {
+router.put('/:id', CheckLogin, CheckRole('ADMIN','MANAGER'), async function (req, res, next) {
     try {
         let result = await categoryController.UpdateCategory(req.params.id, req.body);
         if (!result) return res.status(404).json({ success: false, message: "Không tìm thấy category để cập nhật", data: null });
@@ -62,7 +62,7 @@ router.put('/:id', CheckLogin, CheckRole('admin'), async function (req, res, nex
 });
 
 // Xóa category (Yêu cầu Admin)
-router.delete('/:id', CheckLogin, CheckRole('admin'), async function (req, res, next) {
+router.delete('/:id', CheckLogin, CheckRole('ADMIN','MANAGER'), async function (req, res, next) {
     try {
         let result = await categoryController.DeleteCategory(req.params.id);
         if (!result) return res.status(404).json({ success: false, message: "Không tìm thấy category để xóa", data: null });
