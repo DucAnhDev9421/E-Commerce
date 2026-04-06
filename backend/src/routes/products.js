@@ -35,7 +35,11 @@ router.get('/:id', async function (req, res, next) {
 // Tạo mới sản phẩm (Yêu cầu Admin)
 router.post('/', CheckLogin, CheckRole('ADMIN','MANAGER'), async function (req, res, next) {
     try {
-        let result = await productController.CreateProduct(req.body);
+        const { name, description, price, stock, images, categoryId, status, discount } = req.body;
+
+        let result = await productController.CreateProduct(
+            name, description, price, stock, images, categoryId, status, discount
+        );
         res.status(201).json({
             success: true,
             message: "Tạo sản phẩm thành công",

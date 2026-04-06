@@ -11,11 +11,11 @@ let { verifyToken } = require('../utils/authHandler');
  */
 router.post('/', verifyToken, async function (req, res, next) {
     try {
-        let data = req.body;
+        const { street, ward, city, district, receiverName, phoneNumber, isDefault } = req.body;
 
-        data.user = req.user._id;
-
-        let result = await addressController.CreateAAddress(data);
+        let result = await addressController.CreateAAddress(
+            req.user._id, street, ward, city, district, receiverName, phoneNumber, isDefault
+        );
         res.status(201).json({ success: true, message: "Tạo địa chỉ thành công", data: result });
 
     } catch (error) {

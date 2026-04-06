@@ -35,7 +35,9 @@ router.get('/:id', async function (req, res, next) {
 // Tạo mới category (Yêu cầu Admin)
 router.post('/', CheckLogin, CheckRole('ADMIN','MANAGER'), async function (req, res, next) {
     try {
-        let result = await categoryController.CreateCategory(req.body);
+        const { name, description, image, status } = req.body;
+
+        let result = await categoryController.CreateCategory(name, description, image, status);
         res.status(201).json({
             success: true,
             message: "Tạo category thành công",

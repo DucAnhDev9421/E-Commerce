@@ -6,7 +6,11 @@ let { CheckLogin, CheckRole } = require('../utils/authHandler');
 // Tạo image mới (Yêu cầu Admin/Manager)
 router.post('/', CheckLogin, CheckRole('ADMIN', 'MANAGER'), async function (req, res, next) {
     try {
-        let result = await ProductImageController.CreateProductImage(req.body);
+        const { productId, imageUrl, isPrimary, altText } = req.body;
+
+        let result = await ProductImageController.CreateProductImage(
+            productId, imageUrl, isPrimary, altText
+        );
         res.status(201).json({
             success: true,
             message: 'Image added successfully',
