@@ -53,6 +53,13 @@ const ProductDetail: React.FC = () => {
           const firstImage = res.images[0].startsWith('http') ? res.images[0] : `${BASE_URL}${res.images[0]}`;
           setMainImage(firstImage);
         }
+        
+        try {
+          const revRes: any = await reviewApi.getByProduct(id);
+          setReviews(revRes.data || []);
+        } catch(e) {
+          console.error("Lỗi lấy danh sách đánh giá", e);
+        }
       } catch (error: any) {
         message.error('Lỗi tải chi tiết sản phẩm: ' + (error?.message || 'Không thể lấy thông tin sản phẩm'));
       } finally {

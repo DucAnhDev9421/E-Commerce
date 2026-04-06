@@ -38,6 +38,9 @@ import { logout } from '@/store/authSlice'
 import { fetchCart, clearCart } from '@/store/cartSlice'
 import { getAvatarUrl } from '@/utils/imageUtils'
 import categoryApi from '@/api/categoryApi'
+import notificationApi from '@/api/notificationApi'
+import { io, Socket } from 'socket.io-client'
+import { notification } from 'antd'
 
 const MainLayout: React.FC = () => {
   const navigate = useNavigate()
@@ -46,6 +49,10 @@ const MainLayout: React.FC = () => {
   const { totalQuantity } = useAppSelector((state) => state.cart)
   const [searchValue, setSearchValue] = useState('')
   const [categories, setCategories] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  const BASE_URL = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000'
 
   const handleLogout = () => {
     dispatch(logout())
@@ -70,6 +77,56 @@ const MainLayout: React.FC = () => {
       dispatch(fetchCart())
     }
   }, [isAuthenticated, dispatch])
+
+  useEffect(() => {
+    let socket: Socket | null = null;
+    
+    if (isAuthenticated && user?._id) {
+      const fetchNotis = async () => {
+        try {
+          const res: any = await notificationApi.getUserNotifications();
+          const notiArray = res.data || res;
+          if (Array.isArray(notiArray)) {
+             setNotifications(notiArray);
+             setUnreadCount(notiArray.filter((n: any) => !n.isRead).length);
+          }
+        } catch (error) {
+          console.error("Fetch notifications failed", error);
+        }
+      };
+      
+      fetchNotis();
+
+      socket = io(BASE_URL, { transports: ['websocket'] });
+
+      socket.on('NEW_NOTIFICATION', (data: any) => {
+        if (data.to === user._id) {
+           notification.info({
+              message: data.title,
+              description: data.message,
+              placement: 'bottomRight',
+              duration: 5,
+           });
+           fetchNotis(); 
+        }
+      });
+    }
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [isAuthenticated, user, BASE_URL]);
+
+  const handleMarkAsRead = async (id: string, isRead: boolean) => {
+    if (isRead) return;
+    try {
+      await notificationApi.markAsRead(id);
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch(err) {
+      console.log(err);
+    }
+  }
 
   const handleSearch = () => {
     if (searchValue.trim()) {
@@ -212,26 +269,42 @@ const MainLayout: React.FC = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative shrink-0 hidden sm:flex">
                     <Bell className="size-5" />
-                    <span className="absolute top-1.5 right-1.5 size-2 bg-primary rounded-full" />
+                    {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2 bg-destructive rounded-full animate-pulse" />}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <DropdownMenuLabel className="flex items-center justify-between">
-                    <span>Notifications</span>
-                    <Button variant="ghost" size="sm" className="h-auto py-1 px-2 text-xs">Mark all read</Button>
+                    <span>Thông báo ({unreadCount})</span>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="max-h-80 overflow-y-auto">
-                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      <Bell className="size-8 mx-auto mb-2 opacity-30" />
-                      <p>No notifications yet</p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <div className="p-2">
-                    <Button variant="ghost" className="w-full justify-center text-xs" onClick={() => navigate('/notifications')}>
-                      View all notifications
-                    </Button>
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                        <Bell className="size-8 mx-auto mb-2 opacity-30" />
+                        <p>No notifications yet</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        {notifications.map((noti) => (
+                           <div 
+                             key={noti._id} 
+                             onClick={() => handleMarkAsRead(noti._id, noti.isRead)}
+                             className={`p-3 border-b last:border-0 cursor-pointer transition-colors ${noti.isRead ? 'bg-background hover:bg-muted/50' : 'bg-primary/5 hover:bg-primary/10'}`}
+                           >
+                             <div className="flex items-start gap-3">
+                               <div className="mt-1">
+                                 {noti.isRead ? <Bell className="size-4 text-muted-foreground" /> : <div className="size-2 mt-1 rounded-full bg-primary" />}
+                               </div>
+                               <div className="flex-1">
+                                  <p className={`text-sm ${noti.isRead ? 'text-muted-foreground' : 'font-medium text-foreground'}`}>{noti.title}</p>
+                                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{noti.message}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-2">{new Date(noti.createdAt).toLocaleString('vi-VN')}</p>
+                               </div>
+                             </div>
+                           </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
