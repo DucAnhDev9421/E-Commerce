@@ -40,10 +40,10 @@ router.post('/:productId', verifyToken, async (req, res, next) => {
             return res.status(400).json({ success: false, message: "Điểm đánh giá phải từ 1 đến 5" });
         }
 
-        const newReviewData = { userId, productId: new mongoose.Types.ObjectId(productId), rating, comment };
-        await reviewController.CreateReview(newReviewData, session);
+        const objProductId = new mongoose.Types.ObjectId(productId);
+        await reviewController.CreateReview(userId, objProductId, rating, comment, session);
 
-        const stats = await reviewController.CalculateProductRating(new mongoose.Types.ObjectId(productId), session);
+        const stats = await reviewController.CalculateProductRating(objProductId, session);
 
         const updatedProduct = await ProductModel.findByIdAndUpdate(
             productId,
