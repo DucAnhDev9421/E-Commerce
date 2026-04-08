@@ -36,7 +36,11 @@ router.post('/register', async function (req, res, next) {
 
     try {
 
-        let result = await authController.RegisterUser(req.body, session);
+        const { username, email, password, fullName, phone } = req.body;
+
+        let result = await authController.RegisterUser(
+            username, email, password, fullName, phone, session
+        );
 
         await session.commitTransaction();
         session.endSession();

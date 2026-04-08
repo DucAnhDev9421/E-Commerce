@@ -11,7 +11,9 @@ let { verifyToken, checkRole } = require('../utils/authHandler');
 router.post('/', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
-        let result = await roleController.CreateRole(req.body);
+        const { name, description } = req.body;
+
+        let result = await roleController.CreateARole(name, description);
         res.status(201).send(result);
 
     } catch (error) {

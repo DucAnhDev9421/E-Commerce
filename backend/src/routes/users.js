@@ -49,7 +49,11 @@ router.get('/:id', verifyToken, async function (req, res, next) {
 router.post('/', verifyToken, checkRole('ADMIN'), async function (req, res, next) {
     try {
 
-        let result = await userController.CreateAnUser(req.body);
+        const { username, password, email, role, fullName, phone, avatarUrl } = req.body;
+
+        let result = await userController.CreateAnUser(
+            username, password, email, role, fullName, phone, avatarUrl
+        );
         res.status(201).json({ success: true, message: "Tạo user thành công", data: result });
 
     } catch (error) {
@@ -85,7 +89,7 @@ router.delete('/:id', verifyToken, checkRole('ADMIN'), async function (req, res,
 /**
  * Change password
  */
-router.put('/:id/change-password', verifyToken, async function (req, res) {
+router.put('/:id/change-password', verifyToken, async function (req, res, next) {
     try {
 
         const { oldPassword, newPassword } = req.body;
