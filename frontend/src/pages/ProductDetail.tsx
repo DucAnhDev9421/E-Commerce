@@ -3,6 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addToCart } from '../store/cartSlice';
 import productApi from '../api/productApi';
+import reviewApi from '../api/reviewApi';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { 
   ShoppingCart, 
   ShieldCheck, 
@@ -41,6 +43,38 @@ const ProductDetail: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+
+  const handleSubmitReview = async () => {
+    if (!isAuthenticated) {
+      message.info('Vui lòng đăng nhập để đánh giá sản phẩm.');
+      navigate('/login');
+      return;
+    }
+    if (!reviewComment.trim()) {
+      message.warning('Vui lòng nhập nội dung đánh giá.');
+      return;
+    }
+    try {
+      if (!id) return;
+      await reviewApi.create(id, { rating: reviewRating, comment: reviewComment });
+      message.success('Cảm ơn bạn đã đánh giá sản phẩm!');
+      setIsReviewOpen(false);
+      setReviewComment('');
+      setReviewRating(5);
+      
+      const revRes: any = await reviewApi.getByProduct(id);
+      const reviewsData = Array.isArray(revRes.data) ? revRes.data : Array.isArray(revRes) ? revRes : [];
+      reviewsData.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setReviews(reviewsData);
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || 'Không thể gửi đánh giá lúc này.');
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
     const fetchProduct = async () => {
@@ -56,7 +90,9 @@ const ProductDetail: React.FC = () => {
         
         try {
           const revRes: any = await reviewApi.getByProduct(id);
-          setReviews(revRes.data || []);
+          const reviewsData = Array.isArray(revRes.data) ? revRes.data : Array.isArray(revRes) ? revRes : [];
+          reviewsData.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setReviews(reviewsData);
         } catch(e) {
           console.error("Lỗi lấy danh sách đánh giá", e);
         }
@@ -106,6 +142,11 @@ const ProductDetail: React.FC = () => {
 
   const discount = product.discount || 0;
   const oldPrice = discount > 0 ? product.price / (1 - discount / 100) : 0;
+
+  const averageRating = reviews.length > 0 
+    ? (reviews.reduce((acc, rev) => acc + (rev.rating || 5), 0) / reviews.length).toFixed(1) 
+    : '5.0';
+  const totalReviews = reviews.length;
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-8 animate-fadeIn">
@@ -172,8 +213,8 @@ const ProductDetail: React.FC = () => {
                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 pointer-events-none rounded-md px-3 py-1 font-medium tracking-wide">CHÍNH HÃNG</Badge>
                 <div className="flex items-center gap-1 ml-auto">
                     <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-semibold">4.9</span>
-                    <span className="text-xs text-muted-foreground font-normal">(120 đánh giá)</span>
+                    <span className="text-sm font-semibold">{averageRating}</span>
+                    <span className="text-xs text-muted-foreground font-normal">({totalReviews} đánh giá)</span>
                 </div>
               </div>
               
@@ -291,7 +332,7 @@ const ProductDetail: React.FC = () => {
                 value="reviews" 
                 className="data-[state=active]:border-primary data-[state=active]:text-primary border-b-2 border-transparent bg-transparent rounded-none px-4 py-4 text-base font-bold tracking-tight uppercase"
               >
-                Đánh giá (99+)
+                Đánh giá ({totalReviews > 99 ? '99+' : totalReviews})
               </TabsTrigger>
             </TabsList>
             <TabsContent value="details" className="mt-12">
@@ -353,20 +394,91 @@ const ProductDetail: React.FC = () => {
                </div>
             </TabsContent>
             <TabsContent value="reviews" className="mt-12 pb-20">
-               <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/20 rounded-[3rem] border border-dashed">
-                  <div className="p-6 bg-background rounded-full shadow-md">
-                     <Star className="size-12 text-muted-foreground/20" />
-                  </div>
-                  <div className="space-y-1">
-                     <h3 className="text-xl font-bold">Chưa có đánh giá nào</h3>
-                     <p className="text-muted-foreground max-w-xs mx-auto">Hãy là người đầu tiên trải nghiệm và chia sẻ cảm nhận về sản phẩm này.</p>
-                  </div>
-                  <Button variant="outline" className="rounded-full px-8 mt-4">Viết đánh giá</Button>
-               </div>
+               {reviews && reviews.length > 0 ? (
+                 <div className="space-y-8">
+                   <div className="flex justify-between items-center bg-muted/20 p-6 rounded-2xl border">
+                     <div>
+                       <h3 className="text-2xl font-bold mb-1">Đánh giá từ khách hàng</h3>
+                       <p className="text-muted-foreground text-sm">Có {reviews.length} đánh giá cho sản phẩm này</p>
+                     </div>
+                     <Button className="rounded-full px-8" onClick={() => setIsReviewOpen(true)}>Viết đánh giá</Button>
+                   </div>
+                   <div className="space-y-4">
+                     {reviews.map((rev, idx) => (
+                       <Card key={idx} className="shadow-sm">
+                         <CardContent className="p-6">
+                           <div className="flex justify-between items-start mb-4">
+                             <div className="flex gap-2 items-center">
+                               <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-lg">
+                                 {rev.user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                               </div>
+                               <div>
+                                 <div className="font-bold text-sm">{rev.user?.username || 'Người dùng'}</div>
+                                 <div className="text-xs text-muted-foreground">
+                                   {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString("vi-VN") : 'Gần đây'}
+                                 </div>
+                               </div>
+                             </div>
+                             <div className="flex">
+                               {[1,2,3,4,5].map(star => (
+                                 <Star key={star} className={cn("size-4", star <= rev.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/20")} />
+                               ))}
+                             </div>
+                           </div>
+                           <p className="text-sm leading-relaxed">{rev.comment}</p>
+                         </CardContent>
+                       </Card>
+                     ))}
+                   </div>
+                 </div>
+               ) : (
+                 <div className="flex flex-col items-center justify-center py-20 text-center gap-4 bg-muted/20 rounded-[3rem] border border-dashed">
+                    <div className="p-6 bg-background rounded-full shadow-md">
+                       <Star className="size-12 text-muted-foreground/20" />
+                    </div>
+                    <div className="space-y-1">
+                       <h3 className="text-xl font-bold">Chưa có đánh giá nào</h3>
+                       <p className="text-muted-foreground max-w-xs mx-auto">Hãy là người đầu tiên trải nghiệm và chia sẻ cảm nhận về sản phẩm này.</p>
+                    </div>
+                    <Button variant="outline" className="rounded-full px-8 mt-4" onClick={() => setIsReviewOpen(true)}>Viết đánh giá</Button>
+                 </div>
+               )}
             </TabsContent>
           </Tabs>
         </div>
       </div>
+
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Đánh giá sản phẩm</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2 mx-auto mb-2">
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button key={star} onClick={() => setReviewRating(star)} className="focus:outline-none hover:scale-110 transition-transform">
+                    <Star className={cn("size-8 transition-colors", star <= reviewRating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30")} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Nội dung đánh giá</label>
+              <textarea 
+                className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReviewOpen(false)}>Hủy</Button>
+            <Button onClick={handleSubmitReview}>Gửi đánh giá</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Mobile Sticky Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden px-4 pb-6 pt-2 bg-gradient-to-t from-background to-transparent pointer-events-none">
